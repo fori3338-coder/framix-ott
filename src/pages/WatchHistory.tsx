@@ -4,14 +4,16 @@ import { Clock, Trash2, Play, History, CheckCircle2, AlertCircle } from "lucide-
 import { supabase } from "../lib/supabase";
 
 // ─── Supabase watch_history 행 타입 ──────────────────────────────────────────
-// Supabase JOIN(1:1 FK)은 배열로 반환하므로 dramas/episodes를 배열로 선언
+// 실제 watch_history: id user_id episode_id watched_at progress_seconds completed
+// episodes를 통해 series(드라마)를 임베드 조회
 interface WatchHistoryRow {
   id: string;
-  drama_id: string;
   episode_id: string;
-  progress: number;          // 0-100
-  watched_at: string;        // ISO timestamp
-  dramas: {
+  progress_seconds: number;
+  completed: boolean;
+  progress: number;           // 0-100 (completed 기반 파생값)
+  watched_at: string;         // ISO timestamp
+  series: {
     id: string;
     title: string;
     poster_url: string | null;
@@ -54,12 +56,11 @@ function useWatchHistory() {
         .from("watch_history")
         .select(`
           id,
-          drama_id,
           episode_id,
-          progress,
+          progress_seconds,
+          completed,
           watched_at,
-          dramas ( id, title, poster_url ),
-          episodes ( id, episode_number, title, duration, thumbnail_url )
+          episodes ( id, episode_number, title, video_url, series_id, series ( id, title, thumbnail_url ) )
         `)
         .order("watched_at", { ascending: false })
         .limit(200);
@@ -73,7 +74,31 @@ function useWatchHistory() {
           throw err;
         }
       } else {
-        setRows((data ?? []) as WatchHistoryRow[]);
+        const mapped: WatchHistoryRow[] = (data ?? []).map((row: any) => {
+          const ep = row.episodes ?? null;
+          const series = ep?.series ?? null;
+          return {
+            id: row.id,
+            episode_id: row.episode_id,
+            progress_seconds: row.progress_seconds ?? 0,
+            completed: !!row.completed,
+            progress: row.completed ? 100 : (row.progress_seconds > 0 ? 1 : 0),
+            watched_at: row.watched_at,
+            series: series
+              ? [{ id: series.id, title: series.title, poster_url: series.thumbnail_url ?? null }]
+              : null,
+            episodes: ep
+              ? [{
+                  id: ep.id,
+                  episode_number: ep.episode_number,
+                  title: ep.title,
+                  duration: "12:00",
+                  thumbnail_url: null,
+                }]
+              : null,
+          };
+        });
+        setRows(mapped);
       }
     } catch (e) {
       setError((e as Error).message);
@@ -207,7 +232,7 @@ export default function WatchHistory() {
               </div>
               <div className="space-y-1.5">
                 {items.map((item, i) => {
-                  const drama = item.dramas?.[0] ?? null;
+                  const drama = item.series?.[0] ?? null;
                   const episode = item.episodes?.[0] ?? null;
                   if (!drama || !episode) return null;
                   const done = item.progress >= 100;

@@ -8,9 +8,9 @@ function toFrontendEpisode(e: DbEpisode): Episode {
     id: e.id,
     number: e.episode_number,
     title: e.title,
-    duration: e.duration ?? '00:00',
-    thumbnail: e.thumbnail_url ?? `https://picsum.photos/seed/${e.id}/400/225`,
-    isFree: e.is_free,
+    duration: '00:00',
+    thumbnail: `https://picsum.photos/seed/${e.id}/400/225`,
+    isFree: true,
     videoUrl: e.video_url ?? undefined,
     progress: 0,
   };
@@ -21,23 +21,22 @@ function toFrontendDrama(d: DbDrama, episodes: DbEpisode[]): Drama {
   return {
     id: d.id,
     title: d.title,
-    englishTitle: d.english_title ?? undefined,
-    synopsis: d.synopsis ?? '',
-    poster: d.poster_url ?? `https://picsum.photos/seed/${d.id}-poster/400/600`,
-    backdrop: d.backdrop_url ?? `https://picsum.photos/seed/${d.id}-backdrop/1280/720`,
-    genres: d.genres ?? [],
-    tags: d.tags ?? [],
+    synopsis: d.description ?? '',
+    poster: d.thumbnail_url ?? `https://picsum.photos/seed/${d.id}-poster/400/600`,
+    backdrop: d.thumbnail_url ?? `https://picsum.photos/seed/${d.id}-backdrop/1280/720`,
+    genres: d.genre ? [d.genre] : [],
+    tags: [],
     rating: d.rating ?? 0,
-    ageRating: (d.age_rating as Drama['ageRating']) ?? '15+',
-    year: d.year,
+    ageRating: '15+',
+    year: new Date().getFullYear(),
     totalEpisodes: d.total_episodes,
-    episodeLength: d.episode_length ?? '',
-    cast: d.cast ?? [],
-    director: d.director ?? '',
-    isOriginal: d.is_original,
-    isNew: d.is_new,
-    isExclusive: d.is_exclusive,
-    views: d.views,
+    episodeLength: '',
+    cast: [],
+    director: '',
+    isOriginal: false,
+    isNew: d.status === 'new',
+    isExclusive: false,
+    views: 0,
     episodes: episodes.map(toFrontendEpisode),
   };
 }
@@ -58,12 +57,12 @@ export function useDramaDetail(id: string | undefined) {
       try {
         // 드라마 + 에피소드 병렬 조회
         const [dramaRes, episodesRes] = await Promise.all([
-          supabase.from('dramas').select('*').eq('id', id).single(),
+          supabase.from('series').select('*').eq('id', id).single(),
           supabase
             .from('episodes')
             .select('*')
-            .eq('drama_id', id)
-            .order('sort_order', { ascending: true }),
+            .eq('series_id', id)
+            .order('episode_number', { ascending: true }),
         ]);
 
         if (dramaRes.error) throw dramaRes.error;

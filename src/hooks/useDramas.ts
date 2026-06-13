@@ -7,23 +7,22 @@ function toFrontendDrama(d: DbDrama): Drama {
   return {
     id: d.id,
     title: d.title,
-    englishTitle: d.english_title ?? undefined,
-    synopsis: d.synopsis ?? '',
-    poster: d.poster_url ?? `https://picsum.photos/seed/${d.id}-poster/400/600`,
-    backdrop: d.backdrop_url ?? `https://picsum.photos/seed/${d.id}-backdrop/1280/720`,
-    genres: d.genres ?? [],
-    tags: d.tags ?? [],
+    synopsis: d.description ?? '',
+    poster: d.thumbnail_url ?? `https://picsum.photos/seed/${d.id}-poster/400/600`,
+    backdrop: d.thumbnail_url ?? `https://picsum.photos/seed/${d.id}-backdrop/1280/720`,
+    genres: d.genre ? [d.genre] : [],
+    tags: [],
     rating: d.rating ?? 0,
-    ageRating: (d.age_rating as Drama['ageRating']) ?? '15+',
-    year: d.year,
+    ageRating: '15+',
+    year: new Date().getFullYear(),
     totalEpisodes: d.total_episodes,
-    episodeLength: d.episode_length ?? '',
-    cast: d.cast ?? [],
-    director: d.director ?? '',
-    isOriginal: d.is_original,
-    isNew: d.is_new,
-    isExclusive: d.is_exclusive,
-    views: d.views,
+    episodeLength: '',
+    cast: [],
+    director: '',
+    isOriginal: false,
+    isNew: d.status === 'new',
+    isExclusive: false,
+    views: 0,
     episodes: [],
   };
 }
@@ -42,9 +41,8 @@ export function useDramas() {
       setError(null);
       try {
         const { data, error: err } = await supabase
-          .from('dramas')
-          .select('*')
-          .order('created_at', { ascending: false });
+          .from('series')
+          .select('*');
 
         if (err) throw err;
         if (!cancelled) setDramas((data ?? []).map(toFrontendDrama));
@@ -59,10 +57,10 @@ export function useDramas() {
 
     // ── Realtime 구독: dramas 테이블 INSERT/UPDATE/DELETE 시 즉시 반영 ──────
     const channel = supabase
-      .channel('dramas-realtime')
+      .channel('series-realtime')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'dramas' },
+        { event: '*', schema: 'public', table: 'series' },
         () => {
           // 변경 감지 시 전체 목록 재조회 (단순 재페치가 안정적)
           if (!cancelled) fetchAll();
@@ -94,7 +92,7 @@ export function useDramaById(id: string | undefined) {
       setError(null);
       try {
         const { data, error: err } = await supabase
-          .from('dramas')
+          .from('series')
           .select('*')
           .eq('id', id)
           .single();
@@ -128,9 +126,9 @@ export function useSearchDramas(query: string) {
     async function fetch() {
       try {
         const { data } = await supabase
-          .from('dramas')
+          .from('series')
           .select('*')
-          .or(`title.ilike.%${query}%,english_title.ilike.%${query}%`)
+          .ilike('title', `%${query}%`)
           .limit(20);
 
         if (!cancelled) setDramas((data ?? []).map(toFrontendDrama));

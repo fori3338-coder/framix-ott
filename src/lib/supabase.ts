@@ -18,37 +18,19 @@ export const supabase = createClient(supabaseUrl ?? '', supabaseAnonKey ?? '');
 export interface DbDrama {
   id: string;
   title: string;
-  english_title: string | null;
-  synopsis: string | null;
-  poster_url: string | null;
-  backdrop_url: string | null;
-  genres: string[];
-  tags: string[];
-  cast: string[];
-  director: string | null;
-  age_rating: string;
-  year: number;
-  episode_length: string | null;
-  total_episodes: number;
-  is_original: boolean;
-  is_new: boolean;
-  is_exclusive: boolean;
+  description: string | null;
+  thumbnail_url: string | null;
+  genre: string | null;
   rating: number;
-  views: number;
-  created_at: string;
-  updated_at: string;
+  total_episodes: number;
+  status: string | null;
 }
 
 export interface DbEpisode {
   id: string;
-  drama_id: string;
+  series_id: string;
   episode_number: number;
   title: string;
-  duration: string | null;
-  thumbnail_url: string | null;
+  description: string | null;
   video_url: string | null;
-  is_free: boolean;
-  sort_order: number;
-  views: number;
-  created_at: string;
 }

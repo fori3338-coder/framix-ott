@@ -120,19 +120,15 @@ export default function ContentUpload() {
     setSubmitError(null);
 
     try {
-      // 1. dramas 테이블에 INSERT (이미지 URL은 업로드 후 UPDATE)
+      // 1. series 테이블에 INSERT (이미지 URL은 업로드 후 UPDATE)
       const { data: dramaRow, error: dramaErr } = await supabase
-        .from("dramas")
+        .from("series")
         .insert({
           title,
-          english_title: englishTitle || null,
-          synopsis,
-          age_rating: ageRating,
-          genres: selectedGenres,
-          is_original: isOriginal,
-          is_exclusive: isExclusive,
-          is_new: true,
-          year: new Date().getFullYear(),
+          description: synopsis,
+          genre: selectedGenres[0] ?? null,
+          total_episodes: episodes.length,
+          status: "new",
         })
         .select()
         .single();
@@ -154,11 +150,11 @@ export default function ContentUpload() {
         backdropUrl = await uploadImage(BUCKET.BANNERS, `${dramaId}_hero.${ext}`, backdropFile);
       }
 
-      // 4. 이미지 URL UPDATE
-      if (posterUrl || backdropUrl) {
-        await supabase.from("dramas").update({
-          ...(posterUrl ? { poster_url: posterUrl } : {}),
-          ...(backdropUrl ? { backdrop_url: backdropUrl } : {}),
+      // 4. 썸네일 URL UPDATE (series.thumbnail_url)
+      const thumbnailUrl = posterUrl ?? backdropUrl;
+      if (thumbnailUrl) {
+        await supabase.from("series").update({
+          thumbnail_url: thumbnailUrl,
         }).eq("id", dramaId);
       }
 
@@ -174,27 +170,13 @@ export default function ContentUpload() {
           });
         }
 
-        // 5b. 에피소드 썸네일 업로드 → thumbnails 버킷
-        let thumbnailUrl: string | null = null;
-        if (ep.thumbnailFile) {
-          const ext = ep.thumbnailFile.name.split('.').pop() ?? 'jpg';
-          thumbnailUrl = await uploadImage(
-            BUCKET.THUMBNAILS,
-            `episodes/${dramaId}_ep${i + 1}.${ext}`,
-            ep.thumbnailFile
-          );
-        }
-
-        // 5c. episodes 테이블 INSERT
+        // 5b. episodes 테이블 INSERT
         await supabase.from("episodes").insert({
-          drama_id: dramaId,
+          series_id: dramaId,
           episode_number: i + 1,
           title: ep.title,
-          duration: ep.duration,
-          is_free: ep.isFree,
-          sort_order: i,
+          description: null,
           video_url: videoUrl,
-          thumbnail_url: thumbnailUrl,
         });
       }
 

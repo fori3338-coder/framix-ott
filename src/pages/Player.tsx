@@ -9,21 +9,30 @@ import { useDramaDetail } from "../hooks/useDramaDetail";
 import { supabase } from "../lib/supabase";
 
 // ─── watch_history upsert 헬퍼 ────────────────────────────────────────────────
+// 실제 컬럼: id user_id episode_id watched_at progress_seconds completed
 // watch_history 테이블이 없는 경우(42P01) 조용히 무시
+const EPISODE_DURATION_SECONDS = 720; // 12분 (목 영상 길이 기준)
+
 async function saveWatchHistory(
-  dramaId: string,
   episodeId: string,
-  progress: number
+  progressPercent: number
 ) {
   try {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData?.user?.id;
+    if (!userId) return; // 로그인하지 않은 경우 저장 생략
+
+    const progressSeconds = Math.round((progressPercent / 100) * EPISODE_DURATION_SECONDS);
+
     const { error } = await supabase.from("watch_history").upsert(
       {
-        drama_id: dramaId,
+        user_id: userId,
         episode_id: episodeId,
-        progress: Math.round(progress),
+        progress_seconds: progressSeconds,
+        completed: progressPercent >= 100,
         watched_at: new Date().toISOString(),
       },
-      { onConflict: "drama_id,episode_id" }
+      { onConflict: "user_id,episode_id" }
     );
     if (error && error.code !== "42P01") {
       console.warn("[Player] watch_history 저장 실패:", error.message);
@@ -81,7 +90,7 @@ export default function Player() {
     // 10초마다 현재 진행률 저장
     const interval = setInterval(() => {
       if (progressRef.current > 0) {
-        saveWatchHistory(id, episodeId, progressRef.current);
+        saveWatchHistory(episodeId, progressRef.current);
       }
     }, 10000);
     return () => clearInterval(interval);
@@ -90,7 +99,7 @@ export default function Player() {
   // 에피소드 종료 시 100%로 저장
   const handleVideoEnded = useCallback(() => {
     if (id && episodeId) {
-      saveWatchHistory(id, episodeId, 100);
+      saveWatchHistory(episodeId, 100);
     }
   }, [id, episodeId]);
 
@@ -287,7 +296,7 @@ export default function Player() {
                 videoRef.current.currentTime = (pct / 100) * videoRef.current.duration;
               }
               // 탐색 시 즉시 저장
-              if (id && episodeId) saveWatchHistory(id, episodeId, pct);
+              if (id && episodeId) saveWatchHistory(episodeId, pct);
             }}
           >
             <div className="h-full bg-gold transition-all" style={{ width: `${progress}%` }} />
