@@ -4,6 +4,7 @@ export interface Episode {
   title: string;
   duration: string; // e.g. "12:34"
   thumbnail: string;
+  videoUrl?: string; // Supabase Storage URL (실제 영상)
   isFree: boolean;
   progress?: number; // 0-100, watch progress
 }

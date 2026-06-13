@@ -2,47 +2,87 @@ import { Link } from "react-router-dom";
 import { Play, Info, Sparkles } from "lucide-react";
 import HeroBanner from "../components/HeroBanner";
 import DramaRow from "../components/DramaRow";
-import { dramas, continueWatching, myListIds } from "../data/mockData";
+import { useDramas } from "../hooks/useDramas";
 
 export default function Home() {
+  const { dramas, loading, error } = useDramas();
+
+  // ── 로딩 스켈레톤 ──────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="pb-16 animate-pulse">
+        <div className="w-full h-[55vw] min-h-[260px] max-h-[540px] bg-surface-2" />
+        <div className="mt-8 space-y-6 px-5">
+          {[1, 2, 3].map((i) => (
+            <div key={i}>
+              <div className="h-4 bg-surface-2 rounded w-40 mb-3" />
+              <div className="flex gap-3">
+                {[1, 2, 3, 4].map((j) => (
+                  <div key={j} className="w-[120px] aspect-[2/3] rounded-lg bg-surface-2 shrink-0" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Supabase 오류 또는 데이터 없음 ────────────────────────────────────────
+  if (error) {
+    return (
+      <div className="pb-16">
+        <div className="px-5 pt-20 text-center">
+          <p className="text-red-400 text-sm mb-1">데이터 로드 오류</p>
+          <p className="text-text-muted text-xs">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── 데이터 없을 때 (등록 콘텐츠 0건) ─────────────────────────────────────
+  if (dramas.length === 0) {
+    return (
+      <div className="pb-16">
+        <div className="px-5 pt-28 text-center">
+          <p className="text-text-dim font-medium mb-1">등록된 콘텐츠가 없습니다</p>
+          <p className="text-text-muted text-sm">
+            <Link to="/admin/upload" className="text-gold underline">콘텐츠를 등록</Link>하면 여기에 표시됩니다.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── 카테고리별 분류 ───────────────────────────────────────────────────────
   const heroDramas = dramas.filter((d) => d.isOriginal).slice(0, 5);
+  // 오리지널 없으면 전체 최신순 상위 5편을 히어로로
+  const heroList = heroDramas.length > 0 ? heroDramas : dramas.slice(0, 5);
+
   const trending = [...dramas].sort((a, b) => b.views - a.views).slice(0, 10);
   const newEpisodes = dramas.filter((d) => d.isNew);
   const recommended = dramas.filter((d) => !d.isNew).slice(0, 10);
-  const continueList = dramas.filter((d) =>
-    continueWatching.some((c) => c.dramaId === d.id),
-  );
-  const myList = dramas.filter((d) => myListIds.includes(d.id));
   const romance = dramas.filter((d) => d.genres.includes("로맨스"));
   const revenge = dramas.filter((d) => d.genres.includes("복수"));
   const office = dramas.filter((d) => d.genres.includes("오피스"));
 
-  // Recommended For You spotlight pick
   const spotlight = recommended[0];
   const recommendedRow = recommended.slice(1);
 
   return (
     <div className="pb-16">
-      <HeroBanner dramas={heroDramas} />
+      <HeroBanner dramas={heroList} />
 
       <div className="mt-6 md:mt-10 space-y-2 md:space-y-3">
-        {continueList.length > 0 && (
+        {trending.length > 0 && (
           <DramaRow
-            title="이어보기"
-            subtitle="중단한 지점부터 다시 시청하세요"
-            dramas={continueList}
-            continueWatching={continueWatching}
+            title="🔥 지금 가장 인기있는 작품"
+            subtitle="실시간 TOP 10"
+            dramas={trending}
+            showRank
             accent
           />
         )}
-
-        <DramaRow
-          title="🔥 지금 가장 인기있는 작품"
-          subtitle="실시간 TOP 10"
-          dramas={trending}
-          showRank
-          accent
-        />
 
         {newEpisodes.length > 0 && (
           <DramaRow
@@ -53,7 +93,7 @@ export default function Home() {
           />
         )}
 
-        {/* Recommended For You — spotlight + row */}
+        {/* 추천 픽 spotlight */}
         {spotlight && (
           <section className="relative mb-7 md:mb-12 animate-fade-in">
             <div className="flex items-end justify-between px-5 md:px-12 mb-3 md:mb-4">
@@ -66,7 +106,7 @@ export default function Home() {
                     당신을 위한 추천
                   </h2>
                   <p className="hidden md:block text-xs text-text-muted mt-0.5">
-                    시청 기록을 바탕으로 큐레이션했어요
+                    최신 등록 콘텐츠를 큐레이션했어요
                   </p>
                 </div>
               </div>
@@ -95,13 +135,17 @@ export default function Home() {
                       {spotlight.title}
                     </h3>
                     <div className="flex items-center gap-2 text-[11px] md:text-sm text-text-dim mb-3 flex-wrap">
-                      <span className="text-gold font-bold">★ {spotlight.rating.toFixed(1)}</span>
-                      <span className="text-text-muted">•</span>
+                      {spotlight.rating > 0 && (
+                        <span className="text-gold font-bold">★ {spotlight.rating.toFixed(1)}</span>
+                      )}
+                      {spotlight.rating > 0 && <span className="text-text-muted">•</span>}
                       <span>{spotlight.year}</span>
                       <span className="border border-text-muted/60 px-1.5 rounded text-[10px]">
                         {spotlight.ageRating}
                       </span>
-                      <span>{spotlight.totalEpisodes}부작</span>
+                      {spotlight.totalEpisodes > 0 && (
+                        <span>{spotlight.totalEpisodes}부작</span>
+                      )}
                     </div>
                     <p className="hidden md:block text-sm text-text-dim/90 line-clamp-2 mb-4 max-w-lg">
                       {spotlight.synopsis}
@@ -127,19 +171,33 @@ export default function Home() {
           </section>
         )}
 
-        {myList.length > 0 && (
-          <DramaRow title="내가 찜한 작품" dramas={myList} cardSize="sm" />
+        {romance.length > 0 && (
+          <DramaRow title="💕 로맨스 인기작" dramas={romance} />
+        )}
+        {revenge.length > 0 && (
+          <DramaRow title="🗡️ 복수 & 사이다" dramas={revenge} />
+        )}
+        {office.length > 0 && (
+          <DramaRow title="🏢 오피스 로맨스" dramas={office} cardSize="sm" />
         )}
 
-        <DramaRow title="💕 로맨스 인기작" dramas={romance} />
-        <DramaRow title="🗡️ 복수 & 사이다" dramas={revenge} />
-        <DramaRow title="🏢 오피스 로맨스" dramas={office} cardSize="sm" />
-        <DramaRow
-          title="FRAMIX 오리지널"
-          subtitle="우리만의 독점 작품"
-          dramas={dramas.filter((d) => d.isOriginal)}
-          accent
-        />
+        {dramas.filter((d) => d.isOriginal).length > 0 && (
+          <DramaRow
+            title="FRAMIX 오리지널"
+            subtitle="우리만의 독점 작품"
+            dramas={dramas.filter((d) => d.isOriginal)}
+            accent
+          />
+        )}
+
+        {/* 전체 목록 (장르 분류 없는 콘텐츠 포함) */}
+        {dramas.length > 0 && (
+          <DramaRow
+            title="전체 콘텐츠"
+            subtitle="등록된 모든 작품"
+            dramas={dramas}
+          />
+        )}
       </div>
     </div>
   );

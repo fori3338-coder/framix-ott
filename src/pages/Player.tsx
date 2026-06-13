@@ -1,28 +1,50 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  ChevronLeft,
-  Play,
-  Pause,
-  SkipForward,
-  SkipBack,
-  Heart,
-  MessageCircle,
-  Share2,
-  List,
-  Lock,
-  Volume2,
-  VolumeX,
-  Maximize,
+  ChevronLeft, Play, Pause, SkipForward, SkipBack,
+  Heart, MessageCircle, Share2, List, Lock,
+  Volume2, VolumeX, Maximize,
 } from "lucide-react";
-import { getDramaById, getEpisodeById } from "../data/mockData";
+import { useDramaDetail } from "../hooks/useDramaDetail";
+import { supabase } from "../lib/supabase";
+
+// ─── watch_history upsert 헬퍼 ────────────────────────────────────────────────
+// watch_history 테이블이 없는 경우(42P01) 조용히 무시
+async function saveWatchHistory(
+  dramaId: string,
+  episodeId: string,
+  progress: number
+) {
+  try {
+    const { error } = await supabase.from("watch_history").upsert(
+      {
+        drama_id: dramaId,
+        episode_id: episodeId,
+        progress: Math.round(progress),
+        watched_at: new Date().toISOString(),
+      },
+      { onConflict: "drama_id,episode_id" }
+    );
+    if (error && error.code !== "42P01") {
+      console.warn("[Player] watch_history 저장 실패:", error.message);
+    }
+  } catch {
+    // 네트워크 오류 등 조용히 무시
+  }
+}
 
 export default function Player() {
   const { id, episodeId } = useParams();
   const navigate = useNavigate();
-  const drama = getDramaById(id);
-  const episode = getEpisodeById(drama, episodeId);
 
+  // ── Supabase 조회 ──────────────────────────────────────────────────────────
+  const { drama, loading } = useDramaDetail(id);
+  const episode = drama?.episodes.find((e) => e.id === episodeId) ?? null;
+
+  // ── 비디오 ref ─────────────────────────────────────────────────────────────
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // ── UI 상태 ────────────────────────────────────────────────────────────────
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -30,15 +52,65 @@ export default function Player() {
   const [showEpisodes, setShowEpisodes] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [prevEpisodeId, setPrevEpisodeId] = useState(episodeId);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // 에피소드 변경 시 리셋
   if (episodeId !== prevEpisodeId) {
     setPrevEpisodeId(episodeId);
     setProgress(0);
     setPlaying(true);
   }
 
+  // ── 컨트롤 자동 숨김 ──────────────────────────────────────────────────────
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resetHideTimer = useCallback(() => {
+    setShowControls(true);
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setShowControls(false), 3000);
+  }, []);
   useEffect(() => {
+    resetHideTimer();
+    return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
+  }, [resetHideTimer]);
+
+  // ── watch_history 주기적 저장 (10초마다) ─────────────────────────────────
+  const progressRef = useRef(progress);
+  progressRef.current = progress;
+
+  useEffect(() => {
+    if (!id || !episodeId || !episode) return;
+    // 10초마다 현재 진행률 저장
+    const interval = setInterval(() => {
+      if (progressRef.current > 0) {
+        saveWatchHistory(id, episodeId, progressRef.current);
+      }
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [id, episodeId, episode]);
+
+  // 에피소드 종료 시 100%로 저장
+  const handleVideoEnded = useCallback(() => {
+    if (id && episodeId) {
+      saveWatchHistory(id, episodeId, 100);
+    }
+  }, [id, episodeId]);
+
+  // ── 실제 <video> 재생 / 목 fallback ───────────────────────────────────────
+  const hasRealVideo = Boolean(episode?.videoUrl);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !hasRealVideo) return;
+    playing ? v.play().catch(() => {}) : v.pause();
+  }, [playing, hasRealVideo, episodeId]);
+
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.muted = muted;
+  }, [muted]);
+
+  // 목 모드 진행률 시뮬레이션 (실제 영상 없을 때만)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (hasRealVideo) return;
     if (playing) {
       intervalRef.current = setInterval(() => {
         setProgress((p) => (p >= 100 ? 100 : p + 0.4));
@@ -46,10 +118,17 @@ export default function Player() {
     } else if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [playing]);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [playing, hasRealVideo]);
+
+  // ── 로딩 ──────────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-gold border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!drama || !episode) {
     return (
@@ -63,22 +142,43 @@ export default function Player() {
   const currentIndex = drama.episodes.findIndex((e) => e.id === episode.id);
   const prevEp = drama.episodes[currentIndex - 1];
   const nextEp = drama.episodes[currentIndex + 1];
-
   const isLocked = !episode.isFree;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black flex flex-col" onMouseMove={resetHideTimer} onTouchStart={resetHideTimer}>
       <div
         className="relative flex-1 overflow-hidden"
         onClick={() => setShowControls((s) => !s)}
       >
-        <img
-          src={`https://picsum.photos/seed/${episode.id}-player/720/1280`}
-          alt={episode.title}
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        {/* ── 실제 영상 또는 목 썸네일 ── */}
+        {hasRealVideo ? (
+          <video
+            ref={videoRef}
+            src={episode.videoUrl}
+            className="absolute inset-0 w-full h-full object-cover"
+            playsInline
+            autoPlay
+            muted={muted}
+            onTimeUpdate={() => {
+              const v = videoRef.current;
+              if (v && v.duration) setProgress((v.currentTime / v.duration) * 100);
+            }}
+            onEnded={() => {
+              handleVideoEnded();
+              if (nextEp) navigate(`/watch/${drama.id}/${nextEp.id}`);
+            }}
+          />
+        ) : (
+          <img
+            src={episode.thumbnail ?? `https://picsum.photos/seed/${episode.id}-player/720/1280`}
+            alt={episode.title}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
+
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/70" />
 
+        {/* ── VIP 잠금 오버레이 ── */}
         {isLocked && (
           <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center px-6 text-center gap-4 z-20">
             <div className="w-14 h-14 rounded-full bg-gold/15 border border-gold/40 flex items-center justify-center">
@@ -97,11 +197,8 @@ export default function Player() {
           </div>
         )}
 
-        <div
-          className={`absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-4 safe-top transition-opacity ${
-            showControls ? "opacity-100" : "opacity-0"
-          }`}
-        >
+        {/* ── 상단 컨트롤 ── */}
+        <div className={`absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-4 safe-top transition-opacity ${showControls ? "opacity-100" : "opacity-0"}`}>
           <button
             onClick={(e) => { e.stopPropagation(); navigate(`/drama/${drama.id}`); }}
             className="w-9 h-9 rounded-full bg-black/40 flex items-center justify-center text-white"
@@ -122,6 +219,7 @@ export default function Player() {
           </button>
         </div>
 
+        {/* ── 중앙 재생 컨트롤 ── */}
         {!isLocked && showControls && (
           <div className="absolute inset-0 flex items-center justify-center gap-10">
             <button
@@ -150,47 +248,48 @@ export default function Player() {
           </div>
         )}
 
+        {/* ── 우측 반응 버튼 ── */}
         <div className="absolute right-3 bottom-28 md:bottom-24 flex flex-col items-center gap-5 z-10">
-          <button
-            onClick={(e) => { e.stopPropagation(); setLiked((l) => !l); }}
-            className="flex flex-col items-center gap-1 text-white"
-          >
+          <button onClick={(e) => { e.stopPropagation(); setLiked((l) => !l); }} className="flex flex-col items-center gap-1 text-white">
             <div className={`w-11 h-11 rounded-full flex items-center justify-center ${liked ? "bg-gold/20" : "bg-black/30"}`}>
               <Heart size={22} className={liked ? "text-gold fill-gold" : "text-white"} />
             </div>
             <span className="text-xs">{liked ? "12.4K" : "12.3K"}</span>
           </button>
           <button onClick={(e) => e.stopPropagation()} className="flex flex-col items-center gap-1 text-white">
-            <div className="w-11 h-11 rounded-full bg-black/30 flex items-center justify-center">
-              <MessageCircle size={22} />
-            </div>
+            <div className="w-11 h-11 rounded-full bg-black/30 flex items-center justify-center"><MessageCircle size={22} /></div>
             <span className="text-xs">832</span>
           </button>
           <button onClick={(e) => e.stopPropagation()} className="flex flex-col items-center gap-1 text-white">
-            <div className="w-11 h-11 rounded-full bg-black/30 flex items-center justify-center">
-              <Share2 size={20} />
-            </div>
+            <div className="w-11 h-11 rounded-full bg-black/30 flex items-center justify-center"><Share2 size={20} /></div>
             <span className="text-xs">공유</span>
           </button>
         </div>
 
-        <div
-          className={`absolute bottom-0 left-0 right-0 px-4 pb-4 safe-bottom transition-opacity ${
-            showControls ? "opacity-100" : "opacity-0"
-          }`}
-        >
+        {/* ── 하단 진행 바 ── */}
+        <div className={`absolute bottom-0 left-0 right-0 px-4 pb-4 safe-bottom transition-opacity ${showControls ? "opacity-100" : "opacity-0"}`}>
           <div className="flex items-center justify-between mb-2">
-            <button
-              onClick={(e) => { e.stopPropagation(); setMuted((m) => !m); }}
-              className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center text-white"
-            >
+            <button onClick={(e) => { e.stopPropagation(); setMuted((m) => !m); }} className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center text-white">
               {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
             </button>
-            <button onClick={(e) => e.stopPropagation()} className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center text-white">
+            <button onClick={(e) => { e.stopPropagation(); videoRef.current?.requestFullscreen?.(); }} className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center text-white">
               <Maximize size={16} />
             </button>
           </div>
-          <div className="h-1 bg-white/20 rounded-full overflow-hidden">
+          <div
+            className="h-1 bg-white/20 rounded-full overflow-hidden cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              const rect = e.currentTarget.getBoundingClientRect();
+              const pct = ((e.clientX - rect.left) / rect.width) * 100;
+              setProgress(pct);
+              if (videoRef.current && videoRef.current.duration) {
+                videoRef.current.currentTime = (pct / 100) * videoRef.current.duration;
+              }
+              // 탐색 시 즉시 저장
+              if (id && episodeId) saveWatchHistory(id, episodeId, pct);
+            }}
+          >
             <div className="h-full bg-gold transition-all" style={{ width: `${progress}%` }} />
           </div>
           <div className="flex justify-between text-[11px] text-text-dim mt-1">
@@ -200,6 +299,7 @@ export default function Player() {
         </div>
       </div>
 
+      {/* ── 에피소드 목록 드로어 ── */}
       {showEpisodes && (
         <div className="absolute inset-0 z-30 flex">
           <div className="flex-1 bg-black/50" onClick={() => setShowEpisodes(false)} />

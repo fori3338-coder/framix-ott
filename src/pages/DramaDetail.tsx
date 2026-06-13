@@ -1,25 +1,53 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Play, Plus, Check, Share2, Star, Lock, ChevronLeft } from "lucide-react";
-import { dramas, getDramaById, myListIds } from "../data/mockData";
+import { useDramaDetail } from "../hooks/useDramaDetail";
+import { useDramas } from "../hooks/useDramas";
 import DramaRow from "../components/DramaRow";
+
+// ─── 스켈레톤 로딩 UI ─────────────────────────────────────────────────────────
+function DetailSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="w-full h-[42vh] md:h-[60vh] bg-surface-2" />
+      <div className="px-4 md:px-8 mt-4 flex gap-3">
+        <div className="flex-1 h-12 bg-surface-2 rounded-md" />
+        <div className="w-12 h-12 bg-surface-2 rounded-md" />
+        <div className="w-12 h-12 bg-surface-2 rounded-md" />
+      </div>
+      <div className="px-4 md:px-8 mt-5 space-y-2">
+        <div className="h-4 bg-surface-2 rounded w-3/4" />
+        <div className="h-4 bg-surface-2 rounded w-full" />
+        <div className="h-4 bg-surface-2 rounded w-5/6" />
+      </div>
+    </div>
+  );
+}
 
 export default function DramaDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const drama = getDramaById(id);
-  const [inList, setInList] = useState(() => myListIds.includes(id ?? ""));
 
-  if (!drama) {
+  // ── Supabase 조회 ──────────────────────────────────────────────────────────
+  const { drama, loading, error } = useDramaDetail(id);
+  const { dramas: allDramas } = useDramas();
+  const [inList, setInList] = useState(false);
+
+  // ── 로딩 상태 ──────────────────────────────────────────────────────────────
+  if (loading) return <DetailSkeleton />;
+
+  // ── 에러 / 미발견 ──────────────────────────────────────────────────────────
+  if (error || !drama) {
     return (
       <div className="px-4 py-20 text-center">
         <p className="text-text-dim">작품을 찾을 수 없습니다.</p>
+        {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
         <Link to="/" className="text-gold underline mt-2 inline-block">홈으로 돌아가기</Link>
       </div>
     );
   }
 
-  const similar = dramas
+  const similar = allDramas
     .filter((d) => d.id !== drama.id && d.genres.some((g) => drama.genres.includes(g)))
     .slice(0, 10);
 
@@ -64,8 +92,9 @@ export default function DramaDetail() {
       {/* Action buttons */}
       <div className="px-4 md:px-8 mt-4 flex items-center gap-3">
         <button
-          onClick={() => navigate(`/watch/${drama.id}/${drama.episodes[0]?.id}`)}
-          className="flex-1 flex items-center justify-center gap-2 bg-gold text-black font-bold py-3 rounded-md text-sm md:text-base hover:bg-gold-light transition-colors"
+          onClick={() => drama.episodes[0] && navigate(`/watch/${drama.id}/${drama.episodes[0].id}`)}
+          disabled={!drama.episodes[0]}
+          className="flex-1 flex items-center justify-center gap-2 bg-gold text-black font-bold py-3 rounded-md text-sm md:text-base hover:bg-gold-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Play size={18} className="fill-black" />
           1화 재생
@@ -111,38 +140,42 @@ export default function DramaDetail() {
       {/* Episode list */}
       <div className="px-4 md:px-8 mt-7">
         <h2 className="text-base md:text-xl font-bold mb-3">에피소드 ({drama.episodes.length})</h2>
-        <div className="space-y-2">
-          {drama.episodes.map((ep) => (
-            <Link
-              key={ep.id}
-              to={`/watch/${drama.id}/${ep.id}`}
-              className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-2 transition-colors group"
-            >
-              <div className="relative w-28 md:w-36 aspect-video rounded-md overflow-hidden shrink-0 bg-surface-2">
-                <img src={ep.thumbnail} alt={ep.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-colors">
-                  <Play size={20} className="text-white opacity-0 group-hover:opacity-100" />
-                </div>
-                <span className="absolute bottom-1 right-1 text-[10px] bg-black/70 text-white px-1 rounded">
-                  {ep.duration}
-                </span>
-                {!ep.isFree && (
-                  <span className="absolute top-1 left-1 bg-black/70 rounded p-0.5">
-                    <Lock size={11} className="text-gold" />
+        {drama.episodes.length === 0 ? (
+          <p className="text-sm text-text-muted py-6 text-center">등록된 에피소드가 없습니다.</p>
+        ) : (
+          <div className="space-y-2">
+            {drama.episodes.map((ep) => (
+              <Link
+                key={ep.id}
+                to={`/watch/${drama.id}/${ep.id}`}
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-2 transition-colors group"
+              >
+                <div className="relative w-28 md:w-36 aspect-video rounded-md overflow-hidden shrink-0 bg-surface-2">
+                  <img src={ep.thumbnail} alt={ep.title} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-colors">
+                    <Play size={20} className="text-white opacity-0 group-hover:opacity-100" />
+                  </div>
+                  <span className="absolute bottom-1 right-1 text-[10px] bg-black/70 text-white px-1 rounded">
+                    {ep.duration}
                   </span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-text">
-                  {ep.number}화 {!ep.isFree && <span className="text-gold text-xs ml-1">VIP</span>}
-                </p>
-                <p className="text-xs text-text-muted mt-0.5 line-clamp-2">
-                  {drama.title}의 {ep.number}번째 이야기. 예상치 못한 전개가 시작된다.
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
+                  {!ep.isFree && (
+                    <span className="absolute top-1 left-1 bg-black/70 rounded p-0.5">
+                      <Lock size={11} className="text-gold" />
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-text">
+                    {ep.number}화 {!ep.isFree && <span className="text-gold text-xs ml-1">VIP</span>}
+                  </p>
+                  <p className="text-xs text-text-muted mt-0.5 line-clamp-2">
+                    {drama.title}의 {ep.number}번째 이야기. 예상치 못한 전개가 시작된다.
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mt-8">
