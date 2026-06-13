@@ -8,7 +8,8 @@ export default function Header() {
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
-    window.addEventListener("scroll", onScroll);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
@@ -18,7 +19,8 @@ export default function Header() {
         scrolled ? "bg-base/95 backdrop-blur-md border-b border-border" : "bg-gradient-to-b from-black/70 to-transparent"
       }`}
     >
-      <div className="flex items-center justify-between px-4 py-3 md:px-8">
+      <div className="flex items-center justify-between px-4 py-2.5 sm:py-3 md:px-8 safe-x">
+
         <Link to="/" className="flex items-center gap-1.5 shrink-0">
           <span className="text-xl md:text-2xl font-black tracking-tight text-gradient-gold">FRAMIX</span>
         </Link>

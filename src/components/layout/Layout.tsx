@@ -4,9 +4,9 @@ import BottomNav from "./BottomNav";
 
 export default function Layout() {
   return (
-    <div className="min-h-screen bg-base text-text">
+    <div className="min-h-screen bg-base text-text overflow-x-hidden">
       <Header />
-      <main className="pb-20 md:pb-12">
+      <main className="pb-24 md:pb-12">
         <Outlet />
       </main>
       <BottomNav />

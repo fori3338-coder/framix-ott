@@ -13,23 +13,26 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (typeof document !== "undefined" && document.hidden) return;
     const timer = setInterval(() => {
       setIndex((i) => (i + 1) % dramas.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, [dramas.length]);
+  }, [dramas.length, index]);
 
   const drama = dramas[index];
   if (!drama) return null;
 
   return (
-    <div className="relative w-full h-[58vh] md:h-[85vh] min-h-[420px] overflow-hidden">
+    <div className="relative w-full h-[60vh] sm:h-[70vh] md:h-[85vh] min-h-[440px] max-h-[820px] overflow-hidden">
       {dramas.map((d, i) => (
         <img
           key={d.id}
           src={d.backdrop}
           alt={d.title}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+          loading={i === 0 ? "eager" : "lazy"}
+          decoding="async"
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 gpu ${
             i === index ? "opacity-100" : "opacity-0"
           }`}
         />

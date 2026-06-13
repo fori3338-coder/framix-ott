@@ -10,17 +10,21 @@ interface DramaCardProps {
 }
 
 export default function DramaCard({ drama, rank, progress, size = "md" }: DramaCardProps) {
-  const widthClass = size === "sm" ? "w-[110px] md:w-[140px]" : "w-[130px] md:w-[170px]";
+  const widthClass =
+    size === "sm"
+      ? "w-[100px] sm:w-[120px] md:w-[140px]"
+      : "w-[120px] sm:w-[150px] md:w-[170px] lg:w-[185px]";
 
   return (
     <Link
       to={`/drama/${drama.id}`}
       className={`group relative shrink-0 ${widthClass} animate-fade-in`}
     >
-      <div className="relative aspect-2/3 rounded-lg overflow-hidden bg-surface-2 ring-1 ring-border group-active:scale-95 transition-transform duration-150">
+      <div className="relative aspect-2/3 rounded-lg overflow-hidden bg-surface-2 ring-1 ring-border group-active:scale-95 transition-transform duration-150 gpu">
         <img
           src={drama.poster}
           alt={drama.title}
+          decoding="async"
           loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />

@@ -5,13 +5,15 @@ import DramaCard from "./DramaCard";
 
 interface DramaRowProps {
   title: string;
+  subtitle?: string;
   dramas: Drama[];
   showRank?: boolean;
   continueWatching?: ContinueWatchingItem[];
   cardSize?: "sm" | "md";
+  accent?: boolean;
 }
 
-export default function DramaRow({ title, dramas, showRank, continueWatching, cardSize }: DramaRowProps) {
+export default function DramaRow({ title, subtitle, dramas, showRank, continueWatching, cardSize, accent }: DramaRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scrollBy = (amount: number) => {
@@ -21,9 +23,12 @@ export default function DramaRow({ title, dramas, showRank, continueWatching, ca
   if (dramas.length === 0) return null;
 
   return (
-    <section className="relative mb-6 md:mb-10">
-      <div className="flex items-center justify-between px-4 md:px-8 mb-2 md:mb-3">
-        <h2 className="text-base md:text-xl font-bold text-text">{title}</h2>
+    <section className="relative mb-6 sm:mb-8 md:mb-10">
+      <div className="flex items-end justify-between px-4 sm:px-6 md:px-8 mb-2 md:mb-3 gap-3">
+        <div className="min-w-0">
+          <h2 className={`text-base sm:text-lg md:text-xl font-bold truncate ${accent ? "text-gradient-gold" : "text-text"}`}>{title}</h2>
+          {subtitle && <p className="text-[11px] sm:text-xs text-text-muted mt-0.5 truncate">{subtitle}</p>}
+        </div>
       </div>
 
       <div className="relative group">
@@ -44,7 +49,7 @@ export default function DramaRow({ title, dramas, showRank, continueWatching, ca
 
         <div
           ref={scrollRef}
-          className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide px-4 md:px-8 pb-1 snap-x snap-mandatory"
+          className="flex gap-2.5 sm:gap-3 md:gap-4 overflow-x-auto scrollbar-hide px-4 sm:px-6 md:px-8 pb-1 snap-x snap-mandatory scroll-smooth"
         >
           {dramas.map((drama, i) => {
             const cw = continueWatching?.find((c) => c.dramaId === drama.id);
