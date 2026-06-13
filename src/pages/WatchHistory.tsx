@@ -4,6 +4,7 @@ import { Clock, Trash2, Play, History, CheckCircle2, AlertCircle } from "lucide-
 import { supabase } from "../lib/supabase";
 
 // ─── Supabase watch_history 행 타입 ──────────────────────────────────────────
+// Supabase JOIN(1:1 FK)은 배열로 반환하므로 dramas/episodes를 배열로 선언
 interface WatchHistoryRow {
   id: string;
   drama_id: string;
@@ -14,14 +15,14 @@ interface WatchHistoryRow {
     id: string;
     title: string;
     poster_url: string | null;
-  } | null;
+  }[] | null;
   episodes: {
     id: string;
     episode_number: number;
     title: string;
     duration: string | null;
     thumbnail_url: string | null;
-  } | null;
+  }[] | null;
 }
 
 function formatDate(iso: string) {
@@ -110,7 +111,7 @@ export default function WatchHistory() {
 
   const completed = rows.filter((h) => h.progress >= 100).length;
   const totalMinutes = rows.reduce((sum, h) => {
-    const dur = h.episodes?.duration ?? "12:00";
+    const dur = h.episodes?.[0]?.duration ?? "12:00";
     const [m, s] = dur.split(":").map(Number);
     const total = (m * 60 + (s || 0)) / 60;
     return sum + (total * h.progress) / 100;
@@ -206,8 +207,8 @@ export default function WatchHistory() {
               </div>
               <div className="space-y-1.5">
                 {items.map((item, i) => {
-                  const drama = item.dramas;
-                  const episode = item.episodes;
+                  const drama = item.dramas?.[0] ?? null;
+                  const episode = item.episodes?.[0] ?? null;
                   if (!drama || !episode) return null;
                   const done = item.progress >= 100;
                   const thumb =
