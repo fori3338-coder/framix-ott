@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Drama, ContinueWatchingItem } from "../types";
-import DramaCard from "./DramaCard";
+import DramaCard from "../components/DramaCard";
 
 interface DramaRowProps {
   title: string;

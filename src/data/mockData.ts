@@ -1,4 +1,5 @@
 import type { Drama, ContinueWatchingItem, HistoryItem, SubscriptionPlan } from "../types";
+import { posterImages, bannerImages } from "./localImages";
 
 const genresPool = [
   "재벌", "복수", "회귀", "로맨스", "오피스", "쌍둥이", "계약결혼", "운명",
@@ -56,8 +57,8 @@ export const dramas: Drama[] = titles.map((t, i) => {
     englishTitle: t.en,
     synopsis:
       "평범한 그녀의 인생을 송두리째 바꿔놓은 하룻밤의 계약. 재벌가의 숨겨진 비밀과 얽히며 시작된 위험한 사랑, 그리고 되돌릴 수 없는 운명의 소용돌이가 펼쳐진다. 매회 반전이 쏟아지는 몰입감 100% 쇼츠 드라마.",
-    poster: `https://picsum.photos/seed/${id}-poster/400/600`,
-    backdrop: `https://picsum.photos/seed/${id}-backdrop/1280/720`,
+    poster: posterImages[i] ?? `https://picsum.photos/seed/${id}-poster/400/600`,
+    backdrop: bannerImages[i] ?? `https://picsum.photos/seed/${id}-backdrop/1280/720`,
     genres: pickGenres(i),
     tags: ["#사이다", "#반전", "#몰입감폭발"],
     rating: Math.round((7 + (i % 30) / 10) * 10) / 10,
@@ -67,7 +68,7 @@ export const dramas: Drama[] = titles.map((t, i) => {
     episodeLength: "10-15분",
     cast: ["배우 A", "배우 B", "배우 C"],
     director: "연출 김감독",
-    isOriginal: i % 5 === 0,
+    isOriginal: i < bannerImages.length,
     isNew: i % 4 === 1,
     isExclusive: i % 6 === 0,
     views: 1000000 + i * 137000,
