@@ -409,13 +409,13 @@ export default function ContentUpload() {
               <div>
                 <label className="block text-sm font-semibold mb-2">배경 이미지 (16:9)</label>
                 <input ref={backdropRef} type="file" accept="image/*" className="hidden"
-                  onChange={(e) => handleImage(e.target.files?.[0], setBackdropFile, setBackdropPreview)} />
+                  onChange={(e) => handleImage(e.target.files?.[0], null, setBackdropPreview)} />
                 <button type="button" onClick={() => backdropRef.current?.click()}
                   className="w-full aspect-video rounded-xl border-2 border-dashed border-border bg-surface-2 hover:border-gold/50 transition-colors relative overflow-hidden">
                   {backdropPreview ? (
                     <>
                       <img src={backdropPreview} alt="배경" className="absolute inset-0 w-full h-full object-cover" />
-                      <span onClick={(e) => { e.stopPropagation(); setBackdropPreview(null); setBackdropFile(null); }}
+                      <span onClick={(e) => { e.stopPropagation(); setBackdropPreview(null); }}
                         className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 grid place-items-center text-white hover:bg-danger transition-colors">
                         <X size={14} />
                       </span>
