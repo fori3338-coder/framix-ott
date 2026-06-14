@@ -92,25 +92,35 @@ export default function Player() {
   if (!drama || !episode) return <div className="text-white p-10">Not Found</div>;
 
   const isLocked = !episode.isFree;
+  const hasVideo = !!episode.videoUrl;
 
   return (
     <div className="fixed inset-0 bg-black text-white">
 
       {/* VIDEO */}
-      <video
-        ref={videoRef}
-        src={episode.videoUrl}
-        className="w-full h-full object-cover"
-        autoPlay
-        muted={muted}
-        onTimeUpdate={() => {
-          const v = videoRef.current;
-          if (v?.duration) {
-            setProgress((v.currentTime / v.duration) * 100);
-          }
-        }}
-        onEnded={handleVideoEnded}
-      />
+      {hasVideo ? (
+        <video
+          ref={videoRef}
+          src={episode.videoUrl}
+          className="w-full h-full object-cover"
+          autoPlay
+          muted={muted}
+          onTimeUpdate={() => {
+            const v = videoRef.current;
+            if (v?.duration) {
+              setProgress((v.currentTime / v.duration) * 100);
+            }
+          }}
+          onEnded={handleVideoEnded}
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-black">
+          <div className="text-center space-y-2">
+            <p className="text-white font-bold text-lg">영상이 아직 등록되지 않았습니다</p>
+            <p className="text-white/50 text-sm">관리자에서 영상 파일을 업로드해 주세요</p>
+          </div>
+        </div>
+      )}
 
       {/* OVERLAY */}
       <div className="absolute inset-0 bg-black/40" />
