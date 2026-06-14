@@ -5,26 +5,12 @@ import type { Drama } from "../types";
 type Series = {
   id: string;
   title: string;
-  english_title?: string;
   description?: string;
-  thumbnail?: string;
-  backdrop?: string;
-  logo?: string;
-  genres?: string[];
-  rating?: number;
-  age_rating?: "전체" | "12+" | "15+" | "19+";
-  year?: number;
+  thumbnail_url?: string;
+  genre?: string | null;
   total_episodes?: number;
-  views?: number;
-  is_new?: boolean;
-  is_original?: boolean;
-  is_exclusive?: boolean;
-  cast?: string[];
-  cast_members?: string[];
-  director?: string;
-  tags?: string[];
-  episode_length?: string;
   status?: string;
+  rating?: number;
 };
 
 // ─── Series(DB) → Drama(Frontend) 변환 ─────────────────────────────────────
@@ -32,24 +18,22 @@ function toDrama(s: Series): Drama {
   return {
     id: s.id,
     title: s.title,
-    englishTitle: s.english_title,
     synopsis: s.description ?? "",
-    poster: s.thumbnail ?? `https://picsum.photos/seed/${s.id}-poster/400/600`,
-    backdrop: s.backdrop ?? s.thumbnail ?? `https://picsum.photos/seed/${s.id}-backdrop/1280/720`,
-    logo: s.logo,
-    genres: s.genres ?? [],
-    tags: s.tags ?? [],
+    poster: s.thumbnail_url ?? `https://picsum.photos/seed/${s.id}-poster/400/600`,
+    backdrop: s.thumbnail_url ?? `https://picsum.photos/seed/${s.id}-backdrop/1280/720`,
+    genres: s.genre ? [s.genre] : [],
+    tags: [],
     rating: s.rating ?? 0,
-    ageRating: s.age_rating ?? "15+",
-    year: s.year ?? new Date().getFullYear(),
+    ageRating: "15+",
+    year: new Date().getFullYear(),
     totalEpisodes: s.total_episodes ?? 0,
-    episodeLength: s.episode_length ?? "",
-    cast: s.cast_members ?? s.cast ?? [],
-    director: s.director ?? "",
-    isOriginal: s.is_original ?? false,
-    isNew: s.is_new ?? false,
-    isExclusive: s.is_exclusive ?? false,
-    views: s.views ?? 0,
+    episodeLength: "",
+    cast: [],
+    director: "",
+    isOriginal: false,
+    isNew: s.status === "new",
+    isExclusive: false,
+    views: 0,
     episodes: [],
   };
 }
@@ -74,16 +58,7 @@ export function useDramas() {
         return;
       }
 
-      const normalized = (data || []).map((item: any) =>
-        toDrama({
-          ...item,
-          genres: Array.isArray(item.genres)
-            ? item.genres
-            : item.genres
-            ? [item.genres]
-            : [],
-        })
-      );
+      const normalized = (data || []).map((item: any) => toDrama(item));
 
       setDramas(normalized);
       setLoading(false);
