@@ -209,17 +209,17 @@ export default function ContentUpload() {
         }
 
         // 5c. episodes 테이블 INSERT — DB 스키마 컬럼 전체 반영
-        const { error: epErr } = await supabase.from("episodes").insert({
-          series_id: dramaId,
-          episode_number: i + 1,
-          title: ep.title,
-          duration: ep.duration,
-          is_free: ep.isFree,
-          sort_order: i,
-          video_url: videoUrl,
-          thumbnail_url: episodeThumbnailUrl,
-          description: null,
-        });
+const { error: epErr } = await supabase.from("episodes").insert({
+  series_id: dramaId,
+  episode_number: i + 1,
+  title: ep.title,
+  description: null,
+  video_url: videoUrl,
+  thumbnail_url: episodeThumbnailUrl,
+  duration_seconds: 720,
+  membership_level: ep.isFree ? "free" : "premium",
+  status: "active"
+});
 
         if (epErr) {
           console.error(`[ContentUpload] 에피소드 ${i + 1} 등록 오류:`, epErr.message);
