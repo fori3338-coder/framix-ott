@@ -160,18 +160,13 @@ export default function ContentUpload() {
     setSubmitError(null);
 
     try {
-      // 1. series 테이블에 INSERT — DB 스키마에 정의된 모든 필드 포함
+      // 1. series 테이블에 INSERT — 실제 DB 스키마 컬럼 기준
       const { data: dramaRow, error: dramaErr } = await supabase
         .from("series")
         .insert({
           title,
-          english_title: englishTitle || null,
           description: synopsis,
-          genres: selectedGenres,          // text[] 컬럼
-          genre: selectedGenres[0] ?? null, // 하위 호환 단일 필드 (있을 경우)
-          age_rating: ageRating,
-          is_original: isOriginal,
-          is_exclusive: isExclusive,
+          genre: selectedGenres[0] ?? null,
           total_episodes: episodes.length,
           status: "active",
         })
@@ -195,17 +190,11 @@ export default function ContentUpload() {
         backdropUrl = await uploadImage(BUCKET.BANNERS, `${dramaId}_hero.${ext}`, backdropFile);
       }
 
-      // 4. 이미지 URL UPDATE — thumbnail_url(포스터) + backdrop_url(배너) 모두 반영
-      if (posterUrl || backdropUrl) {
-        const updatePayload: Record<string, string> = {};
-        if (posterUrl) updatePayload.thumbnail_url = posterUrl;
-        if (backdropUrl) updatePayload.backdrop_url = backdropUrl;
-        // thumbnail_url이 없으면 backdropUrl로 폴백
-        if (!posterUrl && backdropUrl) updatePayload.thumbnail_url = backdropUrl;
-
+      // 4. 포스터 URL UPDATE
+      if (posterUrl) {
         const { error: imgErr } = await supabase
           .from("series")
-          .update(updatePayload)
+          .update({ thumbnail_url: posterUrl })
           .eq("id", dramaId);
 
         if (imgErr) console.warn('[ContentUpload] 이미지 URL 업데이트 경고:', imgErr.message);
@@ -538,7 +527,8 @@ export default function ContentUpload() {
                   onDragOver={(e) => handleDragOver(e, ep.id)}
                   onDragLeave={(e) => handleDragLeave(e, ep.id)}
                   onDrop={(e) => handleDrop(e, ep.id)}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     const input = document.getElementById(`video-input-${ep.id}`) as HTMLInputElement | null;
                     input?.click();
                   }}
@@ -551,7 +541,7 @@ export default function ContentUpload() {
                     type="file"
                     accept="video/*"
                     className="hidden"
-                    onChange={(e) => handleEpisodeVideo(ep.id, e.target.files?.[0])}
+                    onChange={(e) => { e.stopPropagation(); handleEpisodeVideo(ep.id, e.target.files?.[0]); }}
                   />
                   <UploadCloud size={22} className={`mx-auto mb-2 ${ep.videoFile ? "text-green-400" : "text-gold"}`} />
                   <p className="text-xs font-semibold">{ep.videoFile ? ep.videoFile.name : "클릭 또는 드래그하여 영상 업로드"}</p>
