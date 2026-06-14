@@ -39,7 +39,6 @@ export default function ContentUpload() {
 
   // ── 이미지 ─────────────────────────────────────────────────────────────────
   const [posterFile, setPosterFile] = useState<File | null>(null);
-  const [backdropFile, setBackdropFile] = useState<File | null>(null);
   const [posterPreview, setPosterPreview] = useState<string | null>(null);
   const [backdropPreview, setBackdropPreview] = useState<string | null>(null);
   const posterRef = useRef<HTMLInputElement>(null);
