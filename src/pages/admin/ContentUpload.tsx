@@ -128,7 +128,7 @@ export default function ContentUpload() {
           description: synopsis,
           genre: selectedGenres[0] ?? null,
           total_episodes: episodes.length,
-          status: "new",
+          status: "active",
         })
         .select()
         .single();
