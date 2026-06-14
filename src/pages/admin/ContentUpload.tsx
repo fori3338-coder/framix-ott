@@ -164,8 +164,12 @@ export default function ContentUpload() {
         .from("series")
         .insert({
           title,
+          english_title: englishTitle || null,
           description: synopsis,
-          genre: selectedGenres[0] ?? null,
+          genres: selectedGenres,
+          age_rating: ageRating,
+          is_original: isOriginal,
+          is_exclusive: isExclusive,
           total_episodes: episodes.length,
           status: "active",
         })
@@ -182,11 +186,22 @@ export default function ContentUpload() {
         posterUrl = await uploadImage(BUCKET.POSTERS, `${dramaId}.${ext}`, posterFile);
       }
 
-      // 4. 포스터 URL UPDATE
-      if (posterUrl) {
+      // 3. 배경 이미지 업로드 → banners 버킷
+      let backdropUrl: string | null = null;
+      if (backdropRef.current?.files?.[0]) {
+        const file = backdropRef.current.files[0];
+        const ext = file.name.split('.').pop() ?? 'jpg';
+        backdropUrl = await uploadImage(BUCKET.BANNERS, `${dramaId}.${ext}`, file);
+      }
+
+      // 4. 포스터/배경 URL UPDATE
+      if (posterUrl || backdropUrl) {
         const { error: imgErr } = await supabase
           .from("series")
-          .update({ thumbnail_url: posterUrl })
+          .update({
+            ...(posterUrl ? { thumbnail_url: posterUrl } : {}),
+            ...(backdropUrl ? { backdrop_url: backdropUrl } : {}),
+          })
           .eq("id", dramaId);
 
         if (imgErr) console.warn('[ContentUpload] 이미지 URL 업데이트 경고:', imgErr.message);
@@ -221,6 +236,9 @@ export default function ContentUpload() {
           series_id: dramaId,
           episode_number: i + 1,
           title: ep.title,
+          duration: ep.duration,
+          is_free: ep.isFree,
+          sort_order: i,
           video_url: videoUrl,
           thumbnail_url: episodeThumbnailUrl,
           description: null,
