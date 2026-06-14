@@ -54,16 +54,21 @@ export default function Player() {
   // =========================
   // ✅ VIEW + HISTORY END FIX (핵심)
   // =========================
-  const handleVideoEnded = useCallback(() => {
-    if (!id || !episodeId) return;
+const handleVideoEnded = useCallback(async () => {
+  if (!id || !episodeId) return;
 
-    // 1) watch history 100%
-    saveWatchHistory(episodeId, 100);
+  saveWatchHistory(episodeId, 100);
 
-    // 2) views 증가 (RPC)
-    supabase.rpc("increment_series_views", {
-      series_id: id,
-    });
+  const { data, error } = await supabase.rpc("increment_series_views", {
+    series_id: id,
+  });
+
+  if (error) {
+    console.error("VIEW 증가 실패:", error);
+  } else {
+    console.log("VIEW 증가 성공:", data);
+  }
+}, [id, episodeId]);
 
     // 다음 에피소드 자동 이동
     const currentIndex = drama?.episodes.findIndex((e) => e.id === episodeId);
