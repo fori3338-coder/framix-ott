@@ -57,18 +57,21 @@ export default function Player() {
 const handleVideoEnded = useCallback(async () => {
   if (!id || !episodeId) return;
 
-  saveWatchHistory(episodeId, 100);
+  try {
+    await saveWatchHistory(episodeId, 100);
 
-  const { data, error } = await supabase.rpc("increment_series_views", {
-    series_id: id,
-  });
+    const { error } = await supabase.rpc("increment_series_views", {
+      series_id: id,
+    });
 
-  if (error) {
-    console.error("VIEW 증가 실패:", error);
-  } else {
-    console.log("VIEW 증가 성공:", data);
+    if (error) {
+      console.error("VIEW 증가 실패:", error);
+    }
+
+  } catch (err) {
+    console.error("handleVideoEnded error:", err);
   }
-}, [id, episodeId]);
+}, [id, episodeId, drama, navigate]);
 
     // 다음 에피소드 자동 이동
     const currentIndex = drama?.episodes.findIndex((e) => e.id === episodeId);
