@@ -183,13 +183,6 @@ export default function ContentUpload() {
         posterUrl = await uploadImage(BUCKET.POSTERS, `${dramaId}.${ext}`, posterFile);
       }
 
-      // 3. 배너 업로드 → banners 버킷
-      let backdropUrl: string | null = null;
-      if (backdropFile) {
-        const ext = backdropFile.name.split('.').pop() ?? 'jpg';
-        backdropUrl = await uploadImage(BUCKET.BANNERS, `${dramaId}_hero.${ext}`, backdropFile);
-      }
-
       // 4. 포스터 URL UPDATE
       if (posterUrl) {
         const { error: imgErr } = await supabase
