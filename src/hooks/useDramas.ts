@@ -20,6 +20,7 @@ type Series = {
   is_original?: boolean;
   is_exclusive?: boolean;
   cast?: string[];
+  cast_members?: string[];
   director?: string;
   tags?: string[];
   episode_length?: string;
@@ -43,7 +44,7 @@ function toDrama(s: Series): Drama {
     year: s.year ?? new Date().getFullYear(),
     totalEpisodes: s.total_episodes ?? 0,
     episodeLength: s.episode_length ?? "",
-    cast: s.cast ?? [],
+    cast: s.cast_members ?? s.cast ?? [],
     director: s.director ?? "",
     isOriginal: s.is_original ?? false,
     isNew: s.is_new ?? false,
