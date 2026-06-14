@@ -1,145 +1,119 @@
-import { useEffect, useState } from 'react';
-import { supabase, type DbDrama } from '../lib/supabase';
-import type { Drama } from '../types';
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
-// ─── DbDrama → Drama 변환 ─────────────────────────────────────────────────────
-function toFrontendDrama(d: DbDrama): Drama {
-  return {
-    id: d.id,
-    title: d.title,
-    synopsis: d.description ?? '',
-    poster: d.thumbnail_url ?? `https://picsum.photos/seed/${d.id}-poster/400/600`,
-    backdrop: d.thumbnail_url ?? `https://picsum.photos/seed/${d.id}-backdrop/1280/720`,
-    genres: d.genre ? [d.genre] : [],
-    tags: [],
-    rating: d.rating ?? 0,
-    ageRating: '15+',
-    year: new Date().getFullYear(),
-    totalEpisodes: d.total_episodes,
-    episodeLength: '',
-    cast: [],
-    director: '',
-    isOriginal: false,
-    isNew: d.status === 'new',
-    isExclusive: false,
-    views: 0,
-    episodes: [],
-  };
-}
+type Series = {
+  id: string;
+  title: string;
+  english_title?: string;
+  description?: string;
+  thumbnail?: string;
+  backdrop?: string;
+  logo?: string;
+  genres?: string[];
+  rating?: number;
+  year?: number;
+  total_episodes?: number;
+  views?: number;
+  is_new?: boolean;
+  is_original?: boolean;
+  is_exclusive?: boolean;
+  cast?: string[];
+  director?: string;
+  tags?: string[];
+  episode_length?: number;
+  status?: string;
+};
 
-// ─── 전체 드라마 목록 (Realtime 구독 포함) ───────────────────────────────────
 export function useDramas() {
-  const [dramas, setDramas] = useState<Drama[]>([]);
+  const [dramas, setDramas] = useState<Series[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<any>(null);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function fetchAll() {
+    const fetchData = async () => {
       setLoading(true);
-      setError(null);
-      try {
-        const { data, error: err } = await supabase
-          .from('series')
-          .select('*');
 
-        if (err) throw err;
-        if (!cancelled) setDramas((data ?? []).map(toFrontendDrama));
-      } catch (e) {
-        if (!cancelled) setError((e as Error).message);
-      } finally {
-        if (!cancelled) setLoading(false);
+      const { data, error } = await supabase
+        .from("series")
+        .select("*")
+        .eq("status", "active");
+
+      if (error) {
+        setError(error);
+        setLoading(false);
+        return;
       }
-    }
 
-    fetchAll();
+      const normalized = (data || []).map((item: any) => ({
+        ...item,
+        genres: Array.isArray(item.genres)
+          ? item.genres
+          : item.genres
+          ? [item.genres]
+          : [],
+      }));
 
-    // ── Realtime 구독: dramas 테이블 INSERT/UPDATE/DELETE 시 즉시 반영 ──────
-    const channel = supabase
-      .channel('series-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'series' },
-        () => {
-          // 변경 감지 시 전체 목록 재조회 (단순 재페치가 안정적)
-          if (!cancelled) fetchAll();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      cancelled = true;
-      supabase.removeChannel(channel);
+      setDramas(normalized);
+      setLoading(false);
     };
+
+    fetchData();
   }, []);
 
-  return { dramas, loading, error };
-}
+  // =========================
+  // AUTO CATEGORY SYSTEM
+  // =========================
 
-// ─── 단일 드라마 조회 (ID 기반) ───────────────────────────────────────────────
-export function useDramaById(id: string | undefined) {
-  const [drama, setDrama] = useState<Drama | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const trending = [...dramas]
+    .sort((a, b) => (b.views || 0) - (a.views || 0))
+    .slice(0, 10);
 
-  useEffect(() => {
-    if (!id) { setLoading(false); return; }
-    let cancelled = false;
+  const romance = dramas.filter((d) =>
+    d.genres?.some((g) => g.includes("로맨스"))
+  );
 
-    async function fetch() {
-      setLoading(true);
-      setError(null);
-      try {
-        const { data, error: err } = await supabase
-          .from('series')
-          .select('*')
-          .eq('id', id)
-          .single();
+  const revenge = dramas.filter((d) =>
+    d.genres?.some((g) => g.includes("복수"))
+  );
 
-        if (err) throw err;
-        if (!cancelled && data) setDrama(toFrontendDrama(data as DbDrama));
-      } catch (e) {
-        if (!cancelled) setError((e as Error).message);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
+  const office = dramas.filter((d) =>
+    d.genres?.some((g) => g.includes("오피스"))
+  );
 
-    fetch();
-    return () => { cancelled = true; };
-  }, [id]);
+  const action = dramas.filter((d) =>
+    d.genres?.some((g) => g.includes("액션"))
+  );
 
-  return { drama, loading, error };
-}
+  const comedy = dramas.filter((d) =>
+    d.genres?.some((g) => g.includes("코미디"))
+  );
 
-// ─── 검색 ─────────────────────────────────────────────────────────────────────
-export function useSearchDramas(query: string) {
-  const [dramas, setDramas] = useState<Drama[]>([]);
-  const [loading, setLoading] = useState(false);
+  const recommended = [...dramas]
+    .sort((a, b) => {
+      const scoreA =
+        (a.rating || 0) * 2 +
+        (a.views || 0) * 0.000001 +
+        (a.is_new ? 2 : 0);
 
-  useEffect(() => {
-    if (!query.trim()) { setDramas([]); return; }
-    let cancelled = false;
-    setLoading(true);
+      const scoreB =
+        (b.rating || 0) * 2 +
+        (b.views || 0) * 0.000001 +
+        (b.is_new ? 2 : 0);
 
-    async function fetch() {
-      try {
-        const { data } = await supabase
-          .from('series')
-          .select('*')
-          .ilike('title', `%${query}%`)
-          .limit(20);
+      return scoreB - scoreA;
+    })
+    .slice(0, 10);
 
-        if (!cancelled) setDramas((data ?? []).map(toFrontendDrama));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    const timer = setTimeout(fetch, 300); // debounce
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [query]);
-
-  return { dramas, loading };
+  return {
+    dramas,
+    loading,
+    error,
+    trending,
+    romance,
+    revenge,
+    office,
+    action,
+    comedy,
+    recommended,
+  };
 }
