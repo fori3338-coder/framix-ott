@@ -42,41 +42,27 @@ export async function uploadVideo(
 ): Promise<string> {
   const ext = file.name.split('.').pop() ?? 'mp4';
   const path = `${dramaId}/${episodeId}.${ext}`;
+  onProgress?.(10);
 
-  return new Promise((resolve, reject) => {
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/${BUCKET.VIDEOS}/${path}`;
-    const xhr = new XMLHttpRequest();
-
-    xhr.open('POST', url);
-    xhr.setRequestHeader('Authorization', `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`);
-    xhr.setRequestHeader('x-upsert', 'true');
-    xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
-
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable) {
-        onProgress?.(Math.round((e.loaded / e.total) * 100));
-      }
+  const { error } = await supabase.storage
+    .from(BUCKET.VIDEOS)
+    .upload(path, file, {
+      upsert: true,
+      contentType: file.type || 'video/mp4',
     });
 
-    xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        const { data } = supabase.storage.from(BUCKET.VIDEOS).getPublicUrl(path);
-        resolve(data.publicUrl);
-      } else {
-        let errMsg = `HTTP ${xhr.status}`;
-        try {
-          const body = JSON.parse(xhr.responseText);
-          errMsg = body?.message ?? errMsg;
-        } catch { /* ignore */ }
-        reject(new Error(`영상 업로드 실패: ${errMsg}`));
-      }
-    });
+  if (error) {
+    throw new Error(`영상 업로드 실패: ${error.message}`);
+  }
 
-    xhr.addEventListener('error', () => reject(new Error('영상 업로드 중 네트워크 오류가 발생했습니다.')));
-    xhr.send(file);
-  });
+  onProgress?.(100);
+
+  const { data } = supabase.storage
+    .from(BUCKET.VIDEOS)
+    .getPublicUrl(path);
+
+  return data.publicUrl;
 }
-
 // ─── 서명 URL 생성 (유료 에피소드 재생용) ─────────────────────────────────────
 export async function getSignedVideoUrl(
   dramaId: string,
