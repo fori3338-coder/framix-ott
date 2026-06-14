@@ -159,17 +159,13 @@ export default function ContentUpload() {
     setSubmitError(null);
 
     try {
-      // 1. series 테이블에 INSERT — 실제 DB 스키마 컬럼 기준
+      // 1. series 테이블에 INSERT — 실제 존재하는 컬럼만 사용
       const { data: dramaRow, error: dramaErr } = await supabase
         .from("series")
         .insert({
           title,
-          english_title: englishTitle || null,
           description: synopsis,
-          genres: selectedGenres,
-          age_rating: ageRating,
-          is_original: isOriginal,
-          is_exclusive: isExclusive,
+          genre: selectedGenres[0] ?? null,
           total_episodes: episodes.length,
           status: "active",
         })
@@ -179,32 +175,13 @@ export default function ContentUpload() {
       if (dramaErr || !dramaRow) throw new Error(dramaErr?.message ?? "드라마 등록 실패");
       const dramaId: string = dramaRow.id;
 
-      // 2. 포스터 업로드 → posters 버킷
-      let posterUrl: string | null = null;
+      // 2. 포스터 업로드 → thumbnail_url UPDATE
       if (posterFile) {
         const ext = posterFile.name.split('.').pop() ?? 'jpg';
-        posterUrl = await uploadImage(BUCKET.POSTERS, `${dramaId}.${ext}`, posterFile);
-      }
-
-      // 3. 배경 이미지 업로드 → banners 버킷
-      let backdropUrl: string | null = null;
-      if (backdropRef.current?.files?.[0]) {
-        const file = backdropRef.current.files[0];
-        const ext = file.name.split('.').pop() ?? 'jpg';
-        backdropUrl = await uploadImage(BUCKET.BANNERS, `${dramaId}.${ext}`, file);
-      }
-
-      // 4. 포스터/배경 URL UPDATE
-      if (posterUrl || backdropUrl) {
-        const { error: imgErr } = await supabase
-          .from("series")
-          .update({
-            ...(posterUrl ? { thumbnail_url: posterUrl } : {}),
-            ...(backdropUrl ? { backdrop_url: backdropUrl } : {}),
-          })
-          .eq("id", dramaId);
-
-        if (imgErr) console.warn('[ContentUpload] 이미지 URL 업데이트 경고:', imgErr.message);
+        const posterUrl = await uploadImage(BUCKET.POSTERS, `${dramaId}.${ext}`, posterFile);
+        if (posterUrl) {
+          await supabase.from("series").update({ thumbnail_url: posterUrl }).eq("id", dramaId);
+        }
       }
 
       // 5. 에피소드 등록 — 누락 필드(duration, is_free, sort_order, thumbnail_url) 포함
