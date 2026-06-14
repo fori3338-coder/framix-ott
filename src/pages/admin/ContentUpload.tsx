@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft, UploadCloud, Plus, Trash2, ImagePlus, CheckCircle2, X, GripVertical,
@@ -50,12 +50,26 @@ export default function ContentUpload() {
     { id: 1, title: "1화", duration: "12:00", isFree: true, videoProgress: 0 },
   ]);
 
+  // ── 드래그 상태 (에피소드별 Map) ───────────────────────────────────────────
+  // Bug Fix #1: 전체 공유 boolean → 에피소드별 Map으로 분리
+  const [dragOverMap, setDragOverMap] = useState<Record<number, boolean>>({});
+
   // ── 제출 상태 ──────────────────────────────────────────────────────────────
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const [dragOver, setDragOver] = useState(false);
+  // ── Bug Fix #1: document 레벨 드래그 기본 동작 차단 ──────────────────────
+  // 브라우저가 드롭된 파일을 직접 열어 페이지 이동하는 것을 방지
+  useEffect(() => {
+    const prevent = (e: DragEvent) => e.preventDefault();
+    document.addEventListener("dragover", prevent);
+    document.addEventListener("drop", prevent);
+    return () => {
+      document.removeEventListener("dragover", prevent);
+      document.removeEventListener("drop", prevent);
+    };
+  }, []);
 
   // ── 완성도 계산 ────────────────────────────────────────────────────────────
   const completion = (() => {
@@ -107,12 +121,38 @@ export default function ContentUpload() {
 
   // ── 에피소드 영상 선택 ─────────────────────────────────────────────────────
   const handleEpisodeVideo = (episodeId: number, file: File | undefined) => {
+    console.log("VIDEO_CHANGE");
     if (!file) return;
     updateEpisode(episodeId, { videoFile: file, videoProgress: 0 });
   };
 
+  // ── Bug Fix #1: 에피소드별 드래그 핸들러 ──────────────────────────────────
+  const handleDragOver = (e: React.DragEvent, episodeId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverMap((prev) => ({ ...prev, [episodeId]: true }));
+  };
+
+  const handleDragLeave = (e: React.DragEvent, episodeId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverMap((prev) => ({ ...prev, [episodeId]: false }));
+  };
+
+  const handleDrop = (e: React.DragEvent, episodeId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverMap((prev) => ({ ...prev, [episodeId]: false }));
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleEpisodeVideo(episodeId, file);
+  };
+
   // ── 최종 제출: Supabase insert + Storage upload ───────────────────────────
+  // Bug Fix #2: 누락 필드 모두 포함 (english_title, genres, age_rating, is_original,
+  //             is_exclusive, backdrop_url) + episodes에 duration, is_free, sort_order
+  // Bug Fix #3: 등록 후 total_episodes UPDATE로 동기화
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log("HANDLE_SUBMIT");
     e.preventDefault();
     if (!title || !synopsis) { setSubmitError("제목과 시놉시스는 필수입니다."); return; }
 
@@ -120,13 +160,18 @@ export default function ContentUpload() {
     setSubmitError(null);
 
     try {
-      // 1. series 테이블에 INSERT (이미지 URL은 업로드 후 UPDATE)
+      // 1. series 테이블에 INSERT — DB 스키마에 정의된 모든 필드 포함
       const { data: dramaRow, error: dramaErr } = await supabase
         .from("series")
         .insert({
           title,
+          english_title: englishTitle || null,
           description: synopsis,
-          genre: selectedGenres[0] ?? null,
+          genres: selectedGenres,          // text[] 컬럼
+          genre: selectedGenres[0] ?? null, // 하위 호환 단일 필드 (있을 경우)
+          age_rating: ageRating,
+          is_original: isOriginal,
+          is_exclusive: isExclusive,
           total_episodes: episodes.length,
           status: "active",
         })
@@ -150,15 +195,24 @@ export default function ContentUpload() {
         backdropUrl = await uploadImage(BUCKET.BANNERS, `${dramaId}_hero.${ext}`, backdropFile);
       }
 
-      // 4. 썸네일 URL UPDATE (series.thumbnail_url)
-      const thumbnailUrl = posterUrl ?? backdropUrl;
-      if (thumbnailUrl) {
-        await supabase.from("series").update({
-          thumbnail_url: thumbnailUrl,
-        }).eq("id", dramaId);
+      // 4. 이미지 URL UPDATE — thumbnail_url(포스터) + backdrop_url(배너) 모두 반영
+      if (posterUrl || backdropUrl) {
+        const updatePayload: Record<string, string> = {};
+        if (posterUrl) updatePayload.thumbnail_url = posterUrl;
+        if (backdropUrl) updatePayload.backdrop_url = backdropUrl;
+        // thumbnail_url이 없으면 backdropUrl로 폴백
+        if (!posterUrl && backdropUrl) updatePayload.thumbnail_url = backdropUrl;
+
+        const { error: imgErr } = await supabase
+          .from("series")
+          .update(updatePayload)
+          .eq("id", dramaId);
+
+        if (imgErr) console.warn('[ContentUpload] 이미지 URL 업데이트 경고:', imgErr.message);
       }
 
-      // 5. 에피소드 등록
+      // 5. 에피소드 등록 — 누락 필드(duration, is_free, sort_order, thumbnail_url) 포함
+      let insertedEpisodes = 0;
       for (let i = 0; i < episodes.length; i++) {
         const ep = episodes[i];
 
@@ -170,15 +224,42 @@ export default function ContentUpload() {
           });
         }
 
-        // 5b. episodes 테이블 INSERT
-        await supabase.from("episodes").insert({
+        // 5b. 에피소드 썸네일 업로드 (선택)
+        let episodeThumbnailUrl: string | null = null;
+        if (ep.thumbnailFile) {
+          const ext = ep.thumbnailFile.name.split('.').pop() ?? 'jpg';
+          episodeThumbnailUrl = await uploadImage(
+            BUCKET.THUMBNAILS,
+            `${dramaId}/ep${i + 1}.${ext}`,
+            ep.thumbnailFile
+          );
+        }
+
+        // 5c. episodes 테이블 INSERT — DB 스키마 컬럼 전체 반영
+        const { error: epErr } = await supabase.from("episodes").insert({
           series_id: dramaId,
           episode_number: i + 1,
           title: ep.title,
-          description: null,
+          duration: ep.duration,
+          is_free: ep.isFree,
+          sort_order: i,
           video_url: videoUrl,
+          thumbnail_url: episodeThumbnailUrl,
+          description: null,
         });
+
+        if (epErr) {
+          console.error(`[ContentUpload] 에피소드 ${i + 1} 등록 오류:`, epErr.message);
+          throw new Error(`${i + 1}화 등록 실패: ${epErr.message}`);
+        }
+        insertedEpisodes++;
       }
+
+      // Bug Fix #3: 실제 삽입된 에피소드 수로 total_episodes 동기화
+      await supabase
+        .from("series")
+        .update({ total_episodes: insertedEpisodes })
+        .eq("id", dramaId);
 
       setSubmitted(true);
       setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
@@ -452,19 +533,30 @@ export default function ContentUpload() {
                   )}
                 </div>
 
-                <label
-                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={(e) => { e.preventDefault(); setDragOver(false); handleEpisodeVideo(ep.id, e.dataTransfer.files?.[0]); }}
+                {/* Bug Fix #1: label → div로 변경, 드래그 핸들러를 에피소드별로 분리 */}
+                <div
+                  onDragOver={(e) => handleDragOver(e, ep.id)}
+                  onDragLeave={(e) => handleDragLeave(e, ep.id)}
+                  onDrop={(e) => handleDrop(e, ep.id)}
+                  onClick={() => {
+                    const input = document.getElementById(`video-input-${ep.id}`) as HTMLInputElement | null;
+                    input?.click();
+                  }}
                   className={`block rounded-xl border-2 border-dashed transition-all cursor-pointer py-6 px-4 text-center ${
-                    dragOver ? "border-gold bg-gold/5" : ep.videoFile ? "border-green-500/40 bg-green-500/5" : "border-border bg-surface hover:border-gold/50"
-                  }`}>
-                  <input type="file" accept="video/*" className="hidden"
-                    onChange={(e) => handleEpisodeVideo(ep.id, e.target.files?.[0])} />
+                    dragOverMap[ep.id] ? "border-gold bg-gold/5" : ep.videoFile ? "border-green-500/40 bg-green-500/5" : "border-border bg-surface hover:border-gold/50"
+                  }`}
+                >
+                  <input
+                    id={`video-input-${ep.id}`}
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={(e) => handleEpisodeVideo(ep.id, e.target.files?.[0])}
+                  />
                   <UploadCloud size={22} className={`mx-auto mb-2 ${ep.videoFile ? "text-green-400" : "text-gold"}`} />
                   <p className="text-xs font-semibold">{ep.videoFile ? ep.videoFile.name : "클릭 또는 드래그하여 영상 업로드"}</p>
                   <p className="text-[10px] text-text-muted mt-0.5">MP4, MOV · 최대 5GB</p>
-                </label>
+                </div>
 
                 {ep.videoProgress > 0 && ep.videoProgress < 100 && (
                   <div className="animate-fade-in">
