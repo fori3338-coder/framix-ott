@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import type { Drama } from "../types";
 
 type Series = {
   id: string;
@@ -11,6 +12,7 @@ type Series = {
   logo?: string;
   genres?: string[];
   rating?: number;
+  age_rating?: "전체" | "12+" | "15+" | "19+";
   year?: number;
   total_episodes?: number;
   views?: number;
@@ -20,12 +22,39 @@ type Series = {
   cast?: string[];
   director?: string;
   tags?: string[];
-  episode_length?: number;
+  episode_length?: string;
   status?: string;
 };
 
+// ─── Series(DB) → Drama(Frontend) 변환 ─────────────────────────────────────
+function toDrama(s: Series): Drama {
+  return {
+    id: s.id,
+    title: s.title,
+    englishTitle: s.english_title,
+    synopsis: s.description ?? "",
+    poster: s.thumbnail ?? `https://picsum.photos/seed/${s.id}-poster/400/600`,
+    backdrop: s.backdrop ?? s.thumbnail ?? `https://picsum.photos/seed/${s.id}-backdrop/1280/720`,
+    logo: s.logo,
+    genres: s.genres ?? [],
+    tags: s.tags ?? [],
+    rating: s.rating ?? 0,
+    ageRating: s.age_rating ?? "15+",
+    year: s.year ?? new Date().getFullYear(),
+    totalEpisodes: s.total_episodes ?? 0,
+    episodeLength: s.episode_length ?? "",
+    cast: s.cast ?? [],
+    director: s.director ?? "",
+    isOriginal: s.is_original ?? false,
+    isNew: s.is_new ?? false,
+    isExclusive: s.is_exclusive ?? false,
+    views: s.views ?? 0,
+    episodes: [],
+  };
+}
+
 export function useDramas() {
-  const [dramas, setDramas] = useState<Series[]>([]);
+  const [dramas, setDramas] = useState<Drama[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
 
@@ -44,14 +73,16 @@ export function useDramas() {
         return;
       }
 
-      const normalized = (data || []).map((item: any) => ({
-        ...item,
-        genres: Array.isArray(item.genres)
-          ? item.genres
-          : item.genres
-          ? [item.genres]
-          : [],
-      }));
+      const normalized = (data || []).map((item: any) =>
+        toDrama({
+          ...item,
+          genres: Array.isArray(item.genres)
+            ? item.genres
+            : item.genres
+            ? [item.genres]
+            : [],
+        })
+      );
 
       setDramas(normalized);
       setLoading(false);
@@ -93,12 +124,12 @@ export function useDramas() {
       const scoreA =
         (a.rating || 0) * 2 +
         (a.views || 0) * 0.000001 +
-        (a.is_new ? 2 : 0);
+        (a.isNew ? 2 : 0);
 
       const scoreB =
         (b.rating || 0) * 2 +
         (b.views || 0) * 0.000001 +
-        (b.is_new ? 2 : 0);
+        (b.isNew ? 2 : 0);
 
       return scoreB - scoreA;
     })
