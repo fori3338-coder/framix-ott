@@ -409,7 +409,7 @@ export default function ContentUpload() {
               <div>
                 <label className="block text-sm font-semibold mb-2">배경 이미지 (16:9)</label>
                 <input ref={backdropRef} type="file" accept="image/*" className="hidden"
-                  onChange={(e) => handleImage(e.target.files?.[0], null, setBackdropPreview)} />
+                  onChange={(e) => setBackdropPreview(URL.createObjectURL(e.target.files?.[0] as File))} />
                 <button type="button" onClick={() => backdropRef.current?.click()}
                   className="w-full aspect-video rounded-xl border-2 border-dashed border-border bg-surface-2 hover:border-gold/50 transition-colors relative overflow-hidden">
                   {backdropPreview ? (
