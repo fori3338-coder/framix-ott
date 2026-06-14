@@ -23,10 +23,10 @@ CREATE TABLE public.series (
   backdrop_url    text,          -- hero banner (가로형)
   genres          text[]      NOT NULL DEFAULT '{}',
   tags            text[]      NOT NULL DEFAULT '{}',
-  cast_members text[] NOT NULL DEFAULT '{}',
+  cast_members    text[]      NOT NULL DEFAULT '{}',
   director        text,
   age_rating      text        NOT NULL DEFAULT '15+',
-  year            int         NOT NULL DEFAULT EXTRACT(YEAR FROM now())::int,
+  year            int         NOT NULL DEFAULT date_part('year', now())::int,
   episode_length  text,
   total_episodes  int         NOT NULL DEFAULT 0,
   is_original     boolean     NOT NULL DEFAULT false,
@@ -232,25 +232,149 @@ ON CONFLICT (id) DO NOTHING;
 -- ────────────────────────────────────────────────────────────
 -- 10. Storage RLS 정책
 -- ────────────────────────────────────────────────────────────
-CREATE POLICY "thumbnails_public_read" ON storage.objects FOR SELECT USING (bucket_id = 'thumbnails');
-CREATE POLICY "thumbnails_anon_upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'thumbnails');
-CREATE POLICY "thumbnails_anon_update" ON storage.objects FOR UPDATE USING (bucket_id = 'thumbnails');
-CREATE POLICY "thumbnails_anon_delete" ON storage.objects FOR DELETE USING (bucket_id = 'thumbnails');
+DO $$
+BEGIN
+  CREATE POLICY "thumbnails_public_read" ON storage.objects FOR SELECT USING (bucket_id = 'thumbnails');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: thumbnails_public_read';
+END $$;
 
-CREATE POLICY "banners_public_read"  ON storage.objects FOR SELECT USING (bucket_id = 'banners');
-CREATE POLICY "banners_anon_upload"  ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'banners');
-CREATE POLICY "banners_anon_update"  ON storage.objects FOR UPDATE USING (bucket_id = 'banners');
-CREATE POLICY "banners_anon_delete"  ON storage.objects FOR DELETE USING (bucket_id = 'banners');
+DO $$
+BEGIN
+  CREATE POLICY "thumbnails_anon_upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'thumbnails');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: thumbnails_anon_upload';
+END $$;
 
-CREATE POLICY "posters_public_read"  ON storage.objects FOR SELECT USING (bucket_id = 'posters');
-CREATE POLICY "posters_anon_upload"  ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'posters');
-CREATE POLICY "posters_anon_update"  ON storage.objects FOR UPDATE USING (bucket_id = 'posters');
-CREATE POLICY "posters_anon_delete"  ON storage.objects FOR DELETE USING (bucket_id = 'posters');
+DO $$
+BEGIN
+  CREATE POLICY "thumbnails_anon_update" ON storage.objects FOR UPDATE USING (bucket_id = 'thumbnails');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: thumbnails_anon_update';
+END $$;
 
-CREATE POLICY "videos_public_read"   ON storage.objects FOR SELECT USING (bucket_id = 'videos');
-CREATE POLICY "videos_anon_upload"   ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'videos');
-CREATE POLICY "videos_anon_update"   ON storage.objects FOR UPDATE USING (bucket_id = 'videos');
-CREATE POLICY "videos_anon_delete"   ON storage.objects FOR DELETE USING (bucket_id = 'videos');
+DO $$
+BEGIN
+  CREATE POLICY "thumbnails_anon_delete" ON storage.objects FOR DELETE USING (bucket_id = 'thumbnails');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: thumbnails_anon_delete';
+END $$;
+
+DO $$
+BEGIN
+  CREATE POLICY "banners_public_read" ON storage.objects FOR SELECT USING (bucket_id = 'banners');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: banners_public_read';
+END $$;
+
+DO $$
+BEGIN
+  CREATE POLICY "banners_anon_upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'banners');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: banners_anon_upload';
+END $$;
+
+DO $$
+BEGIN
+  CREATE POLICY "banners_anon_update" ON storage.objects FOR UPDATE USING (bucket_id = 'banners');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: banners_anon_update';
+END $$;
+
+DO $$
+BEGIN
+  CREATE POLICY "banners_anon_delete" ON storage.objects FOR DELETE USING (bucket_id = 'banners');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: banners_anon_delete';
+END $$;
+
+DO $$
+BEGIN
+  CREATE POLICY "posters_public_read" ON storage.objects FOR SELECT USING (bucket_id = 'posters');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: posters_public_read';
+END $$;
+
+DO $$
+BEGIN
+  CREATE POLICY "posters_anon_upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'posters');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: posters_anon_upload';
+END $$;
+
+DO $$
+BEGIN
+  CREATE POLICY "posters_anon_update" ON storage.objects FOR UPDATE USING (bucket_id = 'posters');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: posters_anon_update';
+END $$;
+
+DO $$
+BEGIN
+  CREATE POLICY "posters_anon_delete" ON storage.objects FOR DELETE USING (bucket_id = 'posters');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: posters_anon_delete';
+END $$;
+
+DO $$
+BEGIN
+  CREATE POLICY "videos_public_read" ON storage.objects FOR SELECT USING (bucket_id = 'videos');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: videos_public_read';
+END $$;
+
+DO $$
+BEGIN
+  CREATE POLICY "videos_anon_upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'videos');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: videos_anon_upload';
+END $$;
+
+DO $$
+BEGIN
+  CREATE POLICY "videos_anon_update" ON storage.objects FOR UPDATE USING (bucket_id = 'videos');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: videos_anon_update';
+END $$;
+
+DO $$
+BEGIN
+  CREATE POLICY "videos_anon_delete" ON storage.objects FOR DELETE USING (bucket_id = 'videos');
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard > Storage > Policies에서 수동 설정 필요';
+WHEN duplicate_object THEN
+  RAISE NOTICE '정책이 이미 존재함: videos_anon_delete';
+END $$;
 
 
 -- ────────────────────────────────────────────────────────────
