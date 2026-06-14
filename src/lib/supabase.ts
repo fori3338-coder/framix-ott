@@ -20,9 +20,7 @@ export interface DbDrama {
   title: string;
   description: string | null;
   thumbnail_url: string | null;
-  backdrop_url: string | null;
   genre: string | null;
-  age_rating: string | null;
   rating: number;
   total_episodes: number;
   status: string | null;
