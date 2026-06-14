@@ -23,7 +23,7 @@ CREATE TABLE public.series (
   backdrop_url    text,          -- hero banner (가로형)
   genres          text[]      NOT NULL DEFAULT '{}',
   tags            text[]      NOT NULL DEFAULT '{}',
-  cast            text[]      NOT NULL DEFAULT '{}',
+  cast_members text[] NOT NULL DEFAULT '{}',
   director        text,
   age_rating      text        NOT NULL DEFAULT '15+',
   year            int         NOT NULL DEFAULT EXTRACT(YEAR FROM now())::int,
