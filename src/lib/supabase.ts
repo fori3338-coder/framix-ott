@@ -20,7 +20,9 @@ export interface DbDrama {
   title: string;
   description: string | null;
   thumbnail_url: string | null;
+  backdrop_url: string | null;
   genre: string | null;
+  age_rating: string | null;
   rating: number;
   total_episodes: number;
   status: string | null;
@@ -32,5 +34,8 @@ export interface DbEpisode {
   episode_number: number;
   title: string;
   description: string | null;
+  duration: string | null;
+  thumbnail_url: string | null;
   video_url: string | null;
+  is_free: boolean | null;
 }
