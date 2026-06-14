@@ -3,9 +3,11 @@ import { Play, Info, Sparkles } from "lucide-react";
 import HeroBanner from "../components/HeroBanner";
 import DramaRow from "../components/DramaRow";
 import { useDramas } from "../hooks/useDramas";
+import { useContinueWatching } from "../hooks/useContinueWatching";
 
 export default function Home() {
   const { dramas, loading, error } = useDramas();
+  const { items: continueWatchingItems, isLoggedIn } = useContinueWatching();
 
   // ── 로딩 스켈레톤 ──────────────────────────────────────────────────────────
   if (loading) {
@@ -28,7 +30,7 @@ export default function Home() {
     );
   }
 
-  // ── Supabase 오류 또는 데이터 없음 ────────────────────────────────────────
+  // ── Supabase 오류 ────────────────────────────────────────────────────────
   if (error) {
     return (
       <div className="pb-16">
@@ -40,7 +42,7 @@ export default function Home() {
     );
   }
 
-  // ── 데이터 없을 때 (등록 콘텐츠 0건) ─────────────────────────────────────
+  // ── 데이터 없을 때 ─────────────────────────────────────────────────────────
   if (dramas.length === 0) {
     return (
       <div className="pb-16">
@@ -56,7 +58,6 @@ export default function Home() {
 
   // ── 카테고리별 분류 ───────────────────────────────────────────────────────
   const heroDramas = dramas.filter((d) => d.isOriginal).slice(0, 5);
-  // 오리지널 없으면 전체 최신순 상위 5편을 히어로로
   const heroList = heroDramas.length > 0 ? heroDramas : dramas.slice(0, 5);
 
   const trending = [...dramas].sort((a, b) => b.views - a.views).slice(0, 10);
@@ -69,11 +70,27 @@ export default function Home() {
   const spotlight = recommended[0];
   const recommendedRow = recommended.slice(1);
 
+  // Continue Watching: dramas 중 continueWatchingItems에 해당하는 것만
+  const continueWatchingDramas = continueWatchingItems
+    .map((cw) => dramas.find((d) => d.id === cw.dramaId))
+    .filter(Boolean) as typeof dramas;
+
   return (
     <div className="pb-16">
       <HeroBanner dramas={heroList} />
 
       <div className="mt-6 md:mt-10 space-y-2 md:space-y-3">
+
+        {/* ▶ 이어보기 — 로그인 유저 + 미완료 에피소드 있을 때만 표시 */}
+        {isLoggedIn && continueWatchingDramas.length > 0 && (
+          <DramaRow
+            title="▶ 이어보기"
+            subtitle="시청 중인 작품"
+            dramas={continueWatchingDramas}
+            continueWatching={continueWatchingItems}
+          />
+        )}
+
         {trending.length > 0 && (
           <DramaRow
             title="🔥 지금 가장 인기있는 작품"
@@ -126,7 +143,6 @@ export default function Home() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-base via-base/60 to-transparent" />
                   <div className="absolute inset-0 bg-gradient-to-r from-base/90 via-base/20 to-transparent" />
-
                   <div className="absolute inset-0 flex flex-col justify-end p-5 md:p-10 max-w-2xl">
                     <span className="inline-flex items-center gap-1.5 text-[10px] md:text-xs font-bold uppercase tracking-[0.25em] text-gold mb-2">
                       <Sparkles size={12} /> 추천 픽
@@ -171,15 +187,9 @@ export default function Home() {
           </section>
         )}
 
-        {romance.length > 0 && (
-          <DramaRow title="💕 로맨스 인기작" dramas={romance} />
-        )}
-        {revenge.length > 0 && (
-          <DramaRow title="🗡️ 복수 & 사이다" dramas={revenge} />
-        )}
-        {office.length > 0 && (
-          <DramaRow title="🏢 오피스 로맨스" dramas={office} cardSize="sm" />
-        )}
+        {romance.length > 0 && <DramaRow title="💕 로맨스 인기작" dramas={romance} />}
+        {revenge.length > 0 && <DramaRow title="🗡️ 복수 & 사이다" dramas={revenge} />}
+        {office.length > 0 && <DramaRow title="🏢 오피스 로맨스" dramas={office} cardSize="sm" />}
 
         {dramas.filter((d) => d.isOriginal).length > 0 && (
           <DramaRow
@@ -190,13 +200,8 @@ export default function Home() {
           />
         )}
 
-        {/* 전체 목록 (장르 분류 없는 콘텐츠 포함) */}
         {dramas.length > 0 && (
-          <DramaRow
-            title="전체 콘텐츠"
-            subtitle="등록된 모든 작품"
-            dramas={dramas}
-          />
+          <DramaRow title="전체 콘텐츠" subtitle="등록된 모든 작품" dramas={dramas} />
         )}
       </div>
     </div>

@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { Bookmark, Trash2, LayoutGrid, List as ListIcon, ArrowDownUp, Check } from "lucide-react";
-import { dramas, myListIds } from "../data/mockData";
+import { Bookmark, Trash2, LayoutGrid, List as ListIcon, ArrowDownUp, Check, LogIn } from "lucide-react";
 import DramaCard from "../components/DramaCard";
 import { Link } from "react-router-dom";
+import { useFavorites } from "../hooks/useFavorites";
+import { useDramas } from "../hooks/useDramas";
 
 type SortKey = "recent" | "title" | "rating";
 type View = "grid" | "list";
@@ -14,13 +15,23 @@ const SORTS: { key: SortKey; label: string }[] = [
 ];
 
 export default function MyList() {
-  const [ids, setIds] = useState<string[]>(myListIds);
+  const { dramas } = useDramas();
+  const { favoriteIds, loading, error, isLoggedIn, removeFavorite } = useFavorites();
+
   const [editMode, setEditMode] = useState(false);
   const [sort, setSort] = useState<SortKey>("recent");
   const [view, setView] = useState<View>("grid");
   const [genre, setGenre] = useState<string | null>(null);
 
-  const baseList = useMemo(() => dramas.filter((d) => ids.includes(d.id)), [ids]);
+  // favoriteIds 순서 기준으로 dramas 필터 (최근 추가순 유지)
+  const baseList = useMemo(
+    () =>
+      favoriteIds
+        .map((fid) => dramas.find((d) => d.id === fid))
+        .filter(Boolean) as typeof dramas,
+    [favoriteIds, dramas]
+  );
+
   const genres = useMemo(
     () => Array.from(new Set(baseList.flatMap((d) => d.genres))),
     [baseList]
@@ -31,13 +42,13 @@ export default function MyList() {
     if (genre) l = l.filter((d) => d.genres.includes(genre));
     if (sort === "title") l.sort((a, b) => a.title.localeCompare(b.title, "ko"));
     else if (sort === "rating") l.sort((a, b) => b.rating - a.rating);
-    else l.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+    // "recent" → favoriteIds 순서 그대로
     return l;
-  }, [baseList, genre, sort, ids]);
+  }, [baseList, genre, sort]);
 
   return (
     <div className="px-4 md:px-8 pt-20 md:pt-24 pb-10 animate-fade-in">
-      {/* Premium header */}
+      {/* Header */}
       <div className="relative overflow-hidden rounded-2xl mb-6 border border-border bg-gradient-to-br from-surface-2 via-surface to-base px-5 py-5 md:px-7 md:py-6">
         <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-gold/10 blur-3xl pointer-events-none" />
         <div className="relative flex items-start md:items-center justify-between gap-3 flex-col md:flex-row">
@@ -67,8 +78,33 @@ export default function MyList() {
         </div>
       </div>
 
-      {/* Empty state */}
-      {baseList.length === 0 ? (
+      {/* 로딩 */}
+      {loading && (
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 animate-pulse">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="aspect-[2/3] rounded-lg bg-surface-2" />
+          ))}
+        </div>
+      )}
+
+      {/* 오류 */}
+      {!loading && error && (
+        <div className="text-center py-10 text-red-400 text-sm">{error}</div>
+      )}
+
+      {/* 미로그인 */}
+      {!loading && !error && !isLoggedIn && (
+        <div className="text-center py-20 animate-fade-in">
+          <div className="w-16 h-16 rounded-full bg-surface-2 border border-border flex items-center justify-center mx-auto mb-4">
+            <LogIn size={26} className="text-text-muted" />
+          </div>
+          <p className="text-text-dim font-medium">로그인이 필요합니다</p>
+          <p className="text-text-muted text-sm mt-1">보관함을 이용하려면 로그인하세요.</p>
+        </div>
+      )}
+
+      {/* 빈 보관함 */}
+      {!loading && !error && isLoggedIn && baseList.length === 0 && (
         <div className="text-center py-20 animate-fade-in">
           <div className="w-16 h-16 rounded-full bg-surface-2 border border-border flex items-center justify-center mx-auto mb-4">
             <Bookmark size={26} className="text-text-muted" />
@@ -82,9 +118,12 @@ export default function MyList() {
             작품 둘러보기
           </Link>
         </div>
-      ) : (
+      )}
+
+      {/* 목록 */}
+      {!loading && !error && isLoggedIn && baseList.length > 0 && (
         <>
-          {/* Toolbar: sort, view, genre chips */}
+          {/* Toolbar */}
           <div className="flex items-center justify-between gap-3 mb-3">
             <div className="flex gap-1.5 items-center">
               <ArrowDownUp size={13} className="text-text-muted shrink-0" />
@@ -158,7 +197,7 @@ export default function MyList() {
                   <DramaCard drama={d} size="sm" />
                   {editMode && (
                     <button
-                      onClick={() => setIds((prev) => prev.filter((id) => id !== d.id))}
+                      onClick={() => removeFavorite(d.id)}
                       className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/80 border border-gold/60 flex items-center justify-center text-gold z-10 hover:bg-danger hover:border-danger hover:text-white transition-colors"
                       aria-label="삭제"
                     >
@@ -190,7 +229,7 @@ export default function MyList() {
                   </Link>
                   {editMode ? (
                     <button
-                      onClick={() => setIds((prev) => prev.filter((id) => id !== d.id))}
+                      onClick={() => removeFavorite(d.id)}
                       className="w-8 h-8 rounded-full bg-surface-2 border border-border hover:border-danger hover:text-danger flex items-center justify-center text-text-dim transition-colors"
                       aria-label="삭제"
                     >
