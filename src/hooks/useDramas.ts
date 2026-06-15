@@ -64,6 +64,8 @@ export function useDramas() {
       }
 
       const normalized = (data || []).map((item: any) => toDrama(item));
+      console.log("SUPABASE_DATA", data);
+      console.log("NORMALIZED", normalized);
 
       setDramas(normalized);
       setLoading(false);
