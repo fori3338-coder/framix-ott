@@ -541,10 +541,18 @@ setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
                   onDragOver={(e) => handleDragOver(e, ep.id)}
                   onDragLeave={(e) => handleDragLeave(e, ep.id)}
                   onDrop={(e) => handleDrop(e, ep.id)}
-                  onClick={() => {
-                    const input = document.getElementById(`video-input-${ep.id}`) as HTMLInputElement | null;
-                    input?.click();
-                  }}
+onClick={() => {
+  console.log("[LOG_X] 드롭존 클릭");
+
+  const input =
+    document.getElementById(`video-input-${ep.id}`);
+
+  console.log("[LOG_Y] input 찾음", input);
+
+  input?.click();
+
+  console.log("[LOG_Z] input.click 실행");
+}}
                   className={`block rounded-xl border-2 border-dashed transition-all cursor-pointer py-6 px-4 text-center ${
                     dragOverMap[ep.id] ? "border-gold bg-gold/5" : ep.videoFile ? "border-green-500/40 bg-green-500/5" : "border-border bg-surface hover:border-gold/50"
                   }`}
