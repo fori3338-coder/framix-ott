@@ -45,7 +45,7 @@ export default function Home() {
   }
 
   // ── 섹션별 데이터 ──────────────────────────────────────────────────────────
-const heroList = [...dramas].reverse().slice(0, 5);
+const heroList = dramas.slice(0, 5);
   const trending = [...dramas].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 10);
   const newEpisodes = dramas.filter((d) => d.isNew);
   const romance = dramas.filter((d) =>
