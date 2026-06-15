@@ -1,5 +1,3 @@
-import { Link } from "react-router-dom";
-import { Play, Info, Sparkles } from "lucide-react";
 import HeroBanner from "../components/HeroBanner";
 import DramaRow from "../components/DramaRow";
 import { useDramas } from "../hooks/useDramas";
