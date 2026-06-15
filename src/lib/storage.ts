@@ -55,8 +55,7 @@ export async function uploadVideo(
   console.log('[UPLOAD] UPLOAD_PATH', path);
 
   const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string).replace(/\/$/, '');
-  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-
+  
   // 1차 시도: SDK
   try {
     onProgress?.(5);
@@ -91,18 +90,7 @@ export async function uploadVideo(
 
     const xhr = new XMLHttpRequest();
     xhr.open('POST', uploadUrl, true);
-const {
-  data: { session }
-} = await supabase.auth.getSession()
 
-if (!session?.access_token) {
-  throw new Error('로그인 세션 없음')
-}
-
-xhr.setRequestHeader(
-  'Authorization',
-  `Bearer ${session.access_token}`
-)
     xhr.setRequestHeader('x-upsert', 'true');
     xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
 
