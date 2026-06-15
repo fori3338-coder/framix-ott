@@ -2,7 +2,17 @@ import { useEffect, useState } from 'react';
 import { supabase, type DbDrama, type DbEpisode } from '../lib/supabase';
 import type { Drama, Episode } from '../types';
 
-// ─── DbEpisode → Episode 변환 ─────────────────────────────────────────────────
+// Drama.ageRating 허용 리터럴 유니언
+const VALID_AGE_RATINGS = ["전체", "12+", "15+", "19+"] as const;
+type AgeRating = typeof VALID_AGE_RATINGS[number];
+
+function toAgeRating(val: string | null | undefined): AgeRating {
+  if (val && (VALID_AGE_RATINGS as readonly string[]).includes(val)) {
+    return val as AgeRating;
+  }
+  return '15+';
+}
+
 function toFrontendEpisode(e: DbEpisode): Episode {
   return {
     id: e.id,
@@ -16,32 +26,30 @@ function toFrontendEpisode(e: DbEpisode): Episode {
   };
 }
 
-// ─── DbDrama → Drama (에피소드 포함) ─────────────────────────────────────────
 function toFrontendDrama(d: DbDrama, episodes: DbEpisode[]): Drama {
   return {
     id: d.id,
     title: d.title,
     synopsis: d.description ?? '',
     poster: d.thumbnail_url ?? `https://picsum.photos/seed/${d.id}-poster/400/600`,
-    backdrop: d.thumbnail_url ?? `https://picsum.photos/seed/${d.id}-backdrop/1280/720`,
-    genres: d.genre ? [d.genre] : [],
-    tags: [],
+    backdrop: d.backdrop_url ?? d.thumbnail_url ?? `https://picsum.photos/seed/${d.id}-backdrop/1280/720`,
+    genres: d.genres ?? (d.genre ? [d.genre] : []),
+    tags: d.tags ?? [],
     rating: d.rating ?? 0,
-    ageRating: '15+',
+    ageRating: toAgeRating(d.age_rating),
     year: new Date().getFullYear(),
     totalEpisodes: d.total_episodes,
     episodeLength: '',
     cast: [],
     director: '',
-    isOriginal: false,
-    isNew: d.status === 'new',
-    isExclusive: false,
-    views: 0,
+    isOriginal: d.is_original ?? false,
+    isNew: d.is_new ?? false,
+    isExclusive: d.is_exclusive ?? false,
+    views: d.views ?? 0,
     episodes: episodes.map(toFrontendEpisode),
   };
 }
 
-// ─── 드라마 상세 + 에피소드 목록 조회 ────────────────────────────────────────
 export function useDramaDetail(id: string | undefined) {
   const [drama, setDrama] = useState<Drama | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,11 +59,10 @@ export function useDramaDetail(id: string | undefined) {
     if (!id) { setLoading(false); return; }
     let cancelled = false;
 
-    async function fetch() {
+    async function fetchData() {
       setLoading(true);
       setError(null);
       try {
-        // 드라마 + 에피소드 병렬 조회
         const [dramaRes, episodesRes] = await Promise.all([
           supabase.from('series').select('*').eq('id', id).single(),
           supabase
@@ -81,14 +88,13 @@ export function useDramaDetail(id: string | undefined) {
       }
     }
 
-    fetch();
+    fetchData();
     return () => { cancelled = true; };
   }, [id]);
 
   return { drama, loading, error };
 }
 
-// ─── 단일 에피소드 조회 (Player용) ───────────────────────────────────────────
 export function useEpisode(episodeId: string | undefined) {
   const [episode, setEpisode] = useState<Episode | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,7 +103,7 @@ export function useEpisode(episodeId: string | undefined) {
     if (!episodeId) { setLoading(false); return; }
     let cancelled = false;
 
-    async function fetch() {
+    async function fetchData() {
       setLoading(true);
       const { data } = await supabase
         .from('episodes')
@@ -109,7 +115,7 @@ export function useEpisode(episodeId: string | undefined) {
       if (!cancelled) setLoading(false);
     }
 
-    fetch();
+    fetchData();
     return () => { cancelled = true; };
   }, [episodeId]);
 

@@ -209,7 +209,7 @@ CREATE POLICY "user_favorites_owner"
 -- 9. Storage Bucket 생성
 -- ────────────────────────────────────────────────────────────
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES ('videos', 'videos', false, 5368709120,
+VALUES ('videos', 'videos', true, 5368709120,
         ARRAY['video/mp4','video/webm','video/quicktime','video/x-msvideo'])
 ON CONFLICT (id) DO NOTHING;
 
@@ -383,3 +383,37 @@ END $$;
 -- SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name;
 -- SELECT routine_name FROM information_schema.routines WHERE routine_schema = 'public';
 -- SELECT name, public FROM storage.buckets;
+
+
+-- ────────────────────────────────────────────────────────────
+-- 11. [PATCH] videos 버킷 public 전환 + anon 업로드 정책 보강
+--     기존 false → true 로 변경 (Public URL 접근 허용)
+-- ────────────────────────────────────────────────────────────
+UPDATE storage.buckets
+  SET public = true
+  WHERE id = 'videos';
+
+-- anon 업로드 정책 (이미 존재하면 무시)
+DO $$
+BEGIN
+  CREATE POLICY "videos_anon_insert_v2"
+    ON storage.objects FOR INSERT
+    WITH CHECK (bucket_id = 'videos');
+EXCEPTION
+  WHEN duplicate_object THEN
+    RAISE NOTICE '정책 이미 존재함: videos_anon_insert_v2';
+  WHEN insufficient_privilege THEN
+    RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard에서 수동 설정';
+END $$;
+
+DO $$
+BEGIN
+  CREATE POLICY "videos_anon_select_v2"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'videos');
+EXCEPTION
+  WHEN duplicate_object THEN
+    RAISE NOTICE '정책 이미 존재함: videos_anon_select_v2';
+  WHEN insufficient_privilege THEN
+    RAISE NOTICE 'storage.objects 정책 권한 없음 - Dashboard에서 수동 설정';
+END $$;
