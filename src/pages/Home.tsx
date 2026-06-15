@@ -45,17 +45,7 @@ export default function Home() {
   }
 
   // ── 섹션별 데이터 ──────────────────────────────────────────────────────────
-const heroTitles = [
-  "다시 만난 운명",
-  "쌍둥이 재벌가의 음모",
-  "계약 신혼부부",
-  "도련님의 사랑법",
-  "그 남자의 정체",
-];
-
-const heroList = heroTitles
-  .map(title => mockDramas.find(d => d.title === title))
-  .filter(Boolean);
+const heroList = [...dramas].reverse().slice(0, 5);
   const trending = [...dramas].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 10);
   const newEpisodes = dramas.filter((d) => d.isNew);
   const recommended = [...dramas]
