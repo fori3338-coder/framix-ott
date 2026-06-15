@@ -57,8 +57,9 @@ export default function Home() {
   }
 
   // ── 카테고리별 분류 ───────────────────────────────────────────────────────
-  const heroDramas = dramas.filter((d) => d.isOriginal).slice(0, 5);
-  const heroList = heroDramas.length > 0 ? heroDramas : dramas.slice(0, 5);
+const heroList = [...dramas]
+  .reverse()
+  .slice(0, 5);
 
   const trending = [...dramas].sort((a, b) => b.views - a.views).slice(0, 10);
   const newEpisodes = dramas.filter((d) => d.isNew);
