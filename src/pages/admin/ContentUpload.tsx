@@ -382,9 +382,8 @@ setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
     console.log("TITLE_CHANGE =", e.target.value);
     setTitle(e.target.value);
   }}
-/>
                 placeholder="예: 재벌집 그녀의 계약"
-                className="w-full bg-surface-2 border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-gold transition-colors" />
+                className="w-full bg-surface-2 border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-gold transition-colors"/>
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2">영문 제목</label>
@@ -402,7 +401,8 @@ setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
   setSynopsis(e.target.value);
 }}
                 rows={5} placeholder="작품 줄거리를 입력하세요"
-                className="w-full bg-surface-2 border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gold transition-colors resize-none" />
+                className="w-full bg-surface-2 border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gold transition-colors resize-none" 
+                />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
