@@ -375,7 +375,14 @@ setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
           <div className="bg-surface border border-border rounded-2xl p-4 md:p-6 admin-card space-y-5 animate-fade-in">
             <div>
               <label className="block text-sm font-semibold mb-2">작품 제목 *</label>
-              <input required value={title} onChange={(e) => setTitle(e.target.value)}
+              <input
+  required
+  value={title}
+  onChange={(e) => {
+    console.log("TITLE_CHANGE =", e.target.value);
+    setTitle(e.target.value);
+  }}
+/>
                 placeholder="예: 재벌집 그녀의 계약"
                 className="w-full bg-surface-2 border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-gold transition-colors" />
             </div>
@@ -390,7 +397,10 @@ setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
                 <label className="block text-sm font-semibold">시놉시스 *</label>
                 <span className="text-[11px] text-text-muted tabular-nums">{synopsis.length}/500</span>
               </div>
-              <textarea required maxLength={500} value={synopsis} onChange={(e) => setSynopsis(e.target.value)}
+              <textarea required maxLength={500} value={synopsis} onChange={(e) => {
+  console.log("TEXTAREA_CHANGE =", e.target.value);
+  setSynopsis(e.target.value);
+}}
                 rows={5} placeholder="작품 줄거리를 입력하세요"
                 className="w-full bg-surface-2 border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gold transition-colors resize-none" />
             </div>
