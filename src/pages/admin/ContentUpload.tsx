@@ -635,16 +635,4 @@ className="px-5 py-2.5 rounded-md bg-gradient-gold text-black text-sm font-bold 
 )} 
 </button>
 
-              className="px-5 py-2.5 rounded-md bg-gradient-gold text-black text-sm font-bold hover:brightness-110 transition-all shadow-lg shadow-gold/20 flex items-center gap-1.5 disabled:opacity-70 disabled:cursor-not-allowed">
-              {submitting ? (
-                <><div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" /> 등록 중...</>
-              ) : submitted ? (
-                <><CheckCircle2 size={16} /> 등록 완료!</>
-              ) : "콘텐츠 등록"}
-            </button>
-          )}
-        </div>
-      </form>
-    </div>
-  );
-}
+)}
