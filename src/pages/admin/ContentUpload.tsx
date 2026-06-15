@@ -156,9 +156,6 @@ export default function ContentUpload() {
         status: "active",
       };
 
-      if (englishTitle) seriesPayload.english_title = englishTitle;
-      if (selectedGenres.length) seriesPayload.genres = selectedGenres;
-
       const { data: dramaRow, error: dramaErr } = await supabase
         .from("series")
         .insert(seriesPayload)
