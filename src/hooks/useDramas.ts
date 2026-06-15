@@ -58,10 +58,11 @@ export function useDramas() {
       setLoading(true);
 
       try {
-        const { data, error } = await supabase
-          .from("series")
-          .select("*")
-          .eq("status", "active");
+const { data, error } = await supabase
+  .from("series")
+  .select("*")
+  .eq("status", "active")
+  .order("created_at", { ascending: true });
 
         if (error || !data || data.length === 0) {
           // Supabase 실패 또는 데이터 없음 → mockData fallback
