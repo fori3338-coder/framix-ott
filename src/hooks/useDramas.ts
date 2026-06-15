@@ -13,7 +13,6 @@ type Series = {
   status?: string;
   rating?: number;
   views?: number;
-  cast: s.cast_members ?? [],
 };
 
 // ─── Series(DB) → Drama(Frontend) 변환 ─────────────────────────────────────
