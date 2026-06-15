@@ -236,7 +236,6 @@ export default function ContentUpload() {
           title: ep.title,
           thumbnail_url: episodeThumbnailUrl,
           video_url: videoUrl,
-          is_free: ep.isFree,
           sort_order: i,
         });
 
