@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 import HeroBanner from "../components/HeroBanner";
 import DramaRow from "../components/DramaRow";
 import { useDramas } from "../hooks/useDramas";
