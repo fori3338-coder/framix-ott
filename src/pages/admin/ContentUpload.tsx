@@ -196,8 +196,14 @@ console.log("[ContentUpload] series 등록 완료 id:", dramaId);
         try {
           const ext = posterFile.name.split('.').pop() ?? 'jpg';
           const posterUrl = await uploadImage(BUCKET.POSTERS, `${dramaId}.${ext}`, posterFile);
+          console.log("POSTER_URL =", posterUrl);
           if (posterUrl) {
-            await supabase.from("series").update({ thumbnail_url: posterUrl }).eq("id", dramaId);
+const updateResult = await supabase
+  .from("series")
+  .update({ thumbnail_url: posterUrl })
+  .eq("id", dramaId);
+
+console.log("UPDATE_RESULT =", updateResult);
           }
         } catch (imgErr) {
           console.warn("[ContentUpload] 포스터 업로드 실패 (비치명):", imgErr);
