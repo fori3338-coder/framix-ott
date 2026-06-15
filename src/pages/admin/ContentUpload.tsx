@@ -157,10 +157,7 @@ export default function ContentUpload() {
       };
 
       if (englishTitle) seriesPayload.english_title = englishTitle;
-      if (ageRating) seriesPayload.age_rating = ageRating;
       if (selectedGenres.length) seriesPayload.genres = selectedGenres;
-      if (isOriginal) seriesPayload.is_original = isOriginal;
-      if (isExclusive) seriesPayload.is_exclusive = isExclusive;
 
       const { data: dramaRow, error: dramaErr } = await supabase
         .from("series")
