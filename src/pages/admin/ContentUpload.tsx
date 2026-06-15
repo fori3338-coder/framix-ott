@@ -146,10 +146,10 @@ export default function ContentUpload() {
     if (file) handleEpisodeVideo(episodeId, file);
   };
 
-const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+const handleSubmit = async (e?: FormEvent<HTMLFormElement>) => {
 console.log("[LOG_B] handleSubmit 진입");
 console.log("[ContentUpload] HANDLE_SUBMIT");
-e.preventDefault();
+e?.preventDefault();
     if (!title || !synopsis) { setSubmitError("제목과 시놉시스는 필수입니다."); return; }
 
     setSubmitting(true);
@@ -636,3 +636,8 @@ className="px-5 py-2.5 rounded-md bg-gradient-gold text-black text-sm font-bold 
 </button>
 
 )}
+</div>
+</form>
+</div>
+);
+}
