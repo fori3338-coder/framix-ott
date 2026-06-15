@@ -45,7 +45,18 @@ export default function Home() {
   }
 
   // ── 섹션별 데이터 ──────────────────────────────────────────────────────────
-  const heroList = [...dramas].reverse().slice(0, 5);
+  const heroList = [...dramas]
+    .sort((a, b) => {
+      // 배경 이미지 있는 콘텐츠 우선 (backdrop_url이 실제 이미지인 경우)
+      const aHasBackdrop = a.backdrop && !a.backdrop.includes("picsum") ? 1 : 0;
+      const bHasBackdrop = b.backdrop && !b.backdrop.includes("picsum") ? 1 : 0;
+      if (bHasBackdrop !== aHasBackdrop) return bHasBackdrop - aHasBackdrop;
+      // 그 다음 평점+조회수 종합 점수
+      const sA = (a.rating || 0) * 2 + (a.views || 0) * 0.000001 + (a.isNew ? 1 : 0) + (a.isOriginal ? 1 : 0);
+      const sB = (b.rating || 0) * 2 + (b.views || 0) * 0.000001 + (b.isNew ? 1 : 0) + (b.isOriginal ? 1 : 0);
+      return sB - sA;
+    })
+    .slice(0, 5);
   const trending = [...dramas].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 10);
   const newEpisodes = dramas.filter((d) => d.isNew);
   const recommended = [...dramas]
