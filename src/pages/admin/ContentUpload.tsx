@@ -167,7 +167,14 @@ e?.preventDefault();
         total_episodes: episodes.length,
         status: "active",
       };
-
+      
+   console.log("===============");
+   console.log("TITLE =", title);
+   console.log("SYNOPSIS =", synopsis);
+   console.log("EPISODES =", episodes.length);
+   console.log("SERIES_PAYLOAD =", seriesPayload);
+   console.log("===============");
+      
       const { data: dramaRow, error: dramaErr } = await supabase
         .from("series")
         .insert(seriesPayload)
@@ -178,8 +185,11 @@ e?.preventDefault();
         console.error("[ContentUpload] series INSERT error:", dramaErr);
         throw new Error(dramaErr?.message ?? "드라마 등록 실패");
       }
-      const dramaId: string = (dramaRow as { id: string }).id;
-      console.log("[ContentUpload] series 등록 완료 id:", dramaId);
+const dramaId: string = (dramaRow as { id: string }).id;
+
+console.log("INSERT RESULT =", dramaRow);
+
+console.log("[ContentUpload] series 등록 완료 id:", dramaId);
 
       if (posterFile) {
         setUploadStatus("포스터 업로드 중...");
