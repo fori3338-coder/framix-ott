@@ -114,6 +114,12 @@ export default function ContentUpload() {
   };
 
  const handleEpisodeVideo = (episodeId: number, file: File | undefined) => {
+   console.log(
+  "[LOG_A2]",
+  episodeId,
+  file?.name,
+  file
+);
    console.log("[LOG_A] handleEpisodeVideo 진입", episodeId, file?.name);
    console.log("[ContentUpload] VIDEO_CHANGE", episodeId, file?.name);
    if (!file) return;
