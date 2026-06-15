@@ -4,7 +4,7 @@ import HeroBanner from "../components/HeroBanner";
 import DramaRow from "../components/DramaRow";
 import { useDramas } from "../hooks/useDramas";
 import { useContinueWatching } from "../hooks/useContinueWatching";
-import { dramas as mockDramas } from "../data/mockData";
+import { useFavorites } from "../hooks/useFavorites";
 
 export default function Home() {
   const { dramas, loading } = useDramas();
