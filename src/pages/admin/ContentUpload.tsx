@@ -148,7 +148,11 @@ export default function ContentUpload() {
 
 const handleSubmit = async (e?: FormEvent<HTMLFormElement>) => {
 console.log("[LOG_B] handleSubmit 진입");
-console.log("[ContentUpload] HANDLE_SUBMIT");
+console.log("[ContentUpload] HANDLE_SUBMIT");const {
+  data: { session }
+} = await supabase.auth.getSession();
+
+console.log("SESSION =", session);
 e?.preventDefault();
     if (!title || !synopsis) { setSubmitError("제목과 시놉시스는 필수입니다."); return; }
 
