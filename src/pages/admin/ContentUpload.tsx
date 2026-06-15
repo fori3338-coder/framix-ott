@@ -113,9 +113,10 @@ export default function ContentUpload() {
     reader.readAsDataURL(file);
   };
 
-  const handleEpisodeVideo = (episodeId: number, file: File | undefined) => {
-    console.log("[ContentUpload] VIDEO_CHANGE", episodeId, file?.name);
-    if (!file) return;
+ const handleEpisodeVideo = (episodeId: number, file: File | undefined) => {
+   console.log("[LOG_A] handleEpisodeVideo 진입", episodeId, file?.name);
+   console.log("[ContentUpload] VIDEO_CHANGE", episodeId, file?.name);
+   if (!file) return;
     updateEpisode(episodeId, { videoFile: file, videoProgress: 0 });
   };
 
@@ -139,9 +140,10 @@ export default function ContentUpload() {
     if (file) handleEpisodeVideo(episodeId, file);
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    console.log("[ContentUpload] HANDLE_SUBMIT");
-    e.preventDefault();
+const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+console.log("[LOG_B] handleSubmit 진입");
+console.log("[ContentUpload] HANDLE_SUBMIT");
+e.preventDefault();
     if (!title || !synopsis) { setSubmitError("제목과 시놉시스는 필수입니다."); return; }
 
     setSubmitting(true);
@@ -202,10 +204,13 @@ export default function ContentUpload() {
         setUploadStatus(`${i + 1}화 처리 중... (${i + 1}/${episodes.length})`);
 
         let videoUrl: string | null = null;
-        if (ep.videoFile) {
-          setUploadStatus(`${i + 1}화 영상 업로드 중...`);
-          try {
-            videoUrl = await uploadVideo(dramaId, `ep${i + 1}`, ep.videoFile, (pct) => {
+if (ep.videoFile) {
+setUploadStatus(`${i + 1}화 영상 업로드 중...`);
+
+console.log("[LOG_D] uploadVideo 호출 직전", ep.videoFile?.name);
+
+try {
+videoUrl = await uploadVideo(dramaId, `ep${i + 1}`, ep.videoFile, (pct) => {
               updateEpisode(ep.id, { videoProgress: pct });
               setUploadStatus(`${i + 1}화 영상 업로드 중... ${pct}%`);
             });
@@ -253,9 +258,10 @@ export default function ContentUpload() {
         .update({ total_episodes: insertedEpisodes })
         .eq("id", dramaId);
 
-      setUploadStatus("등록 완료!");
-      setSubmitted(true);
-      setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
+setUploadStatus("등록 완료!");
+setSubmitted(true);
+console.log("[LOG_C] navigate 실행 직전", dramaId);
+setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
 
     } catch (err) {
       const msg = (err as Error).message;
