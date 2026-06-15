@@ -7,10 +7,13 @@ type Series = {
   title: string;
   description?: string;
   thumbnail_url?: string;
+  backdrop_url?: string;
   genre?: string | null;
   total_episodes?: number;
   status?: string;
   rating?: number;
+  views?: number;
+  cast: s.cast_members ?? [],
 };
 
 // ─── Series(DB) → Drama(Frontend) 변환 ─────────────────────────────────────
@@ -20,7 +23,10 @@ function toDrama(s: Series): Drama {
     title: s.title,
     synopsis: s.description ?? "",
     poster: s.thumbnail_url ?? `https://picsum.photos/seed/${s.id}-poster/400/600`,
-    backdrop: s.thumbnail_url ?? `https://picsum.photos/seed/${s.id}-backdrop/1280/720`,
+    backdrop:
+  s.backdrop_url ??
+  s.thumbnail_url ??
+  `https://picsum.photos/seed/${s.id}-backdrop/1280/720`,
     genres: s.genre ? [s.genre] : [],
     tags: [],
     rating: s.rating ?? 0,
@@ -33,7 +39,7 @@ function toDrama(s: Series): Drama {
     isOriginal: false,
     isNew: s.status === "new",
     isExclusive: false,
-    views: 0,
+    views: s.views ?? 0,
     episodes: [],
   };
 }
