@@ -91,7 +91,18 @@ export async function uploadVideo(
 
     const xhr = new XMLHttpRequest();
     xhr.open('POST', uploadUrl, true);
-    xhr.setRequestHeader('Authorization', `Bearer ${supabaseKey}`);
+const {
+  data: { session }
+} = await supabase.auth.getSession()
+
+if (!session?.access_token) {
+  throw new Error('로그인 세션 없음')
+}
+
+xhr.setRequestHeader(
+  'Authorization',
+  `Bearer ${session.access_token}`
+)
     xhr.setRequestHeader('x-upsert', 'true');
     xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
 
