@@ -230,14 +230,14 @@ export default function ContentUpload() {
           }
         }
 
-        const { error: epErr } = await supabase.from("episodes").insert({
-          series_id: dramaId,
-          episode_number: i + 1,
-          title: ep.title,
-          thumbnail_url: episodeThumbnailUrl,
-          video_url: videoUrl,
-          sort_order: i,
-        });
+  const { error: epErr } = await supabase.from("episodes").insert({
+  series_id: dramaId,
+  episode_number: i + 1,
+  title: ep.title,
+  description: ep.title,
+  video_url: videoUrl,
+  thumbnail_url: episodeThumbnailUrl,
+});
 
         if (epErr) {
           console.error(`[ContentUpload] ${i + 1}화 INSERT 오류:`, epErr.message, epErr.details);
