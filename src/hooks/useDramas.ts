@@ -20,7 +20,7 @@ export function useDramas() {
           .eq("status", "active")
           .order("created_at", { ascending: true });
 
-        if (error || !data || data.length === 0) {
+        if (error || !data || data.length < 5) {
           // Supabase 실패 또는 데이터 없음 → mockData fallback
           setDramas(mockDramas);
           setLoading(false);
