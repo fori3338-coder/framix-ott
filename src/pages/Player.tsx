@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ChevronLeft, Play, Pause,
-  Heart, MessageCircle, Share2, List,
+  Heart, MessageCircle, Share2,
   VolumeX, Volume2, Lock, Maximize, Minimize
 } from "lucide-react";
 import { useDramaDetail } from "../hooks/useDramaDetail";
@@ -250,18 +250,19 @@ export default function Player() {
       {/* OVERLAY - 컨트롤이 보일 때만 화면을 살짝 어둡게 */}
       <div className={`absolute inset-0 bg-black/40 pointer-events-none ${fadeClass}`} />
 
-      {/* TOP BAR - 뒤로가기는 자동숨김 대상에서 제외해 항상 빠져나갈 수 있게 함 */}
-      <div className="absolute top-0 left-0 right-0 flex justify-between items-center p-4 pointer-events-none">
-        <button onClick={() => navigate(-1)} className="p-1 pointer-events-auto">
+      {/* TOP BAR: 뒤로가기 버튼 — 항상 표시 (자동숨김 제외) */}
+      <div className="absolute top-0 left-0 p-4 z-20">
+        <button onClick={() => navigate(-1)} className="p-1">
           <ChevronLeft size={28} />
         </button>
+      </div>
+
+      {/* TOP BAR: 드라마 제목 + 에피소드명 — showControls 연동 자동숨김 */}
+      <div className={`absolute top-0 left-0 right-0 flex justify-center items-center p-4 pointer-events-none z-10 ${fadeClass}`}>
         <div className="text-center">
           <div className="font-semibold text-sm">{drama.title}</div>
           <div className="text-xs opacity-70">{episode.title}</div>
         </div>
-        <button className="p-1 pointer-events-auto">
-          <List size={22} />
-        </button>
       </div>
 
       {/* CENTER CONTROLS */}
