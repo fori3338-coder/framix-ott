@@ -69,6 +69,14 @@ export function useDramas() {
     .sort((a, b) => (b.views || 0) - (a.views || 0))
     .slice(0, 10);
 
+  // 신작: isNew=true인 항목 우선, 없으면 전체 dramas에서 최신 등록순(배열 역순)으로 최대 10개
+  // → Supabase에서 is_new 미설정 작품도 반드시 노출
+  const newEpisodes = (() => {
+    const flagged = dramas.filter((d) => d.isNew);
+    if (flagged.length > 0) return flagged;
+    return [...dramas].reverse().slice(0, 10);
+  })();
+
   const romance = dramas.filter((d) =>
     d.genres?.some((g) => g.includes("로맨스"))
   );
@@ -94,6 +102,7 @@ export function useDramas() {
     loading,
 
     trending,
+    newEpisodes,
     romance,
     revenge,
     office,
