@@ -26,6 +26,26 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
   const drama = dramas[index];
   if (!drama) return null;
 
+  // ── 디버그 로그 (요청에 따라 추가) ────────────────────────────────────
+  // 운영 중에는 콘솔에 노출되므로 문제가 재발하지 않는 게 확인되면 제거해도 됨.
+  console.log("FEATURED_CONTENT", drama);
+
+  const firstEpisode = drama.episodes?.[0];
+  const playRoute = firstEpisode ? `/watch/${drama.id}/${firstEpisode.id}` : null;
+  console.log("PLAY_ROUTE", playRoute, {
+    seriesId: drama.id,
+    usingEpisodeId: firstEpisode?.id, // series.id가 아니라 episode.id를 쓰고 있는지 확인용
+  });
+
+  const handlePlay = () => {
+    if (!playRoute) {
+      // episodes가 비어있으면 절대 "/watch/{id}/undefined" 로 이동하지 않는다.
+      console.warn("[HeroBanner] 재생 가능한 에피소드가 없어 이동을 막았습니다:", drama.id);
+      return;
+    }
+    navigate(playRoute);
+  };
+
   return (
     <div
       className="relative w-full h-[68vh] md:h-[88vh] min-h-[460px] overflow-hidden bg-base"
@@ -116,8 +136,9 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             style={{ animationDelay: "280ms", animationFillMode: "backwards" }}
           >
             <button
-              onClick={() => navigate(`/watch/${drama.id}/${drama.episodes[0]?.id}`)}
-              className="flex items-center gap-2 bg-white text-black font-bold px-5 md:px-8 py-3 md:py-3.5 rounded-md text-sm md:text-base hover:bg-gold transition-all duration-200 active:scale-95 shadow-lg"
+              onClick={handlePlay}
+              disabled={!playRoute}
+              className="flex items-center gap-2 bg-white text-black font-bold px-5 md:px-8 py-3 md:py-3.5 rounded-md text-sm md:text-base hover:bg-gold transition-all duration-200 active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Play size={18} className="fill-black" />
               재생

@@ -1,52 +1,8 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase, type DbDrama, type DbEpisode } from "../lib/supabase";
 import { dramas as mockDramas } from "../data/mockData";
+import { toFrontendDrama, groupEpisodesBySeriesId } from "../lib/mappers";
 import type { Drama } from "../types";
-
-type Series = {
-  id: string;
-  title: string;
-  description?: string;
-  thumbnail_url?: string;
-  backdrop_url?: string;
-  genre?: string | null;
-  genres?: string[] | null;
-  total_episodes?: number;
-  status?: string;
-  rating?: number;
-  views?: number;
-  is_original?: boolean | null;
-  is_exclusive?: boolean | null;
-  is_new?: boolean | null;
-  age_rating?: string | null;
-};
-
-function toDrama(s: Series): Drama {
-  return {
-    id: s.id,
-    title: s.title,
-    synopsis: s.description ?? "",
-    poster: s.thumbnail_url ?? `https://picsum.photos/seed/${s.id}-poster/400/600`,
-    backdrop:
-      s.backdrop_url ??
-      s.thumbnail_url ??
-      `https://picsum.photos/seed/${s.id}-backdrop/1280/720`,
-    genres: s.genres ?? (s.genre ? [s.genre] : []),
-    tags: [],
-    rating: s.rating ?? 0,
-    ageRating: (s.age_rating as Drama["ageRating"]) ?? "15+",
-    year: new Date().getFullYear(),
-    totalEpisodes: s.total_episodes ?? 0,
-    episodeLength: "10-15분",
-    cast: [],
-    director: "",
-    isOriginal: s.is_original ?? false,
-    isNew: s.is_new ?? s.status === "new",
-    isExclusive: s.is_exclusive ?? false,
-    views: s.views ?? 0,
-    episodes: [],
-  };
-}
 
 export function useDramas() {
   const [dramas, setDramas] = useState<Drama[]>([]);
@@ -58,20 +14,48 @@ export function useDramas() {
       setLoading(true);
 
       try {
-const { data, error } = await supabase
-  .from("series")
-  .select("*")
-  .eq("status", "active")
-  .order("created_at", { ascending: true });
+        const { data, error } = await supabase
+          .from("series")
+          .select("*")
+          .eq("status", "active")
+          .order("created_at", { ascending: true });
 
         if (error || !data || data.length === 0) {
           // Supabase 실패 또는 데이터 없음 → mockData fallback
           setDramas(mockDramas);
-        } else {
-          setDramas(data.map((item: any) => toDrama(item)));
+          setLoading(false);
+          return;
         }
+
+        // ── 에피소드 일괄 조회 ────────────────────────────────────────────
+        // ⚠️ 과거 버그: 이 부분이 없어서 모든 Drama.episodes가 항상 []였음.
+        // 그 결과 Hero Banner의 "재생" 버튼이 drama.episodes[0]?.id를
+        // 찾지 못해 /watch/{id}/undefined 로 이동 → Not Found 발생.
+        // (DramaDetail 페이지는 useDramaDetail에서 별도로 episodes를
+        //  불러오기 때문에 TOP10 → 상세페이지 → 에피소드 클릭 흐름은 정상이었음)
+        const seriesIds = data.map((s: DbDrama) => s.id);
+        const { data: episodesData, error: episodesError } = await supabase
+          .from("episodes")
+          .select("*")
+          .in("series_id", seriesIds)
+          .order("episode_number", { ascending: true });
+
+        if (episodesError) {
+          console.error("[useDramas] 에피소드 조회 실패:", episodesError);
+        }
+
+        const episodesBySeriesId = groupEpisodesBySeriesId(
+          (episodesData ?? []) as DbEpisode[]
+        );
+
+        setDramas(
+          data.map((item: DbDrama) =>
+            toFrontendDrama(item, episodesBySeriesId.get(item.id) ?? [])
+          )
+        );
       } catch (e) {
         // 네트워크 오류 등 → mockData fallback
+        console.error("[useDramas] 조회 실패:", e);
         setDramas(mockDramas);
       }
 
