@@ -72,6 +72,7 @@ export default function AdminDashboard() {
   // Supabase data state
   const [totalContent, setTotalContent] = useState<number>(0);
   const [monthlyViews, setMonthlyViews] = useState<number>(0);
+  const [totalUsers, setTotalUsers] = useState<number>(0);
   const [topDramas, setTopDramas] = useState<TopDrama[]>([]);
   const [recentActivity, setRecentActivity] = useState<{ who: string; what: string; when: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,6 +115,12 @@ export default function AdminDashboard() {
         setTotalContent(seriesCount ?? 0);
         setMonthlyViews(totalViews);
 
+        // 총 회원수 (public.users 테이블)
+        const { count: userCount } = await supabase
+          .from("users")
+          .select("*", { count: "exact", head: true });
+        setTotalUsers(userCount ?? 0);
+
         setTopDramas(
           (topData ?? []).map((d) => ({
             id: d.id,
@@ -155,7 +162,7 @@ export default function AdminDashboard() {
   }, []);
 
   const stats: StatCard[] = [
-    { label: "총 구독자", value: "284,920", change: "+4.2%", trend: "up", icon: Users, accent: "from-gold to-gold-dark",
+    { label: "총 회원수", value: loading ? "…" : formatNumber(totalUsers), change: "+4.2%", trend: "up", icon: Users, accent: "from-gold to-gold-dark",
       spark: [30, 36, 34, 42, 48, 52, 60, 58, 66, 72, 78, 84] },
     { label: "총 콘텐츠", value: loading ? "…" : formatNumber(totalContent), change: "+2", trend: "up", icon: Film, accent: "from-amber-200 to-gold",
       spark: [10, 12, 14, 18, 22, 24, 26, 28, 30, 30, 32, 34] },

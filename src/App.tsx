@@ -9,9 +9,11 @@ import WatchHistory from "./pages/WatchHistory";
 import Subscription from "./pages/Subscription";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ContentUpload from "./pages/admin/ContentUpload";
+import { AuthProvider } from "./contexts/AuthContext";
 
 export default function App() {
   return (
+    <AuthProvider>
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
@@ -27,5 +29,6 @@ export default function App() {
         <Route path="/watch/:id/:episodeId" element={<Player />} />
       </Routes>
     </BrowserRouter>
+    </AuthProvider>
   );
 }
