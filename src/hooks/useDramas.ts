@@ -20,12 +20,11 @@ export function useDramas() {
           .eq("status", "active")
           .order("created_at", { ascending: true });
 
-        if (error || !data || data.length < 5) {
-          // Supabase 실패 또는 데이터 없음 → mockData fallback
-          setDramas(mockDramas);
-          setLoading(false);
-          return;
-        }
+if (error || !data) {
+  setDramas(mockDramas);
+  setLoading(false);
+  return;
+}
 
         // ── 에피소드 일괄 조회 ────────────────────────────────────────────
         // ⚠️ 과거 버그: 이 부분이 없어서 모든 Drama.episodes가 항상 []였음.
