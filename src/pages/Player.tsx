@@ -8,6 +8,37 @@ import {
 import { useDramaDetail } from "../hooks/useDramaDetail";
 import { supabase } from "../lib/supabase";
 import { recordEpisodeView } from "../lib/viewTracking";
+import { dramas as mockDramas } from "../data/mockData";
+import {
+  showcaseTop10,
+  showcaseNewEpisodes,
+  showcaseRecommended,
+  showcaseRomance,
+  showcaseRevenge,
+  showcaseOriginals,
+} from "../data/showcaseData";
+import type { Drama } from "../types";
+
+// 모든 로컬 mock 드라마를 id 기준으로 검색 (중복 id는 최초 항목 사용)
+function findLocalDrama(id: string | undefined): Drama | null {
+  if (!id) return null;
+  const allLocal = [
+    ...mockDramas,
+    ...showcaseTop10,
+    ...showcaseNewEpisodes,
+    ...showcaseRecommended,
+    ...showcaseRomance,
+    ...showcaseRevenge,
+    ...showcaseOriginals,
+  ];
+  const seen = new Set<string>();
+  for (const d of allLocal) {
+    if (seen.has(d.id)) continue;
+    seen.add(d.id);
+    if (d.id === id) return d;
+  }
+  return null;
+}
 
 // ─── 상수 ────────────────────────────────────────────────────────────────────
 const EPISODE_DURATION_SECONDS = 720; // 기본 12분 (실제 duration 파싱 전 fallback)
@@ -62,7 +93,9 @@ export default function Player() {
   const { id, episodeId } = useParams();
   const navigate = useNavigate();
 
-  const { drama, loading } = useDramaDetail(id);
+  const { drama: supabaseDrama, loading } = useDramaDetail(id);
+  // Supabase에 없으면 로컬 mock 데이터(mockData + showcaseData)에서 fallback
+  const drama = supabaseDrama ?? (!loading ? findLocalDrama(id) : null);
   const episode = drama?.episodes.find((e) => e.id === episodeId);
 
   const videoRef = useRef<HTMLVideoElement>(null);

@@ -3,6 +3,7 @@
  * DB 없이도 완벽 렌더링. DramaCard와 별도로 유지.
  */
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Play, Plus, Star } from "lucide-react";
 import type { Drama } from "../types";
 
@@ -14,6 +15,15 @@ interface ShowcaseCardProps {
 
 export default function ShowcaseCard({ drama, rank, size = "md" }: ShowcaseCardProps) {
   const [imgError, setImgError] = useState(false);
+  const navigate = useNavigate();
+
+  const handlePlay = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const firstEpisode = drama.episodes?.[0];
+    if (firstEpisode) {
+      navigate(`/watch/${drama.id}/${firstEpisode.id}`);
+    }
+  };
 
   const widthClass =
     size === "sm"
@@ -110,7 +120,10 @@ export default function ShowcaseCard({ drama, rank, size = "md" }: ShowcaseCardP
         >
           {/* 재생 버튼 */}
           <div className="flex items-center gap-2 mb-1">
-            <button className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-lg hover:bg-gold transition-colors duration-200 active:scale-90">
+            <button
+              onClick={handlePlay}
+              className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-lg hover:bg-gold transition-colors duration-200 active:scale-90"
+            >
               <Play size={15} className="text-black fill-black ml-0.5" />
             </button>
             <button className="w-9 h-9 rounded-full bg-white/15 border border-white/30 flex items-center justify-center hover:border-gold hover:text-gold transition-colors duration-200 active:scale-90 text-white">
