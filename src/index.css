@@ -23,6 +23,8 @@
   --animate-ken-burns: ken-burns 12s ease-out forwards;
   --animate-hero-progress: hero-progress 6s linear forwards;
   --animate-gold-pulse: gold-pulse 2.6s ease-in-out infinite;
+  --animate-card-rise: card-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-section-in: section-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 
   @keyframes fade-in {
     from { opacity: 0; transform: translateY(8px); }
@@ -51,6 +53,14 @@
   @keyframes gold-pulse {
     0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.5); }
     50% { box-shadow: 0 0 0 12px rgba(212, 175, 55, 0); }
+  }
+  @keyframes card-rise {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes section-in {
+    from { opacity: 0; transform: translateY(32px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }
 
@@ -211,6 +221,38 @@
     transform: translateZ(0);
     will-change: transform, opacity;
     backface-visibility: hidden;
+  }
+
+  /* Showcase card gold glow on hover */
+  .showcase-card-hover {
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+  }
+  .showcase-card-hover:hover {
+    transform: scale(1.10);
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.9),
+      0 0 0 1.5px rgba(212, 175, 55, 0.5),
+      0 0 30px -5px rgba(212, 175, 55, 0.2);
+  }
+
+  /* Section divider gold line */
+  .section-gold-bar {
+    width: 3px;
+    border-radius: 9999px;
+    background: linear-gradient(to bottom, #f0d77b, #D4AF37, #9c7e23);
+  }
+
+  /* Premium badge shimmer */
+  .badge-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .badge-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+    animation: shimmer 2.5s infinite;
   }
 }
 
