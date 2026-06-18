@@ -111,6 +111,9 @@ export default function Player() {
   const [liked, setLiked] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [showNextOverlay, setShowNextOverlay] = useState(false);
+  const [nextCountdown, setNextCountdown] = useState(5);
+  const nextCountdownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── 조회수 기록 (재생 시작 시점) ───────────────────────────────────────
   // video의 'play' 이벤트는 일시정지 후 재생 등으로 여러 번 발생할 수 있으므로,
@@ -144,25 +147,47 @@ export default function Player() {
   // ─── 영상 종료 핸들러 (수정: 두 로직이 한 함수 안에서 완전히 동작) ────────
   const handleVideoEnded = useCallback(async () => {
     if (!id || !episodeId) return;
-
     try {
-      // 1) 시청 완료 기록
       await saveWatchHistory(episodeId, 100);
-
-      // 2) 시리즈 조회수는 재생 "시작" 시점(handlePlayStart → record_episode_view RPC)에
-      //    이미 기록되므로, 여기서 다시 증가시키면 같은 시청에 대해 조회수가 2번
-      //    집계된다. 따라서 종료 시점의 중복 증가 호출은 제거한다.
-
-      // 3) 다음 에피소드 자동 이동
-      const currentIndex = drama?.episodes.findIndex((e) => e.id === episodeId) ?? -1;
-      const next = drama?.episodes?.[currentIndex + 1];
-      if (next) {
-        navigate(`/watch/${id}/${next.id}`);
-      }
     } catch (err) {
       console.error("handleVideoEnded error:", err);
     }
-  }, [id, episodeId, drama, navigate]);
+  }, [id, episodeId]);
+
+  // ─── 영상 종료 10초 전: 다음화 오버레이 표시 ─────────────────────────────
+  const handleTimeUpdate = useCallback(() => {
+    const v = videoRef.current;
+    if (!v?.duration) return;
+    setProgress((v.currentTime / v.duration) * 100);
+    // 다음 에피소드가 있고, 종료 10초 전이면 오버레이 표시
+    const remaining = v.duration - v.currentTime;
+    if (remaining <= 10 && remaining > 0) {
+      setShowNextOverlay(true);
+    }
+  }, []);
+
+  // ─── 다음화 오버레이 카운트다운 ──────────────────────────────────────────
+  useEffect(() => {
+    if (!showNextOverlay) {
+      setNextCountdown(5);
+      if (nextCountdownRef.current) clearTimeout(nextCountdownRef.current);
+      return;
+    }
+    if (nextCountdown <= 0) {
+      // 카운트다운 끝 → 자동 이동
+      setShowNextOverlay(false);
+      const currentIdx2 = drama?.episodes.findIndex((e) => e.id === episodeId) ?? -1;
+      const nextEp2 = drama?.episodes[currentIdx2 + 1];
+      if (nextEp2 && id) navigate(`/watch/${id}/${nextEp2.id}`);
+      return;
+    }
+    nextCountdownRef.current = setTimeout(() => {
+      setNextCountdown((c) => c - 1);
+    }, 1000);
+    return () => {
+      if (nextCountdownRef.current) clearTimeout(nextCountdownRef.current);
+    };
+  }, [showNextOverlay, nextCountdown, drama, episodeId, id, navigate]);
 
   // ─── 재생/일시정지 sync ────────────────────────────────────────────────────
   useEffect(() => {
@@ -311,6 +336,16 @@ export default function Player() {
   if (loading) return <div className="text-white p-10">Loading...</div>;
   if (!drama || !episode) return <div className="text-white p-10">Not Found</div>;
 
+  const currentIndex = drama.episodes.findIndex((e) => e.id === episodeId);
+  const nextEpisode = drama.episodes[currentIndex + 1] ?? null;
+
+  const goToNextEpisode = () => {
+    if (!nextEpisode) return;
+    if (nextCountdownRef.current) clearTimeout(nextCountdownRef.current);
+    setShowNextOverlay(false);
+    navigate(`/watch/${id}/${nextEpisode.id}`);
+  };
+
   const isLocked = !episode.isFree;
   const hasVideo = !!episode.videoUrl;
   const controlsVisible = showControls || isLocked;
@@ -335,12 +370,7 @@ export default function Player() {
           onDoubleClick={handleFullscreen}
           onPlay={handlePlayStart}
           onPlaying={handlePlayStart}
-          onTimeUpdate={() => {
-            const v = videoRef.current;
-            if (v?.duration) {
-              setProgress((v.currentTime / v.duration) * 100);
-            }
-          }}
+          onTimeUpdate={handleTimeUpdate}
           onEnded={handleVideoEnded}
         />
       ) : (
@@ -408,6 +438,20 @@ export default function Player() {
         </div>
       )}
 
+      {/* 다음화 버튼 - 중앙 컨트롤 하단 (작업 3) */}
+      {!isLocked && nextEpisode && (
+        <div className={`absolute flex justify-center pointer-events-none ${fadeClass}`} style={{ bottom: 'calc(50% - 80px)', left: 0, right: 0 }}>
+          <button
+            onClick={(e) => { e.stopPropagation(); revealControls(); goToNextEpisode(); }}
+            className="pointer-events-auto flex items-center gap-2 px-5 py-2 rounded-full bg-black/60 backdrop-blur-sm border border-white/30 hover:border-yellow-400 hover:bg-yellow-400/20 transition-all duration-200 text-sm font-bold"
+            aria-label="다음화"
+          >
+            <span>다음화</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+        </div>
+      )}
+
       {/* RIGHT ACTIONS (전체화면 버튼 포함) */}
       <div className={`absolute right-4 bottom-24 flex flex-col gap-5 items-end pointer-events-none ${fadeClass}`}>
         <button onClick={() => setLiked((p) => !p)} className="flex flex-col items-center gap-1 pointer-events-auto">
@@ -427,6 +471,20 @@ export default function Player() {
         >
           {isFullscreen ? <Minimize size={26} /> : <Maximize size={26} />}
         </button>
+
+        {/* 다음화 버튼 (다음 에피소드가 있을 때만) */}
+        {nextEpisode && (
+          <button
+            onClick={(e) => { e.stopPropagation(); goToNextEpisode(); }}
+            className="flex flex-col items-center gap-1 pointer-events-auto mt-1"
+            aria-label="다음화"
+          >
+            <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/15 hover:bg-yellow-400/80 hover:text-black transition-all duration-200 text-xs font-bold border border-white/30 hover:border-yellow-400">
+              <span>다음화</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </div>
+          </button>
+        )}
       </div>
 
       {/* 볼륨 컨트롤 - BOTTOM PROGRESS 바로 위 독립 배치 */}
@@ -491,6 +549,44 @@ export default function Player() {
           />
         </div>
       </div>
+
+      {/* NETFLIX 스타일 다음화 자동재생 오버레이 (작업 2) */}
+      {showNextOverlay && nextEpisode && (
+        <div className="absolute bottom-20 right-4 z-40 flex flex-col items-end gap-2 animate-fade-in">
+          <button
+            onClick={(e) => { e.stopPropagation(); goToNextEpisode(); }}
+            className="flex items-center gap-3 px-5 py-3 rounded-xl bg-black/80 backdrop-blur-md border border-white/20 hover:border-yellow-400 hover:bg-yellow-400/20 transition-all duration-200 shadow-2xl"
+            aria-label="다음화 바로가기"
+          >
+            <div className="text-right">
+              <div className="text-xs text-white/60 mb-0.5">다음화 자동재생</div>
+              <div className="text-sm font-bold text-white">{nextEpisode.title}</div>
+            </div>
+            <div className="relative w-10 h-10 flex items-center justify-center">
+              {/* 원형 카운트다운 */}
+              <svg className="absolute inset-0 -rotate-90" width="40" height="40">
+                <circle cx="20" cy="20" r="17" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="3"/>
+                <circle
+                  cx="20" cy="20" r="17"
+                  fill="none"
+                  stroke="#D4AF37"
+                  strokeWidth="3"
+                  strokeDasharray={`${2 * Math.PI * 17}`}
+                  strokeDashoffset={`${2 * Math.PI * 17 * (nextCountdown / 5)}`}
+                  style={{ transition: 'stroke-dashoffset 1s linear' }}
+                />
+              </svg>
+              <span className="text-white font-bold text-sm z-10">{nextCountdown}</span>
+            </div>
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowNextOverlay(false); }}
+            className="text-xs text-white/50 hover:text-white/80 transition-colors px-2"
+          >
+            취소
+          </button>
+        </div>
+      )}
 
       {/* LOCK OVERLAY */}
       {isLocked && (
