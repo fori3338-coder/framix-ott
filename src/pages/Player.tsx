@@ -83,12 +83,27 @@ export default function Player() {
   // 서로 다른 사용자/브라우저 사이의 중복 집계 방지는 DB의 record_episode_view()
   // RPC가 viewer_id + dedupe 윈도우로 처리한다.
   const handlePlayStart = useCallback(() => {
-    if (!id || !episodeId) return;
-    if (recordedViewEpisodeRef.current === episodeId) return;
-    recordedViewEpisodeRef.current = episodeId;
-    recordEpisodeView(episodeId, id).catch((err) => {
-      console.error("조회수 기록 실패:", err);
+    console.log("[Player] video onPlay 이벤트 발생", {
+      seriesId: id,
+      episodeId,
+      alreadyRecordedFor: recordedViewEpisodeRef.current,
     });
+    if (!id || !episodeId) {
+      console.warn("[Player] id 또는 episodeId 없음 → 조회수 기록 생략");
+      return;
+    }
+    if (recordedViewEpisodeRef.current === episodeId) {
+      console.log("[Player] 이미 이 에피소드는 기록됨 → 생략");
+      return;
+    }
+    recordedViewEpisodeRef.current = episodeId;
+    recordEpisodeView(episodeId, id)
+      .then((counted) => {
+        console.log("[Player] 조회수 기록 결과:", counted);
+      })
+      .catch((err) => {
+        console.error("조회수 기록 실패:", err);
+      });
   }, [id, episodeId]);
 
   // ─── 영상 종료 핸들러 (수정: 두 로직이 한 함수 안에서 완전히 동작) ────────
@@ -245,6 +260,7 @@ export default function Player() {
           onClick={handleVideoClick}
           onDoubleClick={handleFullscreen}
           onPlay={handlePlayStart}
+          onPlaying={handlePlayStart}
           onTimeUpdate={() => {
             const v = videoRef.current;
             if (v?.duration) {
