@@ -71,7 +71,6 @@ export default function AdminDashboard() {
 
   // Supabase data state
   const [totalContent, setTotalContent] = useState<number>(0);
-  const [totalEpisodes, setTotalEpisodes] = useState<number>(0);
   const [monthlyViews, setMonthlyViews] = useState<number>(0);
   const [topDramas, setTopDramas] = useState<TopDrama[]>([]);
   const [recentActivity, setRecentActivity] = useState<{ who: string; what: string; when: string }[]>([]);
@@ -84,11 +83,6 @@ export default function AdminDashboard() {
         // 총 콘텐츠 (series count)
         const { count: seriesCount } = await supabase
           .from("series")
-          .select("*", { count: "exact", head: true });
-
-        // 총 에피소드 (episodes count)
-        const { count: episodesCount } = await supabase
-          .from("episodes")
           .select("*", { count: "exact", head: true });
 
         // 월 누적 조회수 (series.views 합계)
@@ -112,7 +106,6 @@ export default function AdminDashboard() {
           .limit(5);
 
         setTotalContent(seriesCount ?? 0);
-        setTotalEpisodes(episodesCount ?? 0);
         setMonthlyViews(totalViews);
 
         setTopDramas(
