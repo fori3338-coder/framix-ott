@@ -8,14 +8,14 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalProps) {
-  const { signIn, signUp, signInWithGoogle } = useAuthContext();
+  const { signIn, signUp, signInWithKakao } = useAuthContext();
   const [mode, setMode] = useState<"login" | "signup">(defaultMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [kakaoLoading, setKakaoLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -38,12 +38,12 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
     setLoading(false);
   };
 
-  const handleGoogle = async () => {
-    setGoogleLoading(true);
+  const handleKakao = async () => {
+    setKakaoLoading(true);
     setError(null);
-    const { error: err } = await signInWithGoogle();
-    if (err) { setError(err); setGoogleLoading(false); }
-    // 성공 시 OAuth redirect 발생 — 페이지 이동
+    const { error: err } = await signInWithKakao();
+    if (err) { setError(err); setKakaoLoading(false); }
+    // 성공 시 OAuth redirect — 페이지 이동
   };
 
   return (
@@ -112,7 +112,7 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
 
           {!success && (
             <>
-              {/* 이름 (회원가입만) */}
+              {/* 닉네임 (회원가입만) */}
               {mode === "signup" && (
                 <div className="relative">
                   <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--color-text-muted)" }} />
@@ -199,28 +199,26 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
                 <div className="flex-1 h-px" style={{ background: "var(--color-border)" }} />
               </div>
 
-              {/* 구글 로그인 */}
+              {/* 카카오 로그인 */}
               <button
-                onClick={handleGoogle}
-                disabled={googleLoading}
-                className="w-full py-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2.5 transition-all duration-200 active:scale-95 disabled:opacity-60 border"
-                style={{
-                  background: "var(--color-surface-2)",
-                  color: "var(--color-text)",
-                  borderColor: "var(--color-border)",
-                }}
+                onClick={handleKakao}
+                disabled={kakaoLoading}
+                className="w-full py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2.5 transition-all duration-200 active:scale-95 disabled:opacity-60"
+                style={{ background: "#FEE500", color: "#000" }}
               >
-                {googleLoading ? (
+                {kakaoLoading ? (
                   <Loader2 size={16} className="animate-spin" />
                 ) : (
-                  <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
-                    <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107"/>
-                    <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00"/>
-                    <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0124 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50"/>
-                    <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 01-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2"/>
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      fillRule="evenodd"
+                      clipRule="evenodd"
+                      d="M9 1.5C4.858 1.5 1.5 4.134 1.5 7.374c0 2.07 1.377 3.888 3.456 4.914l-.882 3.294a.225.225 0 00.346.243l4.077-2.7a9.616 9.616 0 00.503.026c4.142 0 7.5-2.634 7.5-5.874C16.5 4.134 13.142 1.5 9 1.5z"
+                      fill="#000000"
+                    />
                   </svg>
                 )}
-                Google로 계속하기
+                카카오로 계속하기
               </button>
             </>
           )}

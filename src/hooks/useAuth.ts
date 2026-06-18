@@ -11,7 +11,7 @@ export interface AuthState {
 export function useAuth(): AuthState & {
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signInWithGoogle: () => Promise<{ error: string | null }>;
+  signInWithKakao: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 } {
   const [user, setUser] = useState<User | null>(null);
@@ -19,14 +19,12 @@ export function useAuth(): AuthState & {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 초기 세션 로드
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setUser(data.session?.user ?? null);
       setLoading(false);
     });
 
-    // 세션 변경 구독
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -52,9 +50,9 @@ export function useAuth(): AuthState & {
     return { error: error?.message ?? null };
   }, []);
 
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithKakao = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
+      provider: "kakao",
       options: { redirectTo: window.location.origin },
     });
     return { error: error?.message ?? null };
@@ -64,5 +62,5 @@ export function useAuth(): AuthState & {
     await supabase.auth.signOut();
   }, []);
 
-  return { user, session, loading, signUp, signIn, signInWithGoogle, signOut };
+  return { user, session, loading, signUp, signIn, signInWithKakao, signOut };
 }
