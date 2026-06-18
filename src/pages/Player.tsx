@@ -420,55 +420,54 @@ export default function Player() {
           <Share2 size={26} />
         </button>
 
-        {/* 볼륨 컨트롤 */}
-        <div
-          className="flex flex-row-reverse items-center gap-2 pointer-events-auto relative"
-          onMouseEnter={() => setShowVolumeSlider(true)}
-          onMouseLeave={() => setShowVolumeSlider(false)}
-        >
-          <button
-            onClick={() => {
-              if (muted) { setMuted(false); if (volume === 0) setVolume(1); }
-              else setMuted(true);
-            }}
-            className="flex items-center justify-center"
-            aria-label="볼륨"
-          >
-            {muted || volume === 0 ? <VolumeX size={26} /> : <Volume2 size={26} />}
-          </button>
-          {/* PC: 항상 표시 / 모바일: showVolumeSlider 시 표시 */}
-          <div
-            className={`flex items-center transition-opacity duration-200 ${
-              showVolumeSlider ? "opacity-100" : "opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto"
-            }`}
-            style={{ touchAction: "none" }}
-          >
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={muted ? 0 : Math.round(volume * 100)}
-              onChange={(e) => {
-                const val = Number(e.target.value) / 100;
-                setVolume(val);
-              }}
-              className="cursor-pointer"
-              style={{
-                accentColor: "#D4AF37",
-                width: "80px",
-                height: "4px",
-              }}
-              aria-label="볼륨 슬라이더"
-            />
-          </div>
-        </div>
-
         <button
           onClick={handleFullscreen}
           aria-label="전체화면"
           className="flex flex-col items-center gap-1 pointer-events-auto"
         >
           {isFullscreen ? <Minimize size={26} /> : <Maximize size={26} />}
+        </button>
+      </div>
+
+      {/* 볼륨 컨트롤 - BOTTOM PROGRESS 바로 위 독립 배치 */}
+      <div
+        className={`absolute right-4 bottom-16 flex flex-row items-center gap-2 z-30 pointer-events-auto ${fadeClass}`}
+        onMouseEnter={() => setShowVolumeSlider(true)}
+        onMouseLeave={() => setShowVolumeSlider(false)}
+      >
+        <div
+          className={`flex items-center transition-opacity duration-200 ${
+            showVolumeSlider ? "opacity-100" : "opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto"
+          }`}
+          style={{ touchAction: "none" }}
+        >
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={muted ? 0 : Math.round(volume * 100)}
+            onChange={(e) => {
+              const val = Number(e.target.value) / 100;
+              setVolume(val);
+            }}
+            className="cursor-pointer"
+            style={{
+              accentColor: "#D4AF37",
+              width: "80px",
+              height: "4px",
+            }}
+            aria-label="볼륨 슬라이더"
+          />
+        </div>
+        <button
+          onClick={() => {
+            if (muted) { setMuted(false); if (volume === 0) setVolume(1); }
+            else setMuted(true);
+          }}
+          className="flex items-center justify-center"
+          aria-label="볼륨"
+        >
+          {muted || volume === 0 ? <VolumeX size={26} /> : <Volume2 size={26} />}
         </button>
       </div>
 
