@@ -85,11 +85,17 @@ export default function AdminDashboard() {
           .from("series")
           .select("*", { count: "exact", head: true });
 
-        // 월 누적 조회수 (series.views 합계)
-        const { data: viewsData } = await supabase
-          .from("series")
-          .select("views");
-        const totalViews = (viewsData ?? []).reduce((sum, row) => sum + (row.views ?? 0), 0);
+        // 월 누적 조회수 (이번 달 1일 00:00 ~ 현재까지 episode_views 기준 집계)
+        // ※ episode_views는 episode 재생 "시작" 시점에 기록되며, 동일 사용자가
+        //    일정 시간 내 재시청한 경우는 record_episode_view() RPC에서 이미
+        //    제외되어 있으므로 여기서는 단순 카운트만 하면 된다.
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const { count: monthlyViewCount } = await supabase
+          .from("episode_views")
+          .select("*", { count: "exact", head: true })
+          .gte("viewed_at", monthStart);
+        const totalViews = monthlyViewCount ?? 0;
 
         // 인기 콘텐츠 TOP6
         const { data: topData } = await supabase

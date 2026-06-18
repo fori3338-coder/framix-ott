@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useDramaDetail } from "../hooks/useDramaDetail";
 import { supabase } from "../lib/supabase";
+import { recordEpisodeView } from "../lib/viewTracking";
 
 // ─── 상수 ────────────────────────────────────────────────────────────────────
 const EPISODE_DURATION_SECONDS = 720; // 기본 12분 (실제 duration 파싱 전 fallback)
@@ -67,6 +68,7 @@ export default function Player() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const hideControlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recordedViewEpisodeRef = useRef<string | null>(null);
 
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(false);
@@ -74,6 +76,20 @@ export default function Player() {
   const [liked, setLiked] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
+
+  // ─── 조회수 기록 (재생 시작 시점) ───────────────────────────────────────
+  // video의 'play' 이벤트는 일시정지 후 재생 등으로 여러 번 발생할 수 있으므로,
+  // 같은 episode에 대해 이 Player 세션 안에서는 최초 1회만 RPC를 호출한다.
+  // 서로 다른 사용자/브라우저 사이의 중복 집계 방지는 DB의 record_episode_view()
+  // RPC가 viewer_id + dedupe 윈도우로 처리한다.
+  const handlePlayStart = useCallback(() => {
+    if (!id || !episodeId) return;
+    if (recordedViewEpisodeRef.current === episodeId) return;
+    recordedViewEpisodeRef.current = episodeId;
+    recordEpisodeView(episodeId, id).catch((err) => {
+      console.error("조회수 기록 실패:", err);
+    });
+  }, [id, episodeId]);
 
   // ─── 영상 종료 핸들러 (수정: 두 로직이 한 함수 안에서 완전히 동작) ────────
   const handleVideoEnded = useCallback(async () => {
@@ -83,11 +99,9 @@ export default function Player() {
       // 1) 시청 완료 기록
       await saveWatchHistory(episodeId, 100);
 
-      // 2) 시리즈 조회수 증가
-      const { error } = await supabase.rpc("increment_series_views", {
-        series_id: id,
-      });
-      if (error) console.error("VIEW 증가 실패:", error);
+      // 2) 시리즈 조회수는 재생 "시작" 시점(handlePlayStart → record_episode_view RPC)에
+      //    이미 기록되므로, 여기서 다시 증가시키면 같은 시청에 대해 조회수가 2번
+      //    집계된다. 따라서 종료 시점의 중복 증가 호출은 제거한다.
 
       // 3) 다음 에피소드 자동 이동
       const currentIndex = drama?.episodes.findIndex((e) => e.id === episodeId) ?? -1;
@@ -230,6 +244,7 @@ export default function Player() {
           muted={muted}
           onClick={handleVideoClick}
           onDoubleClick={handleFullscreen}
+          onPlay={handlePlayStart}
           onTimeUpdate={() => {
             const v = videoRef.current;
             if (v?.duration) {
