@@ -8,14 +8,13 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalProps) {
-  const { signIn, signUp, signInWithKakao } = useAuthContext();
+  const { signIn, signUp } = useAuthContext();
   const [mode, setMode] = useState<"login" | "signup">(defaultMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [kakaoLoading, setKakaoLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -38,13 +37,7 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
     setLoading(false);
   };
 
-  const handleKakao = async () => {
-    setKakaoLoading(true);
-    setError(null);
-    const { error: err } = await signInWithKakao();
-    if (err) { setError(err); setKakaoLoading(false); }
-    // 성공 시 OAuth redirect — 페이지 이동
-  };
+
 
   return (
     <div
@@ -192,34 +185,6 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
                 {mode === "login" ? "로그인" : "회원가입"}
               </button>
 
-              {/* 구분선 */}
-              <div className="flex items-center gap-3 py-1">
-                <div className="flex-1 h-px" style={{ background: "var(--color-border)" }} />
-                <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>또는</span>
-                <div className="flex-1 h-px" style={{ background: "var(--color-border)" }} />
-              </div>
-
-              {/* 카카오 로그인 */}
-              <button
-                onClick={handleKakao}
-                disabled={kakaoLoading}
-                className="w-full py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2.5 transition-all duration-200 active:scale-95 disabled:opacity-60"
-                style={{ background: "#FEE500", color: "#000" }}
-              >
-                {kakaoLoading ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M9 1.5C4.858 1.5 1.5 4.134 1.5 7.374c0 2.07 1.377 3.888 3.456 4.914l-.882 3.294a.225.225 0 00.346.243l4.077-2.7a9.616 9.616 0 00.503.026c4.142 0 7.5-2.634 7.5-5.874C16.5 4.134 13.142 1.5 9 1.5z"
-                      fill="#000000"
-                    />
-                  </svg>
-                )}
-                카카오로 계속하기
-              </button>
             </>
           )}
         </div>

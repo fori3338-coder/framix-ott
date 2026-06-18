@@ -53,6 +53,25 @@ export default function Header() {
             <Link to="/search?cat=new" className="hover:text-gold transition-colors">신작</Link>
             <Link to="/my-list" className="hover:text-gold transition-colors">내 보관함</Link>
             <Link to="/subscription" className="hover:text-gold transition-colors">구독</Link>
+            {user && (
+              <button
+                onClick={() => navigate("/admin")}
+                className="px-3 py-1 rounded-[10px] text-sm font-black tracking-widest transition-all duration-200"
+                style={{
+                  background: "#D4AF37",
+                  color: "#000000",
+                  boxShadow: "0 0 0 0 rgba(212,175,55,0)",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 12px 4px rgba(212,175,55,0.55)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 0 0 rgba(212,175,55,0)";
+                }}
+              >
+                STUDIO
+              </button>
+            )}
           </nav>
 
           <div className="flex items-center gap-3 md:gap-4 ml-auto">
@@ -96,12 +115,6 @@ export default function Header() {
                       <p className="text-sm font-semibold text-text truncate">{displayName}</p>
                       <p className="text-xs text-text-muted truncate">{user.email}</p>
                     </div>
-                    <button
-                      onClick={() => { navigate("/admin"); setShowMenu(false); }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-text-dim hover:text-gold hover:bg-white/5 transition-colors"
-                    >
-                      관리자 대시보드
-                    </button>
                     <button
                       onClick={() => { signOut(); setShowMenu(false); }}
                       className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
