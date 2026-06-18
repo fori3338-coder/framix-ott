@@ -12,8 +12,8 @@ interface DramaCardProps {
 export default function DramaCard({ drama, rank, progress, size = "md" }: DramaCardProps) {
   const widthClass =
     size === "sm"
-      ? "w-[96px] sm:w-[112px] md:w-[136px]"
-      : "w-[116px] sm:w-[148px] md:w-[168px] lg:w-[184px]";
+      ? "w-[90px] sm:w-[108px] md:w-[130px]"
+      : "w-[110px] sm:w-[140px] md:w-[164px] lg:w-[180px]";
 
   return (
     <Link

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Search as SearchIcon, X, TrendingUp, Clock, Sparkles } from "lucide-react";
-import { dramas } from "../data/mockData";
+import { dramas as mockDramas } from "../data/mockData";
+import { useDramas } from "../hooks/useDramas";
 import DramaCard from "../components/DramaCard";
 
-const allGenres = Array.from(new Set(dramas.flatMap((d) => d.genres)));
 const RECENT_KEY = "framix:recent-searches";
 
 const trendingKeywords = [
@@ -17,6 +17,19 @@ function loadRecent(): string[] {
 }
 
 export default function Search() {
+  const { dramas: dbDramas } = useDramas();
+
+  // DB 실제 작품 + mockData 병합 (중복 id 제거, DB 우선)
+  const dramas = useMemo(() => {
+    const dbIds = new Set(dbDramas.map((d) => d.id));
+    return [...dbDramas, ...mockDramas.filter((d) => !dbIds.has(d.id))];
+  }, [dbDramas]);
+
+  const allGenres = useMemo(
+    () => Array.from(new Set(dramas.flatMap((d) => d.genres))),
+    [dramas]
+  );
+
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState(params.get("q") ?? "");
   const [activeGenre, setActiveGenre] = useState<string | null>(null);
