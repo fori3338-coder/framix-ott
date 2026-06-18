@@ -409,7 +409,7 @@ export default function Player() {
       )}
 
       {/* RIGHT ACTIONS (전체화면 버튼 포함) */}
-      <div className={`absolute right-4 bottom-24 flex flex-col gap-5 items-center pointer-events-none ${fadeClass}`}>
+      <div className={`absolute right-4 bottom-24 flex flex-col gap-5 items-end pointer-events-none ${fadeClass}`}>
         <button onClick={() => setLiked((p) => !p)} className="flex flex-col items-center gap-1 pointer-events-auto">
           <Heart size={26} className={liked ? "text-red-500 fill-red-500" : ""} />
         </button>
@@ -422,7 +422,7 @@ export default function Player() {
 
         {/* 볼륨 컨트롤 */}
         <div
-          className="flex flex-col items-center gap-1 pointer-events-auto relative"
+          className="flex flex-row-reverse items-center gap-2 pointer-events-auto relative"
           onMouseEnter={() => setShowVolumeSlider(true)}
           onMouseLeave={() => setShowVolumeSlider(false)}
         >
@@ -431,14 +431,14 @@ export default function Player() {
               if (muted) { setMuted(false); if (volume === 0) setVolume(1); }
               else setMuted(true);
             }}
-            className="flex flex-col items-center gap-1"
+            className="flex items-center justify-center"
             aria-label="볼륨"
           >
             {muted || volume === 0 ? <VolumeX size={26} /> : <Volume2 size={26} />}
           </button>
           {/* PC: 항상 표시 / 모바일: showVolumeSlider 시 표시 */}
           <div
-            className={`absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 transition-opacity duration-200 ${
+            className={`flex items-center transition-opacity duration-200 ${
               showVolumeSlider ? "opacity-100" : "opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto"
             }`}
             style={{ touchAction: "none" }}
@@ -452,12 +452,11 @@ export default function Player() {
                 const val = Number(e.target.value) / 100;
                 setVolume(val);
               }}
-              className="h-20 cursor-pointer"
+              className="cursor-pointer"
               style={{
-                writingMode: "vertical-lr",
-                direction: "rtl",
                 accentColor: "#D4AF37",
-                width: "4px",
+                width: "80px",
+                height: "4px",
               }}
               aria-label="볼륨 슬라이더"
             />
