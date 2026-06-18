@@ -33,7 +33,7 @@ export default function ShowcaseCard({ drama, rank, size = "md" }: ShowcaseCardP
       {/* 포스터 래퍼 */}
       <div
         className={[
-          "relative aspect-[2/3] rounded-xl overflow-hidden",
+          "relative aspect-[9/16] rounded-xl overflow-hidden",
           "bg-[#1a1a1c]",
           "ring-1 ring-white/8",
           "transition-all duration-350 ease-out origin-bottom",
@@ -46,7 +46,7 @@ export default function ShowcaseCard({ drama, rank, size = "md" }: ShowcaseCardP
         {/* 포스터 이미지 */}
         {!imgError ? (
           <img
-            src={drama.poster}
+            src={drama.poster || drama.backdrop}
             alt={drama.title}
             decoding="async"
             loading="lazy"

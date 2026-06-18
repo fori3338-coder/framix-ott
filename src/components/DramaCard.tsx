@@ -24,7 +24,7 @@ export default function DramaCard({ drama, rank, progress, size = "md" }: DramaC
       {/* 포스터 이미지 컨테이너 — hover 시 scale-up (Netflix 스타일) */}
       <div
         className={[
-          "relative aspect-[2/3] rounded-lg overflow-hidden",
+          "relative aspect-[9/16] rounded-lg overflow-hidden",
           "bg-surface-2 ring-1 ring-border",
           "transition-transform duration-300 ease-out origin-center",
           "group-hover:scale-[1.08] group-hover:shadow-[0_8px_32px_rgba(0,0,0,0.8)]",
@@ -33,7 +33,7 @@ export default function DramaCard({ drama, rank, progress, size = "md" }: DramaC
         ].join(" ")}
       >
         <img
-          src={drama.poster}
+          src={drama.poster || drama.backdrop}
           alt={drama.title}
           decoding="async"
           loading="lazy"
