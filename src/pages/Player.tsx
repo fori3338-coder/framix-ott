@@ -105,6 +105,8 @@ export default function Player() {
 
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [progress, setProgress] = useState(0);
   const [liked, setLiked] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -178,6 +180,15 @@ export default function Player() {
     if (videoRef.current) videoRef.current.muted = muted;
   }, [muted]);
 
+  // ─── 볼륨 sync ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.volume = volume;
+      if (volume === 0) setMuted(true);
+      else setMuted(false);
+    }
+  }, [volume]);
+
   // ─── 전체화면 토글 ────────────────────────────────────────────────────────
   const handleFullscreen = useCallback(async () => {
     const container = videoContainerRef.current as FullscreenElement | null;
@@ -219,9 +230,24 @@ export default function Player() {
     };
   }, []);
 
+  // ─── 10초 앞/뒤로 ─────────────────────────────────────────────────────────
+  const skipBack = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.currentTime = Math.max(0, v.currentTime - 10);
+  }, []);
+
+  const skipForward = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.currentTime = Math.min(v.duration || 0, v.currentTime + 10);
+  }, []);
+
   // ─── 키보드 단축키: F = 전체화면 진입/해제, ESC = 전체화면 해제 ──────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (e.key === "f" || e.key === "F") {
         e.preventDefault();
         handleFullscreen();
@@ -231,11 +257,26 @@ export default function Player() {
         } else {
           (document as FullscreenDocument).webkitExitFullscreen?.();
         }
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        skipBack();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        skipForward();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setVolume((v) => Math.min(1, Math.round((v + 0.1) * 10) / 10));
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setVolume((v) => Math.max(0, Math.round((v - 0.1) * 10) / 10));
+      } else if (e.key === " ") {
+        e.preventDefault();
+        setPlaying((p) => !p);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleFullscreen]);
+  }, [handleFullscreen, skipBack, skipForward]);
 
   // ─── 컨트롤 자동 숨김 (넷플릭스 스타일) ──────────────────────────────────
   // 재생 중에는 마우스가 2초간 멈추면 숨기고, 일시정지 중에는 항상 표시한다.
@@ -331,15 +372,38 @@ export default function Player() {
 
       {/* CENTER CONTROLS */}
       {!isLocked && (
-        <div className={`absolute inset-0 flex items-center justify-center gap-10 pointer-events-none ${fadeClass}`}>
+        <div className={`absolute inset-0 flex items-center justify-center gap-6 pointer-events-none ${fadeClass}`}>
+          {/* ⏮ 10초 뒤로 */}
           <button
-            onClick={() => {
-              revealControls();
-              setPlaying((p) => !p);
-            }}
-            className="w-14 h-14 rounded-full bg-black/40 flex items-center justify-center pointer-events-auto"
+            onClick={(e) => { e.stopPropagation(); revealControls(); skipBack(); }}
+            className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center pointer-events-auto transition-all duration-200 hover:shadow-[0_0_12px_3px_rgba(212,175,55,0.6)]"
+            aria-label="10초 뒤로"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+              <text x="9" y="15" fontSize="5" fill="white" fontWeight="bold">10</text>
+            </svg>
+          </button>
+
+          {/* ▶ / ⏸ 재생/일시정지 */}
+          <button
+            onClick={(e) => { e.stopPropagation(); revealControls(); setPlaying((p) => !p); }}
+            className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center pointer-events-auto transition-all duration-200 hover:shadow-[0_0_16px_4px_rgba(212,175,55,0.65)]"
+            aria-label={playing ? "일시정지" : "재생"}
           >
             {playing ? <Pause size={36} /> : <Play size={36} />}
+          </button>
+
+          {/* ⏭ 10초 앞으로 */}
+          <button
+            onClick={(e) => { e.stopPropagation(); revealControls(); skipForward(); }}
+            className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center pointer-events-auto transition-all duration-200 hover:shadow-[0_0_12px_3px_rgba(212,175,55,0.6)]"
+            aria-label="10초 앞으로"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
+              <text x="9" y="15" fontSize="5" fill="white" fontWeight="bold">10</text>
+            </svg>
           </button>
         </div>
       )}
@@ -355,9 +419,51 @@ export default function Player() {
         <button className="flex flex-col items-center gap-1 pointer-events-auto">
           <Share2 size={26} />
         </button>
-        <button onClick={() => setMuted((m) => !m)} className="flex flex-col items-center gap-1 pointer-events-auto">
-          {muted ? <VolumeX size={26} /> : <Volume2 size={26} />}
-        </button>
+
+        {/* 볼륨 컨트롤 */}
+        <div
+          className="flex flex-col items-center gap-1 pointer-events-auto relative"
+          onMouseEnter={() => setShowVolumeSlider(true)}
+          onMouseLeave={() => setShowVolumeSlider(false)}
+        >
+          <button
+            onClick={() => {
+              if (muted) { setMuted(false); if (volume === 0) setVolume(1); }
+              else setMuted(true);
+            }}
+            className="flex flex-col items-center gap-1"
+            aria-label="볼륨"
+          >
+            {muted || volume === 0 ? <VolumeX size={26} /> : <Volume2 size={26} />}
+          </button>
+          {/* PC: 항상 표시 / 모바일: showVolumeSlider 시 표시 */}
+          <div
+            className={`absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 transition-opacity duration-200 ${
+              showVolumeSlider ? "opacity-100" : "opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto"
+            }`}
+            style={{ touchAction: "none" }}
+          >
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={muted ? 0 : Math.round(volume * 100)}
+              onChange={(e) => {
+                const val = Number(e.target.value) / 100;
+                setVolume(val);
+              }}
+              className="h-20 cursor-pointer"
+              style={{
+                writingMode: "vertical-lr",
+                direction: "rtl",
+                accentColor: "#D4AF37",
+                width: "4px",
+              }}
+              aria-label="볼륨 슬라이더"
+            />
+          </div>
+        </div>
+
         <button
           onClick={handleFullscreen}
           aria-label="전체화면"
