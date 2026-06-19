@@ -186,9 +186,7 @@ export default function Player() {
   );
 
   const currentIndex = drama?.episodes.findIndex((e) => e.id === episodeId) ?? -1;
-  // prevEpisode: CENTER 버튼 제거로 미사용 (에피소드 패널에서 이동 가능)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const prevEpisode = currentIndex > 0 ? drama?.episodes[currentIndex - 1] : null;
+
   const nextEpisode =
     currentIndex >= 0 && drama?.episodes[currentIndex + 1]
       ? drama.episodes[currentIndex + 1]
