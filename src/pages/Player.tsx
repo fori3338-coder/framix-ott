@@ -581,7 +581,10 @@ export default function Player() {
       {/* ═══ TOP BAR — Netflix 스타일 뒤로가기 버튼만 표시 ═══════════════════ */}
       <div className={`absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-20 ${fadeClass}`}>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => {
+            if (id && drama) navigate(`/drama/${drama.id}`);
+            else navigate("/");
+          }}
           aria-label="뒤로가기"
           className="p-1.5 text-white bg-transparent hover:opacity-70 transition-opacity shrink-0"
           style={{ position: "absolute", top: "16px", left: "16px", zIndex: 50 }}
