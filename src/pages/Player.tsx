@@ -7,6 +7,7 @@ import {
   SkipBack, SkipForward, ChevronLeftIcon, ChevronRight
 } from "lucide-react";
 import { useDramaDetail } from "../hooks/useDramaDetail";
+import { useSubscription } from "../hooks/useSubscription";
 import { supabase } from "../lib/supabase";
 
 const EPISODE_DURATION_SECONDS = 720;
@@ -56,6 +57,7 @@ export default function Player() {
 
   const { drama, loading } = useDramaDetail(id);
   const episode = drama?.episodes.find((e) => e.id === episodeId);
+  const { isActive: isSubscribed } = useSubscription();
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
@@ -283,7 +285,7 @@ export default function Player() {
   if (loading) return <div className="text-white p-10">Loading...</div>;
   if (!drama || !episode) return <div className="text-white p-10">Not Found</div>;
 
-  const isLocked = !episode.isFree;
+  const isLocked = !episode.isFree && !isSubscribed;
   const hasVideo = !!episode.videoUrl && !isLocked;
   const controlsVisible = showControls || isLocked;
   const fadeClass = `transition-opacity duration-300 ${controlsVisible ? "opacity-100" : "opacity-0"}`;
