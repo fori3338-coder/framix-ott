@@ -40,6 +40,13 @@ function findLocalDrama(id: string | undefined): Drama | null {
   return null;
 }
 
+// ─── 시간 포맷 (초 → MM:SS) ─────────────────────────────────────────────────
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 // ─── 상수 ────────────────────────────────────────────────────────────────────
 const EPISODE_DURATION_SECONDS = 720; // 기본 12분 (실제 duration 파싱 전 fallback)
 const CONTROLS_HIDE_DELAY_MS = 2000; // 마우스가 멈춘 뒤 컨트롤을 숨기기까지의 시간
@@ -114,6 +121,10 @@ export default function Player() {
   const [showNextOverlay, setShowNextOverlay] = useState(false);
   const [nextCountdown, setNextCountdown] = useState(5);
   const nextCountdownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const volumeHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedTimeRef = useRef<number>(0);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
+  const [resumeTime, setResumeTime] = useState(0);
 
   // ─── 조회수 기록 (재생 시작 시점) ───────────────────────────────────────
   // video의 'play' 이벤트는 일시정지 후 재생 등으로 여러 번 발생할 수 있으므로,
@@ -149,6 +160,7 @@ export default function Player() {
     if (!id || !episodeId) return;
     try {
       await saveWatchHistory(episodeId, 100);
+      try { localStorage.removeItem(`framix_resume_${episodeId}`); } catch { /* noop */ }
     } catch (err) {
       console.error("handleVideoEnded error:", err);
     }
@@ -164,7 +176,12 @@ export default function Player() {
     if (remaining <= 10 && remaining > 0) {
       setShowNextOverlay(true);
     }
-  }, []);
+    // 이어보기 위치 저장 (5초 간격, 5초 이상 시청 시)
+    if (episodeId && v.currentTime > 5 && v.currentTime - lastSavedTimeRef.current >= 5) {
+      lastSavedTimeRef.current = v.currentTime;
+      try { localStorage.setItem(`framix_resume_${episodeId}`, String(v.currentTime)); } catch { /* noop */ }
+    }
+  }, [episodeId]);
 
   // ─── 다음화 오버레이 카운트다운 ──────────────────────────────────────────
   useEffect(() => {
@@ -254,6 +271,36 @@ export default function Player() {
       document.removeEventListener("webkitfullscreenchange", handleChange);
     };
   }, []);
+
+  // ─── 볼륨 슬라이더 자동 숨김 (3초) ───────────────────────────────────────
+  const scheduleVolumeHide = useCallback(() => {
+    if (volumeHideTimerRef.current) clearTimeout(volumeHideTimerRef.current);
+    volumeHideTimerRef.current = setTimeout(() => {
+      setShowVolumeSlider(false);
+    }, 3000);
+  }, []);
+
+  // ─── 이어보기 데이터 확인 (에피소드 진입 시) ─────────────────────────────
+  useEffect(() => {
+    if (!episodeId) return;
+    try {
+      const saved = localStorage.getItem(`framix_resume_${episodeId}`);
+      if (saved) {
+        const t = parseFloat(saved);
+        if (t > 5) {
+          setResumeTime(t);
+          setShowResumePrompt(true);
+        }
+      }
+    } catch { /* noop */ }
+  }, [episodeId]);
+
+  // 이어보기 프롬프트 5초 후 자동 숨김
+  useEffect(() => {
+    if (!showResumePrompt) return;
+    const timer = setTimeout(() => setShowResumePrompt(false), 5000);
+    return () => clearTimeout(timer);
+  }, [showResumePrompt]);
 
   // ─── 10초 앞/뒤로 ─────────────────────────────────────────────────────────
   const skipBack = useCallback(() => {
@@ -472,30 +519,17 @@ export default function Player() {
           {isFullscreen ? <Minimize size={26} /> : <Maximize size={26} />}
         </button>
 
-        {/* 다음화 버튼 (다음 에피소드가 있을 때만) */}
-        {nextEpisode && (
-          <button
-            onClick={(e) => { e.stopPropagation(); goToNextEpisode(); }}
-            className="flex flex-col items-center gap-1 pointer-events-auto mt-1"
-            aria-label="다음화"
-          >
-            <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/15 hover:bg-yellow-400/80 hover:text-black transition-all duration-200 text-xs font-bold border border-white/30 hover:border-yellow-400">
-              <span>다음화</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-            </div>
-          </button>
-        )}
+        {/* 다음화 버튼 삭제 - 중앙 버튼으로 통합 */}
       </div>
 
       {/* 볼륨 컨트롤 - BOTTOM PROGRESS 바로 위 독립 배치 */}
       <div
         className={`absolute right-4 bottom-16 flex flex-row items-center gap-2 z-30 pointer-events-auto ${fadeClass}`}
-        onMouseEnter={() => setShowVolumeSlider(true)}
-        onMouseLeave={() => setShowVolumeSlider(false)}
       >
+        {/* 슬라이더 - 클릭/터치 시에만 표시 (왼쪽) */}
         <div
           className={`flex items-center transition-opacity duration-200 ${
-            showVolumeSlider ? "opacity-100" : "opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto"
+            showVolumeSlider ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
           style={{ touchAction: "none" }}
         >
@@ -507,6 +541,7 @@ export default function Player() {
             onChange={(e) => {
               const val = Number(e.target.value) / 100;
               setVolume(val);
+              scheduleVolumeHide();
             }}
             className="cursor-pointer"
             style={{
@@ -517,10 +552,26 @@ export default function Player() {
             aria-label="볼륨 슬라이더"
           />
         </div>
+        {/* 볼륨 아이콘 (오른쪽) - 클릭/터치 시 슬라이더 표시 */}
         <button
-          onClick={() => {
-            if (muted) { setMuted(false); if (volume === 0) setVolume(1); }
-            else setMuted(true);
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!showVolumeSlider) {
+              setShowVolumeSlider(true);
+              scheduleVolumeHide();
+            } else {
+              if (muted) { setMuted(false); if (volume === 0) setVolume(1); }
+              else setMuted(true);
+              scheduleVolumeHide();
+            }
+          }}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!showVolumeSlider) {
+              setShowVolumeSlider(true);
+              scheduleVolumeHide();
+            }
           }}
           className="flex items-center justify-center"
           aria-label="볼륨"
@@ -585,6 +636,36 @@ export default function Player() {
           >
             취소
           </button>
+        </div>
+      )}
+
+      {/* 이어보기 프롬프트 */}
+      {showResumePrompt && !isLocked && (
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center animate-fade-in" style={{ transform: 'translateX(-50%)' }}>
+          <div className="flex flex-col items-center gap-3 px-5 py-4 rounded-2xl bg-black/85 backdrop-blur-md border border-white/20 shadow-2xl">
+            <div className="text-xs text-white/60">이전 시청 기록이 있습니다</div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (videoRef.current) videoRef.current.currentTime = resumeTime;
+                  setShowResumePrompt(false);
+                }}
+                className="px-4 py-1.5 rounded-full bg-yellow-400 text-black font-bold text-sm hover:bg-yellow-300 transition-colors whitespace-nowrap"
+              >
+                {formatTime(resumeTime)}부터 이어보기
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowResumePrompt(false);
+                }}
+                className="px-4 py-1.5 rounded-full bg-white/15 border border-white/30 text-white text-sm hover:bg-white/25 transition-colors whitespace-nowrap"
+              >
+                처음부터 보기
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
