@@ -40,6 +40,16 @@ export function useSubscription(): UseSubscriptionResult {
         }
 
         const now = new Date().toISOString();
+
+        // 만료 판정: end_date가 현재 시각보다 이전인 active 구독 → inactive 처리
+        await supabase
+          .from("subscriptions")
+          .update({ status: "inactive" })
+          .eq("user_id", userId)
+          .eq("status", "active")
+          .not("end_date", "is", null)
+          .lt("end_date", now);
+
         const { data, error } = await supabase
           .from("subscriptions")
           .select("*")
