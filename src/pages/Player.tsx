@@ -140,6 +140,8 @@ export default function Player() {
   const [subtitleLang, setSubtitleLang] = useState<string>(() =>
     localStorage.getItem(SUBTITLE_KEY) ?? "off"
   );
+  // ─── Overlay 자막 출력 state ──────────────────────────────────────────────
+  const [currentSubtitle, setCurrentSubtitle] = useState<string>("");
 
   const currentIndex = drama?.episodes.findIndex((e) => e.id === episodeId) ?? -1;
   const prevEpisode = currentIndex > 0 ? drama?.episodes[currentIndex - 1] : null;
@@ -326,6 +328,33 @@ export default function Player() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [episode?.id]);
+
+  // ─── Overlay 자막: video currentTime 감시 → activeCues → currentSubtitle ──
+  useEffect(() => {
+    if (subtitleLang === "off") {
+      setCurrentSubtitle("");
+      return;
+    }
+    const video = videoRef.current;
+    if (!video) return;
+
+    const readActiveCue = () => {
+      const tracks = video.textTracks;
+      let found = "";
+      for (let i = 0; i < tracks.length; i++) {
+        const t = tracks[i];
+        if (t.language === subtitleLang && t.mode === "showing" && t.activeCues && t.activeCues.length > 0) {
+          const cue = t.activeCues[0] as VTTCue;
+          found = cue.text ?? "";
+          break;
+        }
+      }
+      setCurrentSubtitle(found);
+    };
+
+    video.addEventListener("timeupdate", readActiveCue);
+    return () => video.removeEventListener("timeupdate", readActiveCue);
+  }, [subtitleLang]);
 
   // ─── 영상 진행 저장 ───────────────────────────────────────────────────────
   const handleTimeUpdate = useCallback(() => {
@@ -865,6 +894,32 @@ export default function Player() {
                 </button>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ SUBTITLE OVERLAY ══════════════════════════════════════════════ */}
+      {currentSubtitle !== "" && !isLocked && (
+        <div
+          className="absolute bottom-24 left-0 right-0 flex justify-center pointer-events-none z-25"
+          style={{ zIndex: 25 }}
+        >
+          <div
+            style={{
+              background: "rgba(0,0,0,0.72)",
+              borderRadius: "4px",
+              padding: "4px 12px",
+              maxWidth: "85%",
+              textAlign: "center",
+              fontSize: "1.05rem",
+              fontWeight: 500,
+              lineHeight: 1.5,
+              color: "#ffffff",
+              whiteSpace: "pre-wrap",
+              wordBreak: "keep-all",
+            }}
+          >
+            {currentSubtitle}
           </div>
         </div>
       )}
