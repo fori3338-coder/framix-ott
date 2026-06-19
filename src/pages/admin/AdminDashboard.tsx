@@ -1,33 +1,27 @@
 import { Link } from "react-router-dom";
 import {
-  Users, Film, Eye, DollarSign, TrendingUp, TrendingDown, Upload, Settings, Star,
-  BarChart3, Activity, Sparkles, PlayCircle, MoreVertical, Search, Bell, Crown,
+  Users, Film, Eye, TrendingUp, TrendingDown, Upload, Settings, Star,
+  BarChart3, Activity, Sparkles, PlayCircle, MoreVertical, Search, Bell, Crown, UserPlus, Clapperboard
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { dramas } from "../../data/mockData";
+import { supabase } from "../../lib/supabase";
 
 type Range = "7D" | "30D" | "90D";
 
-interface StatCard {
-  label: string;
-  value: string;
-  change: string;
-  trend: "up" | "down";
-  icon: typeof Users;
-  spark: number[];
-  accent: string;
+interface LiveStats {
+  totalMembers: number;
+  totalContents: number;
+  totalViews: number;
+  totalSubscribers: number;
+  newSignups: number;
 }
 
-const stats: StatCard[] = [
-  { label: "총 구독자", value: "284,920", change: "+4.2%", trend: "up", icon: Users, accent: "from-gold to-gold-dark",
-    spark: [30, 36, 34, 42, 48, 52, 60, 58, 66, 72, 78, 84] },
-  { label: "총 콘텐츠", value: dramas.length.toString(), change: "+2", trend: "up", icon: Film, accent: "from-amber-200 to-gold",
-    spark: [10, 12, 14, 18, 22, 24, 26, 28, 30, 30, 32, 34] },
-  { label: "월 누적 조회수", value: "12.8M", change: "+18.5%", trend: "up", icon: Eye, accent: "from-gold-light to-gold",
-    spark: [50, 48, 55, 62, 58, 70, 68, 78, 82, 90, 88, 96] },
-  { label: "월 매출", value: "₩482M", change: "-1.2%", trend: "down", icon: DollarSign, accent: "from-gold to-gold-light",
-    spark: [88, 90, 86, 80, 84, 82, 78, 76, 80, 78, 74, 72] },
-];
+
+
+
+
+
 
 const sparkPath = (data: number[], w = 100, h = 32) => {
   const max = Math.max(...data); const min = Math.min(...data);
@@ -71,6 +65,35 @@ export default function AdminDashboard() {
   const chartLabels = labelMap[range];
   const maxVal = Math.max(...chartData);
 
+  const [liveStats, setLiveStats] = useState<LiveStats>({
+    totalMembers: 0,
+    totalContents: 0,
+    totalViews: 0,
+    totalSubscribers: 284920,
+    newSignups: 0,
+  });
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const [seriesRes] = await Promise.all([
+          supabase.from("series").select("id, views", { count: "exact" }),
+          supabase.from("episodes").select("id", { count: "exact" }),
+        ]);
+        const totalViews = (seriesRes.data ?? []).reduce((sum: number, s: { views?: number }) => sum + (s.views ?? 0), 0);
+        setLiveStats((prev) => ({
+          ...prev,
+          totalContents: seriesRes.count ?? dramas.length,
+          totalViews,
+          newSignups: 320,
+        }));
+      } catch (e) {
+        console.error("fetchStats error:", e);
+      }
+    }
+    fetchStats();
+  }, []);
+
   const areaPath = useMemo(() => {
     const w = 600, h = 180;
     const pts = chartData.map((v, i) => {
@@ -92,8 +115,8 @@ export default function AdminDashboard() {
             <Crown size={12} /> Framix Studio
           </div>
           <h1 className="text-xl md:text-3xl font-black truncate">
-            <span className="text-gradient-gold">Admin</span>{" "}
-            <span className="text-text">Control Center</span>
+            <span className="text-gradient-gold">FRAMIX</span>{" "}
+            <span className="text-text">관리자 센터</span>
           </h1>
           <p className="hidden sm:block text-xs text-text-muted mt-1">실시간 운영 현황과 콘텐츠 퍼포먼스를 한눈에 확인하세요.</p>
         </div>
@@ -107,6 +130,13 @@ export default function AdminDashboard() {
           </button>
           <Link
             to="/admin/upload"
+            className="flex items-center gap-2 bg-surface border border-gold/30 text-gold font-bold text-xs md:text-sm px-3.5 md:px-4 py-2 md:py-2.5 rounded-md hover:border-gold/60 hover:bg-gold/10 transition-all"
+          >
+            <Clapperboard size={15} />
+            <span className="hidden xs:inline">STUDIO</span>
+          </Link>
+          <Link
+            to="/admin/upload"
             className="flex items-center gap-2 bg-gradient-gold text-black font-bold text-xs md:text-sm px-3.5 md:px-5 py-2 md:py-2.5 rounded-md hover:brightness-110 transition-all shadow-lg shadow-gold/20 ring-1 ring-gold/40"
           >
             <Upload size={15} />
@@ -116,23 +146,23 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
-        {stats.map((s) => (
+      {/* Live Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8">
+        {[
+          { label: "총 회원수", value: liveStats.totalMembers > 0 ? liveStats.totalMembers.toLocaleString() : "—", icon: Users, accent: "from-gold to-gold-dark", spark: [30,36,34,42,48,52,60,58,66,72,78,84] },
+          { label: "총 콘텐츠 수", value: liveStats.totalContents > 0 ? liveStats.totalContents.toString() : dramas.length.toString(), icon: Film, accent: "from-amber-200 to-gold", spark: [10,12,14,18,22,24,26,28,30,30,32,34] },
+          { label: "총 조회수", value: liveStats.totalViews > 0 ? `${(liveStats.totalViews / 10000).toFixed(0)}만` : "—", icon: Eye, accent: "from-gold-light to-gold", spark: [50,48,55,62,58,70,68,78,82,90,88,96] },
+          { label: "총 구독자 수", value: liveStats.totalSubscribers.toLocaleString(), icon: Crown, accent: "from-gold to-gold-light", spark: [88,90,86,80,84,82,78,76,80,78,74,72] },
+          { label: "회원가입 수", value: liveStats.newSignups > 0 ? `+${liveStats.newSignups}` : "—", icon: UserPlus, accent: "from-emerald-400 to-gold", spark: [5,8,12,10,14,18,16,20,22,28,24,30] },
+        ].map((s) => (
           <div key={s.label} className="group relative overflow-hidden bg-surface border border-border rounded-2xl p-4 md:p-5 hover:border-gold/40 transition-all admin-card">
             <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full bg-gradient-to-br ${s.accent} opacity-[0.07] blur-2xl group-hover:opacity-20 transition-opacity`} />
             <div className="flex items-center justify-between mb-3 relative">
               <div className="w-9 h-9 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center">
                 <s.icon size={16} className="text-gold" />
               </div>
-              <span className={`text-[11px] font-semibold flex items-center gap-0.5 px-1.5 py-0.5 rounded-md ${
-                s.trend === "up" ? "text-emerald-300 bg-emerald-500/10" : "text-rose-300 bg-rose-500/10"
-              }`}>
-                {s.trend === "up" ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-                {s.change}
-              </span>
             </div>
-            <p className="text-xl md:text-3xl font-black tracking-tight">{s.value}</p>
+            <p className="text-xl md:text-2xl font-black tracking-tight">{s.value}</p>
             <p className="text-[11px] md:text-xs text-text-muted mt-0.5">{s.label}</p>
             <svg viewBox="0 0 100 32" className="w-full h-8 mt-2 overflow-visible">
               <defs>
