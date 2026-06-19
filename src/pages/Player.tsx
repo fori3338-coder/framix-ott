@@ -4,14 +4,15 @@ import {
   ChevronLeft, Play, Pause,
   Heart,
   VolumeX, Volume2, Lock, Maximize, Minimize,
-  SkipBack, SkipForward, ChevronLeftIcon, ChevronRight
+  SkipBack, SkipForward, ChevronLeftIcon, ChevronRight,
+  SkipForward as NextEpisodeIcon
 } from "lucide-react";
 import { useDramaDetail } from "../hooks/useDramaDetail";
 import { useSubscription } from "../hooks/useSubscription";
 import { supabase } from "../lib/supabase";
 
 const EPISODE_DURATION_SECONDS = 720;
-const CONTROLS_HIDE_DELAY_MS = 2000;
+const CONTROLS_HIDE_DELAY_MS = 3000;
 const RESUME_KEY = (id: string) => `framix_resume_${id}`;
 
 type FullscreenDocument = Document & {
@@ -104,7 +105,6 @@ export default function Player() {
   // ─── 이어보기 카드 5초 후 자동 닫힘 ──────────────────────────────────────
   useEffect(() => {
     if (!showResumeDialog) return;
-    // 이전 타이머 반드시 클리어 후 새로 시작
     if (resumeAutoCloseTimerRef.current) clearTimeout(resumeAutoCloseTimerRef.current);
     resumeAutoCloseTimerRef.current = setTimeout(() => {
       setShowResumeDialog(false);
@@ -220,16 +220,33 @@ export default function Player() {
     };
   }, []);
 
+  // ─── 키보드 단축키 ───────────────────────────────────────────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "f" || e.key === "F") { e.preventDefault(); handleFullscreen(); }
-      else if (e.key === "Escape" && getFullscreenElement()) {
+      if (e.key === " " || e.key === "k" || e.key === "K") {
+        e.preventDefault();
+        revealControls();
+        setPlaying((p) => !p);
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        seek(-10);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        seek(10);
+      } else if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        handleFullscreen();
+      } else if (e.key === "m" || e.key === "M") {
+        e.preventDefault();
+        setMuted((m) => !m);
+      } else if (e.key === "Escape" && getFullscreenElement()) {
         if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
         else (document as FullscreenDocument).webkitExitFullscreen?.();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleFullscreen]);
 
   // ─── 컨트롤 자동 숨김 ───────────────────────────────────────────────────
@@ -249,7 +266,11 @@ export default function Player() {
     return () => { if (hideControlsTimerRef.current) clearTimeout(hideControlsTimerRef.current); };
   }, [playing, scheduleHideControls]);
 
-  const handleVideoClick = () => { revealControls(); setPlaying((p) => !p); };
+  // 모바일: 탭하면 컨트롤 표시, 3초 후 자동 숨김
+  const handleVideoClick = () => {
+    revealControls();
+    setPlaying((p) => !p);
+  };
 
   // ─── 볼륨 슬라이더 자동 숨김 ────────────────────────────────────────────
   const scheduleHideVolume = useCallback(() => {
@@ -282,6 +303,11 @@ export default function Player() {
     revealControls();
   };
 
+  // ─── 다음화 이동 ─────────────────────────────────────────────────────────
+  const goToNextEpisode = () => {
+    if (nextEpisode && id) navigate(`/watch/${id}/${nextEpisode.id}`);
+  };
+
   if (loading) return <div className="text-white p-10">Loading...</div>;
   if (!drama || !episode) return <div className="text-white p-10">Not Found</div>;
 
@@ -293,7 +319,7 @@ export default function Player() {
   return (
     <div
       ref={videoContainerRef}
-      className="fixed inset-0 bg-black text-white"
+      className="fixed inset-0 bg-black text-white select-none"
       onMouseMove={revealControls}
       onTouchStart={revealControls}
     >
@@ -309,6 +335,8 @@ export default function Player() {
           onDoubleClick={handleFullscreen}
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleVideoEnded}
+          playsInline
+          webkit-playsinline="true"
         />
       ) : !isLocked ? (
         <div className="absolute inset-0 flex items-center justify-center bg-black">
@@ -321,127 +349,164 @@ export default function Player() {
         <div className="absolute inset-0 bg-black" />
       )}
 
-      {/* OVERLAY */}
-      <div className={`absolute inset-0 bg-black/40 pointer-events-none ${fadeClass}`} />
+      {/* GRADIENT OVERLAY - 상단/하단 */}
+      <div className={`absolute inset-0 pointer-events-none ${fadeClass}`}
+        style={{
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 20%, transparent 75%, rgba(0,0,0,0.85) 100%)"
+        }}
+      />
 
-      {/* TOP BAR - 뒤로가기 */}
-      <div className="absolute top-0 left-0 p-4 z-20">
-        <button onClick={() => navigate(-1)} className="p-1">
+      {/* TOP BAR - 뒤로가기 + 제목 */}
+      <div className={`absolute top-0 left-0 right-0 flex items-center p-4 z-20 ${fadeClass}`}>
+        <button onClick={() => navigate(-1)} className="p-1 mr-3">
           <ChevronLeft size={28} />
         </button>
-      </div>
-
-      {/* TOP BAR - 제목 */}
-      <div className={`absolute top-0 left-0 right-0 flex justify-center items-center p-4 pointer-events-none z-10 ${fadeClass}`}>
-        <div className="text-center">
+        <div className="flex-1 text-center">
           <div className="font-semibold text-sm">{drama.title}</div>
           <div className="text-xs opacity-70">{episode.title}</div>
         </div>
+        {/* 좋아요 버튼 (우측 상단) */}
+        <button onClick={() => setLiked((p) => !p)} className="p-1">
+          <Heart size={22} className={liked ? "text-red-500 fill-red-500" : ""} />
+        </button>
       </div>
 
-      {/* CENTER CONTROLS */}
+      {/* CENTER CONTROLS - 이전화/다음화 (가운데 중앙) */}
       {!isLocked && (
-        <div className={`absolute inset-0 flex flex-col items-center justify-center gap-6 pointer-events-none ${fadeClass}`}>
-          {/* 재생 컨트롤 행 */}
-          <div className="flex items-center justify-center gap-10 sm:gap-12">
+        <div className={`absolute inset-0 flex items-center justify-center gap-8 pointer-events-none ${fadeClass}`}>
+          {prevEpisode && (
             <button
-              onClick={() => seek(-10)}
-              className="flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-full bg-black/40 pointer-events-auto"
-              title="10초 뒤로"
+              onClick={() => id && navigate(`/watch/${id}/${prevEpisode.id}`)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black/50 border border-white/20 text-sm font-semibold pointer-events-auto"
             >
-              <SkipBack size={24} />
-              <span className="text-[10px] font-semibold leading-none">10초</span>
+              <ChevronLeftIcon size={16} /> 이전화
             </button>
+          )}
+          {nextEpisode && (
             <button
-              onClick={() => { revealControls(); setPlaying((p) => !p); }}
-              className="w-20 h-20 rounded-full bg-black/40 flex items-center justify-center pointer-events-auto"
+              onClick={() => id && navigate(`/watch/${id}/${nextEpisode.id}`)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black/50 border border-white/20 text-sm font-semibold pointer-events-auto"
             >
-              {playing ? <Pause size={44} /> : <Play size={44} />}
+              다음화 <ChevronRight size={16} />
             </button>
-            <button
-              onClick={() => seek(10)}
-              className="flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-full bg-black/40 pointer-events-auto"
-              title="10초 앞으로"
-            >
-              <SkipForward size={24} />
-              <span className="text-[10px] font-semibold leading-none">10초</span>
-            </button>
+          )}
+        </div>
+      )}
+
+      {/* BOTTOM CONTROLS - Netflix 스타일 */}
+      {!isLocked && (
+        <div className={`absolute bottom-0 left-0 right-0 px-4 pb-4 z-20 ${fadeClass}`}>
+          {/* 프로그레스 바 */}
+          <div
+            className="h-1 bg-white/30 rounded cursor-pointer pointer-events-auto mb-4"
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const pct = ((e.clientX - rect.left) / rect.width) * 100;
+              setProgress(pct);
+              if (videoRef.current?.duration) videoRef.current.currentTime = (pct / 100) * videoRef.current.duration;
+              if (episodeId) saveWatchHistory(episodeId, pct);
+            }}
+          >
+            <div className="h-full bg-red-600 rounded transition-all relative" style={{ width: `${progress}%` }}>
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow" />
+            </div>
           </div>
 
-          {/* 이전화 / 다음화 행 */}
-          <div className="flex items-center justify-center gap-6 pointer-events-auto">
-            {prevEpisode && (
+          {/* 버튼 행 */}
+          <div className="flex items-center justify-between pointer-events-auto">
+            {/* 좌측: 재생 + 10초 뒤로 + 10초 앞으로 + 볼륨 */}
+            <div className="flex items-center gap-3">
+              {/* 재생/일시정지 */}
               <button
-                onClick={() => id && navigate(`/watch/${id}/${prevEpisode.id}`)}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-black/50 border border-white/20 text-sm font-semibold hover:bg-black/70 transition-colors"
+                onClick={() => { revealControls(); setPlaying((p) => !p); }}
+                className="p-1.5 hover:scale-110 transition-transform"
+                aria-label={playing ? "일시정지" : "재생"}
               >
-                <ChevronLeftIcon size={16} /> 이전화
+                {playing ? <Pause size={28} /> : <Play size={28} />}
               </button>
-            )}
-            {nextEpisode && (
+
+              {/* 10초 뒤로 */}
               <button
-                onClick={() => id && navigate(`/watch/${id}/${nextEpisode.id}`)}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-black/50 border border-white/20 text-sm font-semibold hover:bg-black/70 transition-colors"
+                onClick={() => seek(-10)}
+                className="flex flex-col items-center justify-center gap-0.5 p-1 hover:scale-110 transition-transform"
+                title="10초 뒤로"
+                aria-label="10초 뒤로"
               >
-                다음화 <ChevronRight size={16} />
+                <SkipBack size={22} />
+                <span className="text-[9px] font-bold leading-none">10</span>
               </button>
-            )}
+
+              {/* 10초 앞으로 */}
+              <button
+                onClick={() => seek(10)}
+                className="flex flex-col items-center justify-center gap-0.5 p-1 hover:scale-110 transition-transform"
+                title="10초 앞으로"
+                aria-label="10초 앞으로"
+              >
+                <SkipForward size={22} />
+                <span className="text-[9px] font-bold leading-none">10</span>
+              </button>
+
+              {/* 볼륨 */}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleVolumeClick}
+                  className="p-1 hover:scale-110 transition-transform"
+                  aria-label={muted ? "음소거 해제" : "음소거"}
+                >
+                  {muted || volume === 0 ? <VolumeX size={22} /> : <Volume2 size={22} />}
+                </button>
+                {/* 볼륨 슬라이더 - PC/모바일 동시 지원 */}
+                <div
+                  className={`overflow-hidden transition-all duration-200 ${showVolumeSlider ? "w-20 opacity-100" : "w-0 opacity-0"}`}
+                >
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={muted ? 0 : volume}
+                    onChange={handleVolumeChange}
+                    onMouseMove={scheduleHideVolume}
+                    onTouchMove={scheduleHideVolume}
+                    className="w-20 accent-white cursor-pointer"
+                    style={{ writingMode: "horizontal-tb" }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 우측: 다음화 + 전체화면 */}
+            <div className="flex items-center gap-3">
+              {/* 다음화 버튼 */}
+              {nextEpisode && (
+                <button
+                  onClick={goToNextEpisode}
+                  className="flex items-center gap-1 p-1 hover:scale-110 transition-transform"
+                  title="다음화"
+                  aria-label="다음화"
+                >
+                  <NextEpisodeIcon size={22} />
+                  <div className="w-0.5 h-5 bg-white rounded" />
+                </button>
+              )}
+
+              {/* 전체화면 */}
+              <button
+                onClick={handleFullscreen}
+                className="p-1 hover:scale-110 transition-transform"
+                aria-label="전체화면"
+              >
+                {isFullscreen ? <Minimize size={22} /> : <Maximize size={22} />}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* RIGHT ACTIONS */}
-      <div className={`absolute right-4 bottom-24 flex flex-col gap-5 items-center pointer-events-none ${fadeClass}`}>
-        <button onClick={() => setLiked((p) => !p)} className="flex flex-col items-center gap-1 pointer-events-auto">
-          <Heart size={26} className={liked ? "text-red-500 fill-red-500" : ""} />
-        </button>
-        {/* 볼륨 컨트롤 */}
-        <div className="flex items-center pointer-events-auto">
-          {showVolumeSlider && (
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={muted ? 0 : volume}
-              onChange={handleVolumeChange}
-              onMouseMove={scheduleHideVolume}
-              className="w-20 mr-2 accent-yellow-400"
-              style={{ writingMode: "horizontal-tb" }}
-            />
-          )}
-          <button onClick={handleVolumeClick} className="flex flex-col items-center gap-1">
-            {muted || volume === 0 ? <VolumeX size={26} /> : <Volume2 size={26} />}
-          </button>
-        </div>
-        <button
-          onClick={handleFullscreen}
-          aria-label="전체화면"
-          className="flex flex-col items-center gap-1 pointer-events-auto"
-        >
-          {isFullscreen ? <Minimize size={26} /> : <Maximize size={26} />}
-        </button>
-      </div>
-
-      {/* BOTTOM PROGRESS */}
-      <div className={`absolute bottom-0 w-full px-4 pb-6 pointer-events-none ${fadeClass}`}>
-        <div
-          className="h-1 bg-white/20 rounded cursor-pointer pointer-events-auto"
-          onClick={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const pct = ((e.clientX - rect.left) / rect.width) * 100;
-            setProgress(pct);
-            if (videoRef.current?.duration) videoRef.current.currentTime = (pct / 100) * videoRef.current.duration;
-            if (episodeId) saveWatchHistory(episodeId, pct);
-          }}
-        >
-          <div className="h-full bg-yellow-400 rounded transition-all" style={{ width: `${progress}%` }} />
-        </div>
-      </div>
-
       {/* LOCK OVERLAY */}
       {isLocked && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-30">
           <div className="text-center space-y-3">
             <Lock size={40} className="mx-auto text-gold" />
             <p className="font-bold text-lg">VIP 전용 콘텐츠</p>
@@ -458,10 +523,7 @@ export default function Player() {
 
       {/* 이어보기 카드 (우측 하단) */}
       {showResumeDialog && (
-        <div
-          className="absolute z-30"
-          style={{ right: 100, bottom: 40 }}
-        >
+        <div className="absolute z-30" style={{ right: 16, bottom: 80 }}>
           <div className="bg-zinc-900/95 border border-white/10 rounded-xl p-4 min-w-[240px] space-y-3">
             <p className="text-sm font-bold">이어서 시청하기</p>
             <p className="text-xs text-white/60">
