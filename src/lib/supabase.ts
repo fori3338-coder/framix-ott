@@ -54,4 +54,5 @@ export interface DbEpisode {
   sort_order: number | null;
   views: number | null;
   created_at: string | null;
+  subtitles: Record<string, string> | null; // { "ko": "url", "en": "url", ... }
 }

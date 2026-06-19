@@ -7,6 +7,8 @@ export interface Episode {
   videoUrl?: string; // Supabase Storage URL (실제 영상)
   isFree: boolean;
   progress?: number; // 0-100, watch progress
+  subtitles?: Record<string, string>; // { "ko": "url", "en": "url", ... }
+  description?: string;
 }
 
 export interface Drama {

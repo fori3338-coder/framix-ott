@@ -30,6 +30,7 @@ export function toFrontendEpisode(e: DbEpisode): Episode {
     isFree: e.is_free ?? true,
     videoUrl: e.video_url ?? undefined,
     progress: 0,
+    subtitles: e.subtitles ?? {},
   };
 }
 
