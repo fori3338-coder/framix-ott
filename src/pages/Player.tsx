@@ -264,6 +264,24 @@ export default function Player() {
     setShowing();
     trackEl.addEventListener("load", setShowing, { once: true });
 
+    // [HOTFIX2] DEBUG — track load 완료 후 실제 상태 전수 로그 + 강제 표시 테스트
+    trackEl.addEventListener("load", () => {
+      console.log("subtitleLang", subtitleLang);
+      console.log("textTracks.length", video.textTracks.length);
+      for (let i = 0; i < video.textTracks.length; i++) {
+        console.log("track", i, {
+          language: video.textTracks[i].language,
+          label: video.textTracks[i].label,
+          mode: video.textTracks[i].mode,
+        });
+      }
+      // 강제 표시 테스트 — 모든 조건 무시하고 첫 번째 track을 강제로 showing
+      if (video.textTracks.length > 0) {
+        video.textTracks[0].mode = "showing";
+      }
+      console.log(video.querySelectorAll("track"));
+    }, { once: true });
+
     // [수정 5] TRACK MODE 강제 적용 — video.textTracks 기준으로 재확인
     setTimeout(() => {
       const tracks = video.textTracks;
@@ -271,7 +289,7 @@ export default function Player() {
         tracks[i].mode = tracks[i].language === lang ? "showing" : "hidden";
       }
     }, 500);
-  }, []);
+  }, [subtitleLang]);
 
   // subtitleLang 변경 → 즉시 적용 + localStorage 저장
   useEffect(() => {
