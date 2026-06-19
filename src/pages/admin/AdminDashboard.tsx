@@ -3,6 +3,7 @@ import {
   Users, Film, Eye, TrendingUp, TrendingDown, Upload, Settings, Star,
   BarChart3, Activity, Sparkles, PlayCircle, MoreVertical, Search, Bell, Crown, UserPlus, Clapperboard,
   Edit2, Trash2, EyeOff, CheckCircle, AlertCircle,
+  Megaphone, Save, Gem, CalendarPlus, XCircle, RefreshCw, UserCog,
 } from "lucide-react";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { supabase } from "../../lib/supabase";
@@ -59,6 +60,36 @@ interface ActivityLog {
   who: string;
 }
 
+// ── 구독자 관리 ──────────────────────────────────────────────────────────
+// profiles 테이블: 레포 내 supabase/migrations/*.sql 전체를 확인한 결과
+// CREATE TABLE 정의가 존재하지 않음 (Supabase Auth 트리거로 자동 생성되는
+// 것으로 추정되며 정확한 컬럼 구성은 코드상 확인 불가). 따라서 select("*")로
+// 전체 컬럼을 비가정으로 가져온 뒤, 화면에서는 존재가 확인된 값만 안전하게
+// 표시한다 (없는 컬럼을 단정해 하드코딩하지 않음).
+type DbProfile = Record<string, unknown> & { id: string };
+
+// subscriptions 테이블: src/hooks/useSubscription.ts, useMySubscription.ts,
+// src/pages/PaymentSuccess.tsx 에서 실제로 사용 중인 컬럼 기준 (코드로 확인됨).
+interface DbSubscription {
+  id: string;
+  user_id: string;
+  membership_level: string; // 'premium' | 'vip'
+  status: string;           // 'active' | 'cancelled' | 'inactive'
+  current_period_start: string;
+  current_period_end: string | null;
+  created_at: string;
+}
+
+interface PlatformSettings {
+  id: number;
+  notice: string;
+  hero_banner_text: string;
+  recommend_algorithm: string;
+  top10_auto: boolean;
+  new_release_count: number;
+  updated_at: string | null;
+}
+
 // ── 조회수 그래프용 스파크라인 경로 생성 ────────────────────────────────────
 const sparkPath = (data: number[], w = 100, h = 32) => {
   if (data.length < 2) return "";
@@ -106,6 +137,27 @@ export default function AdminDashboard() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [showContentManager, setShowContentManager] = useState(false);
+
+  // ── 구독자 관리 상태 ──────────────────────────────────────────────────────
+  const [showMemberManager, setShowMemberManager] = useState(false);
+  const [members, setMembers] = useState<DbProfile[]>([]);
+  const [memberSubs, setMemberSubs] = useState<Map<string, DbSubscription>>(new Map());
+  const [memberLoading, setMemberLoading] = useState(false);
+  const [memberMsg, setMemberMsg] = useState<string | null>(null);
+  const [memberSearch, setMemberSearch] = useState("");
+
+  // ── 플랫폼 설정 상태 ──────────────────────────────────────────────────────
+  const [showPlatformSettings, setShowPlatformSettings] = useState(false);
+  const [platformSettings, setPlatformSettings] = useState<PlatformSettings | null>(null);
+  const [settingsForm, setSettingsForm] = useState({
+    notice: "",
+    hero_banner_text: "",
+    recommend_algorithm: "balanced",
+    top10_auto: true,
+    new_release_count: 10,
+  });
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
 
   // ── 조회수 시계열: series 생성일 기반 집계 ───────────────────────────────
   const buildViewsChart = useCallback((seriesRows: DbSeries[], r: Range) => {
@@ -378,6 +430,189 @@ export default function AdminDashboard() {
     if (error) setContentMsg(`신작 상태 변경 실패: ${error.message}`);
     else { setContentMsg(next ? "신작으로 등록되었습니다." : "신작에서 해제되었습니다."); await fetchAll(); }
     setContentLoading(false);
+  };
+
+  // ════════════════════════════════════════════════════════════════════════
+  // 구독자 관리 (profiles + subscriptions 실 조회/반영)
+  // ════════════════════════════════════════════════════════════════════════
+
+  // ── 실제 조회 코드: profiles 전체 컬럼 + subscriptions 전체 컬럼 ─────────
+  const fetchMembers = useCallback(async () => {
+    setMemberLoading(true);
+    setMemberMsg(null);
+    try {
+      // profiles: 컬럼 구성이 코드상 확인되지 않으므로 select("*")로 비가정 조회.
+      // id는 다른 화면(총 회원수 카운트)에서도 사용되는 보장된 컬럼.
+      const { data: profileRows, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("id", { ascending: false })
+        .limit(200);
+
+      if (profileError) {
+        setMemberMsg(`회원 목록 조회 실패: ${profileError.message}`);
+        setMembers([]);
+        setMemberLoading(false);
+        return;
+      }
+      setMembers((profileRows ?? []) as DbProfile[]);
+
+      // subscriptions: 회원별 최신 구독 1건만 매핑 (created_at 내림차순 우선)
+      const { data: subRows, error: subError } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (subError) {
+        setMemberMsg(`구독 정보 조회 실패: ${subError.message}`);
+      } else {
+        const map = new Map<string, DbSubscription>();
+        ((subRows ?? []) as DbSubscription[]).forEach((s) => {
+          if (!map.has(s.user_id)) map.set(s.user_id, s); // 이미 최신순 정렬됨 → 첫 값만 채택
+        });
+        setMemberSubs(map);
+      }
+    } catch (e) {
+      setMemberMsg(e instanceof Error ? e.message : "회원 목록 조회 중 오류가 발생했습니다.");
+    }
+    setMemberLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (showMemberManager) fetchMembers();
+  }, [showMemberManager, fetchMembers]);
+
+  // ── 실제 저장 코드: Premium/VIP 부여 (subscriptions upsert) ──────────────
+  const handleGrantMembership = async (userId: string, level: "premium" | "vip") => {
+    setMemberLoading(true);
+    setMemberMsg(null);
+    const now = new Date();
+    const periodEnd = new Date(now);
+    periodEnd.setDate(periodEnd.getDate() + 30);
+
+    const existing = memberSubs.get(userId);
+    let error;
+    if (existing) {
+      // 기존 구독 row가 있으면 갱신 (membership_level/status/기간 재설정)
+      ({ error } = await supabase
+        .from("subscriptions")
+        .update({
+          membership_level: level,
+          status: "active",
+          current_period_start: now.toISOString(),
+          current_period_end: periodEnd.toISOString(),
+        })
+        .eq("id", existing.id));
+    } else {
+      // 신규 구독 row 생성
+      ({ error } = await supabase.from("subscriptions").insert({
+        user_id: userId,
+        membership_level: level,
+        status: "active",
+        current_period_start: now.toISOString(),
+        current_period_end: periodEnd.toISOString(),
+      }));
+    }
+    if (error) setMemberMsg(`${level.toUpperCase()} 부여 실패: ${error.message}`);
+    else { setMemberMsg(`${level.toUpperCase()} 멤버십이 부여되었습니다.`); await fetchMembers(); }
+    setMemberLoading(false);
+  };
+
+  // ── 실제 저장 코드: 구독 취소 ─────────────────────────────────────────────
+  // MySubscription.tsx의 기존 해지 로직(status: 'active' → 'cancelled')과
+  // 동일한 값 체계를 그대로 사용 (새로운 상태값을 만들지 않음).
+  const handleCancelSubscription = async (userId: string) => {
+    const existing = memberSubs.get(userId);
+    if (!existing) return;
+    setMemberLoading(true);
+    const { error } = await supabase
+      .from("subscriptions")
+      .update({ status: "cancelled" })
+      .eq("id", existing.id);
+    if (error) setMemberMsg(`구독 취소 실패: ${error.message}`);
+    else { setMemberMsg("구독이 취소 처리되었습니다."); await fetchMembers(); }
+    setMemberLoading(false);
+  };
+
+  // ── 실제 저장 코드: 구독 연장 (+30일) ─────────────────────────────────────
+  const handleExtendSubscription = async (userId: string) => {
+    const existing = memberSubs.get(userId);
+    if (!existing) return;
+    setMemberLoading(true);
+    const base = existing.current_period_end ? new Date(existing.current_period_end) : new Date();
+    const newEnd = new Date(Math.max(base.getTime(), Date.now()));
+    newEnd.setDate(newEnd.getDate() + 30);
+    const { error } = await supabase
+      .from("subscriptions")
+      .update({ current_period_end: newEnd.toISOString() })
+      .eq("id", existing.id);
+    if (error) setMemberMsg(`구독 연장 실패: ${error.message}`);
+    else { setMemberMsg("구독 기간이 30일 연장되었습니다."); await fetchMembers(); }
+    setMemberLoading(false);
+  };
+
+  // ── 회원 검색 (이메일/이름 등 profiles에 존재하는 모든 텍스트 컬럼 대상) ──
+  const filteredMembers = members.filter((m) => {
+    if (!memberSearch.trim()) return true;
+    const q = memberSearch.trim().toLowerCase();
+    return Object.values(m).some(
+      (v) => typeof v === "string" && v.toLowerCase().includes(q)
+    );
+  });
+
+  const memberDisplayName = (m: DbProfile) =>
+    (m.email as string) ?? (m.display_name as string) ?? (m.username as string) ?? (m.name as string) ?? m.id;
+
+  // ════════════════════════════════════════════════════════════════════════
+  // 플랫폼 설정 (platform_settings 실 조회/저장)
+  // ════════════════════════════════════════════════════════════════════════
+
+  const fetchPlatformSettings = useCallback(async () => {
+    setSettingsLoading(true);
+    setSettingsMsg(null);
+    const { data, error } = await supabase
+      .from("platform_settings")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
+    if (error) {
+      setSettingsMsg(`설정 조회 실패: ${error.message}`);
+    } else if (data) {
+      const s = data as PlatformSettings;
+      setPlatformSettings(s);
+      setSettingsForm({
+        notice: s.notice ?? "",
+        hero_banner_text: s.hero_banner_text ?? "",
+        recommend_algorithm: s.recommend_algorithm ?? "balanced",
+        top10_auto: s.top10_auto ?? true,
+        new_release_count: s.new_release_count ?? 10,
+      });
+    }
+    setSettingsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (showPlatformSettings) fetchPlatformSettings();
+  }, [showPlatformSettings, fetchPlatformSettings]);
+
+  // ── 실제 저장 코드: 플랫폼 설정 저장 (싱글톤 row upsert) ──────────────────
+  const handleSaveSettings = async () => {
+    setSettingsLoading(true);
+    setSettingsMsg(null);
+    const { error } = await supabase
+      .from("platform_settings")
+      .upsert({
+        id: 1,
+        notice: settingsForm.notice,
+        hero_banner_text: settingsForm.hero_banner_text,
+        recommend_algorithm: settingsForm.recommend_algorithm,
+        top10_auto: settingsForm.top10_auto,
+        new_release_count: settingsForm.new_release_count,
+        updated_at: new Date().toISOString(),
+      });
+    if (error) setSettingsMsg(`저장 실패: ${error.message}`);
+    else { setSettingsMsg("설정이 저장되었습니다."); await fetchPlatformSettings(); }
+    setSettingsLoading(false);
   };
 
   // ── 차트 경로 계산 ────────────────────────────────────────────────────────
@@ -917,12 +1152,246 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* ── 구독자 관리 패널 ──────────────────────────────────────────────────── */}
+      {showMemberManager && (
+        <div className="mb-6 md:mb-8 bg-surface border border-gold/30 rounded-2xl overflow-hidden admin-card">
+          <div className="flex items-center justify-between p-4 md:p-5 border-b border-border bg-gold/5">
+            <div className="flex items-center gap-2">
+              <UserCog size={15} className="text-gold" />
+              <h2 className="font-bold text-sm md:text-base">구독자 관리</h2>
+              <span className="text-[10px] text-text-muted">· 회원 목록 · Premium/VIP 부여 · 취소 · 연장</span>
+            </div>
+            <button onClick={() => setShowMemberManager(false)} className="text-text-muted hover:text-white text-xs">닫기</button>
+          </div>
+
+          {/* 검색 */}
+          <div className="px-4 md:px-5 pt-3">
+            <div className="flex items-center gap-2 bg-surface-2 border border-border rounded-lg px-3 py-2">
+              <Search size={14} className="text-text-muted shrink-0" />
+              <input
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+                placeholder="이메일, 이름 등으로 회원 검색"
+                className="flex-1 bg-transparent text-sm text-text placeholder:text-text-muted focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {memberMsg && (
+            <div className="mx-4 md:mx-5 mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg bg-gold/10 border border-gold/30 text-gold">
+              <CheckCircle size={13} />
+              {memberMsg}
+              <button onClick={() => setMemberMsg(null)} className="ml-auto text-text-muted hover:text-white">✕</button>
+            </div>
+          )}
+
+          {memberLoading && (
+            <div className="flex items-center gap-2 px-5 py-3 text-xs text-text-muted">
+              <AlertCircle size={13} className="animate-spin" /> 처리 중...
+            </div>
+          )}
+
+          {!memberLoading && members.length === 0 ? (
+            <p className="text-xs text-text-muted text-center py-8">
+              회원 데이터를 불러올 수 없습니다 (profiles 테이블 확인 필요)
+            </p>
+          ) : (
+            <div className="divide-y divide-border max-h-[520px] overflow-y-auto mt-2">
+              {filteredMembers.map((m) => {
+                const sub = memberSubs.get(m.id);
+                const isActiveSub = sub && (sub.status === "active" || sub.status === "cancelled");
+                return (
+                  <div key={m.id} className="flex items-center gap-3 px-4 md:px-5 py-3 hover:bg-surface-2/40 transition-colors flex-wrap">
+                    <div className="w-9 h-9 rounded-full bg-surface-2 border border-border flex items-center justify-center shrink-0">
+                      <Users size={14} className="text-text-muted" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold truncate">{memberDisplayName(m)}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="text-[10px] text-text-muted font-mono truncate max-w-[160px]">{m.id}</span>
+                        {sub ? (
+                          <span
+                            className={`text-[10px] font-semibold ${
+                              sub.status === "active"
+                                ? "text-emerald-400"
+                                : sub.status === "cancelled"
+                                ? "text-amber-400"
+                                : "text-text-muted"
+                            }`}
+                          >
+                            ● {sub.membership_level?.toUpperCase()} ·{" "}
+                            {sub.status === "active" ? "구독중" : sub.status === "cancelled" ? "해지예약" : "만료"}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-text-muted">구독 없음</span>
+                        )}
+                      </div>
+                    </div>
+                    {/* 액션 버튼 */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleGrantMembership(m.id, "premium")}
+                        className="text-[10px] px-2 py-1.5 rounded-md bg-surface-2 border border-border text-text-dim hover:text-gold hover:border-gold/40 flex items-center gap-1"
+                        title="Premium 부여"
+                      >
+                        <Sparkles size={11} /> Premium
+                      </button>
+                      <button
+                        onClick={() => handleGrantMembership(m.id, "vip")}
+                        className="text-[10px] px-2 py-1.5 rounded-md bg-surface-2 border border-border text-text-dim hover:text-gold hover:border-gold/40 flex items-center gap-1"
+                        title="VIP 부여"
+                      >
+                        <Gem size={11} /> VIP
+                      </button>
+                      <button
+                        onClick={() => handleExtendSubscription(m.id)}
+                        disabled={!sub}
+                        className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-text-dim hover:text-emerald-400 hover:border-emerald-400/40 disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="구독 30일 연장"
+                        aria-label="구독 연장"
+                      >
+                        <CalendarPlus size={13} />
+                      </button>
+                      <button
+                        onClick={() => handleCancelSubscription(m.id)}
+                        disabled={!isActiveSub || sub?.status !== "active"}
+                        className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-text-dim hover:text-rose-400 hover:border-rose-400/40 disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="구독 취소"
+                        aria-label="구독 취소"
+                      >
+                        <XCircle size={13} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── 플랫폼 설정 패널 ──────────────────────────────────────────────────── */}
+      {showPlatformSettings && (
+        <div className="mb-6 md:mb-8 bg-surface border border-gold/30 rounded-2xl overflow-hidden admin-card">
+          <div className="flex items-center justify-between p-4 md:p-5 border-b border-border bg-gold/5">
+            <div className="flex items-center gap-2">
+              <Settings size={15} className="text-gold" />
+              <h2 className="font-bold text-sm md:text-base">플랫폼 설정</h2>
+              <span className="text-[10px] text-text-muted">· 공지사항 · 배너 문구 · 추천 알고리즘</span>
+            </div>
+            <button onClick={() => setShowPlatformSettings(false)} className="text-text-muted hover:text-white text-xs">닫기</button>
+          </div>
+
+          {settingsMsg && (
+            <div className="mx-4 md:mx-5 mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg bg-gold/10 border border-gold/30 text-gold">
+              <CheckCircle size={13} />
+              {settingsMsg}
+              <button onClick={() => setSettingsMsg(null)} className="ml-auto text-text-muted hover:text-white">✕</button>
+            </div>
+          )}
+
+          <div className="p-4 md:p-5 space-y-4">
+            {/* 공지사항 */}
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-text-dim mb-1.5">
+                <Megaphone size={12} className="text-gold" /> 공지사항
+              </label>
+              <textarea
+                value={settingsForm.notice}
+                onChange={(e) => setSettingsForm((f) => ({ ...f, notice: e.target.value }))}
+                rows={2}
+                placeholder="사이트 상단 등에 노출할 공지 문구"
+                className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-gold resize-none"
+              />
+            </div>
+
+            {/* 메인 배너 문구 */}
+            <div>
+              <label className="text-xs font-semibold text-text-dim mb-1.5 block">메인 배너 문구</label>
+              <input
+                value={settingsForm.hero_banner_text}
+                onChange={(e) => setSettingsForm((f) => ({ ...f, hero_banner_text: e.target.value }))}
+                placeholder="홈 히어로 배너에 노출할 캐치프레이즈"
+                className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-gold"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* 추천 알고리즘 */}
+              <div>
+                <label className="text-xs font-semibold text-text-dim mb-1.5 block">추천 알고리즘</label>
+                <select
+                  value={settingsForm.recommend_algorithm}
+                  onChange={(e) => setSettingsForm((f) => ({ ...f, recommend_algorithm: e.target.value }))}
+                  className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-gold"
+                >
+                  <option value="balanced">균형(평점+조회수+신작)</option>
+                  <option value="views">조회수 우선</option>
+                  <option value="rating">평점 우선</option>
+                  <option value="latest">최신순</option>
+                </select>
+              </div>
+
+              {/* TOP10 자동 여부 */}
+              <div>
+                <label className="text-xs font-semibold text-text-dim mb-1.5 block">TOP10 자동 집계</label>
+                <button
+                  onClick={() => setSettingsForm((f) => ({ ...f, top10_auto: !f.top10_auto }))}
+                  className={`w-full px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
+                    settingsForm.top10_auto
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                      : "bg-surface-2 border-border text-text-dim"
+                  }`}
+                >
+                  {settingsForm.top10_auto ? "자동 ON (조회수 기준)" : "자동 OFF (수동 우선)"}
+                </button>
+              </div>
+
+              {/* 신작 노출 개수 */}
+              <div>
+                <label className="text-xs font-semibold text-text-dim mb-1.5 block">신작 노출 개수</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={settingsForm.new_release_count}
+                  onChange={(e) => setSettingsForm((f) => ({ ...f, new_release_count: Number(e.target.value) }))}
+                  className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-gold"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                onClick={handleSaveSettings}
+                disabled={settingsLoading}
+                className="flex items-center gap-2 bg-gradient-gold text-black font-bold text-xs md:text-sm px-4 py-2.5 rounded-md hover:brightness-110 transition-all disabled:opacity-50"
+              >
+                <Save size={14} /> 설정 저장
+              </button>
+              <button
+                onClick={fetchPlatformSettings}
+                disabled={settingsLoading}
+                className="flex items-center gap-2 bg-surface-2 border border-border text-text-dim font-semibold text-xs md:text-sm px-4 py-2.5 rounded-md hover:text-gold hover:border-gold/40 transition-all disabled:opacity-50"
+              >
+                <RefreshCw size={13} className={settingsLoading ? "animate-spin" : ""} /> 새로고침
+              </button>
+              {platformSettings?.updated_at && (
+                <span className="text-[10px] text-text-muted ml-auto">
+                  마지막 저장: {new Date(platformSettings.updated_at).toLocaleString("ko-KR")}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Quick actions */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
         {[
-          { to: "/admin/upload", icon: Upload, title: "콘텐츠 업로드", desc: "새 드라마/에피소드 등록" },
-          { to: null, icon: Users, title: "구독자 관리", desc: "멤버십 및 결제 관리" },
-          { to: null, icon: Settings, title: "플랫폼 설정", desc: "배너, 추천 알고리즘 설정" },
+          { to: "/admin/upload", icon: Upload, title: "콘텐츠 업로드", desc: "새 드라마/에피소드 등록", onClick: undefined as (() => void) | undefined },
+          { to: null, icon: Users, title: "구독자 관리", desc: "멤버십 및 결제 관리", onClick: () => setShowMemberManager((v) => !v) },
+          { to: null, icon: Settings, title: "플랫폼 설정", desc: "배너, 추천 알고리즘 설정", onClick: () => setShowPlatformSettings((v) => !v) },
         ].map((a) => {
           const Inner = (
             <div className="group bg-surface border border-border rounded-2xl p-4 hover:border-gold/50 transition-all flex items-center gap-3 admin-card h-full">
@@ -935,7 +1404,11 @@ export default function AdminDashboard() {
               </div>
             </div>
           );
-          return a.to ? <Link key={a.title} to={a.to}>{Inner}</Link> : <div key={a.title} className="cursor-pointer">{Inner}</div>;
+          return a.to ? (
+            <Link key={a.title} to={a.to}>{Inner}</Link>
+          ) : (
+            <div key={a.title} className="cursor-pointer" onClick={a.onClick}>{Inner}</div>
+          );
         })}
       </div>
     </div>
