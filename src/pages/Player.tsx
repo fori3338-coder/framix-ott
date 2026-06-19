@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  ChevronLeft, Play, Pause,
+  Play, Pause,
   Heart,
   VolumeX, Volume2, Lock, Maximize, Minimize,
-  SkipBack, SkipForward, ChevronLeftIcon, ChevronRight,
+  SkipBack, SkipForward,
   SkipForward as NextEpisodeIcon,
   List, Subtitles, Check, X,
 } from "lucide-react";
@@ -186,6 +186,8 @@ export default function Player() {
   );
 
   const currentIndex = drama?.episodes.findIndex((e) => e.id === episodeId) ?? -1;
+  // prevEpisode: CENTER 버튼 제거로 미사용 (에피소드 패널에서 이동 가능)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const prevEpisode = currentIndex > 0 ? drama?.episodes[currentIndex - 1] : null;
   const nextEpisode =
     currentIndex >= 0 && drama?.episodes[currentIndex + 1]
@@ -513,6 +515,7 @@ export default function Player() {
     <div
       ref={videoContainerRef}
       className="fixed inset-0 bg-black text-white select-none"
+      style={{ zIndex: 30 }}
       onMouseMove={revealControls}
       onTouchStart={revealControls}
     >
@@ -576,41 +579,22 @@ export default function Player() {
         }}
       />
 
-      {/* ═══ TOP BAR ════════════════════════════════════════════════════════ */}
-      <div className={`absolute top-0 left-0 right-0 flex items-center p-4 z-20 ${fadeClass}`}>
-        <button onClick={() => navigate(-1)} className="p-1 mr-3">
-          <ChevronLeft size={28} />
-        </button>
-        <div className="flex-1 text-center">
-          <div className="font-semibold text-sm">{drama.title}</div>
-          <div className="text-xs opacity-70">{episode.title}</div>
+      {/* ═══ TOP BAR — Netflix 스타일 좌측 상단 제목 (뒤로가기 제거) ══════ */}
+      <div className={`absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-20 ${fadeClass}`}>
+        <div className="flex flex-col">
+          <div className="font-bold text-sm leading-tight" style={{ textShadow: "0 1px 4px rgba(0,0,0,.9)" }}>
+            {drama.title}
+          </div>
+          <div className="text-xs opacity-70" style={{ textShadow: "0 1px 4px rgba(0,0,0,.9)" }}>
+            {episode.title}
+          </div>
         </div>
-        <button onClick={() => setLiked((p) => !p)} className="p-1">
+        <button onClick={() => setLiked((p) => !p)} className="p-1 shrink-0">
           <Heart size={22} className={liked ? "text-red-500 fill-red-500" : ""} />
         </button>
       </div>
 
-      {/* ═══ CENTER: 이전화 / 다음화 ════════════════════════════════════════ */}
-      {!isLocked && (
-        <div className={`absolute inset-0 flex items-center justify-center gap-8 pointer-events-none ${fadeClass}`}>
-          {prevEpisode && (
-            <button
-              onClick={() => id && navigate(`/watch/${id}/${prevEpisode.id}`)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black/50 border border-white/20 text-sm font-semibold pointer-events-auto"
-            >
-              <ChevronLeftIcon size={16} /> 이전화
-            </button>
-          )}
-          {nextEpisode && (
-            <button
-              onClick={() => id && navigate(`/watch/${id}/${nextEpisode.id}`)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black/50 border border-white/20 text-sm font-semibold pointer-events-auto"
-            >
-              다음화 <ChevronRight size={16} />
-            </button>
-          )}
-        </div>
-      )}
+      {/* ═══ CENTER: 이전화 / 다음화 — 제거됨 ══════════════════════════════ */}
 
       {/* ═══ BOTTOM CONTROLS ════════════════════════════════════════════════ */}
       {!isLocked && (
@@ -727,7 +711,7 @@ export default function Player() {
 
       {/* ═══ 에피소드 패널 (우측) ═══════════════════════════════════════════ */}
       {showEpisodePanel && (
-        <div className="absolute inset-y-0 right-0 w-80 bg-zinc-900/97 z-40 flex flex-col">
+        <div className="absolute inset-y-0 right-0 w-80 bg-zinc-900/97 z-[35] flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
             <span className="font-bold text-sm">에피소드</span>
             <button onClick={() => setShowEpisodePanel(false)} className="p-1">
@@ -788,7 +772,7 @@ export default function Player() {
 
       {/* ═══ 자막 패널 (우측) ═══════════════════════════════════════════════ */}
       {showSubtitlePanel && (
-        <div className="absolute inset-y-0 right-0 w-72 bg-zinc-900/97 z-40 flex flex-col">
+        <div className="absolute inset-y-0 right-0 w-72 bg-zinc-900/97 z-[35] flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
             <span className="font-bold text-sm">자막</span>
             <button onClick={() => setShowSubtitlePanel(false)} className="p-1">

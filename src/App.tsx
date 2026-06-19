@@ -29,8 +29,9 @@ export default function App() {
           <Route path="/admin/upload" element={<ContentUpload />} />
           <Route path="/payment/success" element={<PaymentSuccess />} />
           <Route path="/payment/fail" element={<PaymentFail />} />
+          {/* 수정 1: Player를 Layout 안으로 이동 → Header + BottomNav 항상 표시 */}
+          <Route path="/watch/:id/:episodeId" element={<Player />} />
         </Route>
-        <Route path="/watch/:id/:episodeId" element={<Player />} />
       </Routes>
     </BrowserRouter>
   );
