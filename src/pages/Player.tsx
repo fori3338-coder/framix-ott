@@ -62,6 +62,8 @@ export default function Player() {
   const hideControlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const volumeHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoNextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resumeAutoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resumeDismissedRef = useRef(false);
 
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(false);
@@ -85,6 +87,7 @@ export default function Player() {
   // ─── 이어보기 확인 ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!episodeId) return;
+    if (resumeDismissedRef.current) return;
     const saved = localStorage.getItem(RESUME_KEY(episodeId));
     if (saved) {
       const t = parseFloat(saved);
@@ -96,12 +99,28 @@ export default function Player() {
     }
   }, [episodeId]);
 
+  // ─── 이어보기 카드 3초 후 자동 닫힘 ──────────────────────────────────────
+  useEffect(() => {
+    if (!showResumeDialog) return;
+    resumeAutoCloseTimerRef.current = setTimeout(() => {
+      setShowResumeDialog(false);
+      setPlaying(true);
+    }, 3000);
+    return () => {
+      if (resumeAutoCloseTimerRef.current) clearTimeout(resumeAutoCloseTimerRef.current);
+    };
+  }, [showResumeDialog]);
+
   const handleResume = () => {
+    if (resumeAutoCloseTimerRef.current) clearTimeout(resumeAutoCloseTimerRef.current);
+    resumeDismissedRef.current = true;
     if (videoRef.current) videoRef.current.currentTime = resumeTime;
     setShowResumeDialog(false);
     setPlaying(true);
   };
   const handleStartOver = () => {
+    if (resumeAutoCloseTimerRef.current) clearTimeout(resumeAutoCloseTimerRef.current);
+    resumeDismissedRef.current = true;
     if (videoRef.current) videoRef.current.currentTime = 0;
     setShowResumeDialog(false);
     setPlaying(true);
