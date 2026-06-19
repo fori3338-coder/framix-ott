@@ -2,17 +2,18 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ChevronLeft, Play, Pause,
-  Heart,
-  VolumeX, Volume2, Lock, Maximize, Minimize,
-  SkipBack, SkipForward, ChevronLeftIcon, ChevronRight
+  Heart, MessageCircle, Share2,
+  VolumeX, Volume2, Lock, Maximize, Minimize
 } from "lucide-react";
 import { useDramaDetail } from "../hooks/useDramaDetail";
 import { supabase } from "../lib/supabase";
 
-const EPISODE_DURATION_SECONDS = 720;
-const CONTROLS_HIDE_DELAY_MS = 2000;
-const RESUME_KEY = (id: string) => `framix_resume_${id}`;
+// ─── 상수 ────────────────────────────────────────────────────────────────────
+const EPISODE_DURATION_SECONDS = 720; // 기본 12분 (실제 duration 파싱 전 fallback)
+const CONTROLS_HIDE_DELAY_MS = 2000; // 마우스가 멈춘 뒤 컨트롤을 숨기기까지의 시간
 
+// 구형 Safari(특히 iOS)는 표준 Fullscreen API 대신 webkit 접두사 API를 쓰는 경우가 있어
+// document/element에 안전하게 접근하기 위한 타입.
 type FullscreenDocument = Document & {
   webkitFullscreenElement?: Element | null;
   webkitExitFullscreen?: () => void;
@@ -29,12 +30,17 @@ function getFullscreenElement(): Element | null {
   return document.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
 }
 
+// ─── watch_history upsert ────────────────────────────────────────────────────
 async function saveWatchHistory(episodeId: string, progressPercent: number) {
   try {
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData?.user?.id;
     if (!userId) return;
-    const progressSeconds = Math.round((progressPercent / 100) * EPISODE_DURATION_SECONDS);
+
+    const progressSeconds = Math.round(
+      (progressPercent / 100) * EPISODE_DURATION_SECONDS
+    );
+
     await supabase.from("watch_history").upsert(
       {
         user_id: userId,
@@ -50,6 +56,7 @@ async function saveWatchHistory(episodeId: string, progressPercent: number) {
   }
 }
 
+// ─── Player ──────────────────────────────────────────────────────────────────
 export default function Player() {
   const { id, episodeId } = useParams();
   const navigate = useNavigate();
@@ -60,132 +67,86 @@ export default function Player() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const hideControlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const volumeHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const autoNextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(false);
-  const [volume, setVolume] = useState(1);
   const [progress, setProgress] = useState(0);
   const [liked, setLiked] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
-  // resume dialog
-  const [showResumeDialog, setShowResumeDialog] = useState(false);
-  const [resumeTime, setResumeTime] = useState(0);
-  // auto next overlay
-  const [showAutoNext, setShowAutoNext] = useState(false);
-  const [autoNextCountdown, setAutoNextCountdown] = useState(5);
 
-  const currentIndex = drama?.episodes.findIndex((e) => e.id === episodeId) ?? -1;
-  const prevEpisode = currentIndex > 0 ? drama?.episodes[currentIndex - 1] : null;
-  const nextEpisode = currentIndex >= 0 && drama?.episodes[currentIndex + 1] ? drama.episodes[currentIndex + 1] : null;
-
-  // ─── 이어보기 확인 ────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!episodeId) return;
-    const saved = localStorage.getItem(RESUME_KEY(episodeId));
-    if (saved) {
-      const t = parseFloat(saved);
-      if (t > 5) {
-        setResumeTime(t);
-        setShowResumeDialog(true);
-        setPlaying(false);
-      }
-    }
-  }, [episodeId]);
-
-  const handleResume = () => {
-    if (videoRef.current) videoRef.current.currentTime = resumeTime;
-    setShowResumeDialog(false);
-    setPlaying(true);
-  };
-  const handleStartOver = () => {
-    if (videoRef.current) videoRef.current.currentTime = 0;
-    setShowResumeDialog(false);
-    setPlaying(true);
-  };
-
-  // ─── 영상 진행 저장 (localStorage) ───────────────────────────────────────
-  const handleTimeUpdate = () => {
-    const v = videoRef.current;
-    if (!v?.duration) return;
-    const pct = (v.currentTime / v.duration) * 100;
-    setProgress(pct);
-    if (episodeId) localStorage.setItem(RESUME_KEY(episodeId), String(v.currentTime));
-
-    // 자동 다음화: 종료 10초 전
-    const remaining = v.duration - v.currentTime;
-    if (remaining <= 10 && remaining > 0 && nextEpisode && !showAutoNext) {
-      setShowAutoNext(true);
-      setAutoNextCountdown(5);
-    }
-  };
-
-  // ─── 자동 다음화 카운트다운 ──────────────────────────────────────────────
-  useEffect(() => {
-    if (!showAutoNext) return;
-    if (autoNextCountdown <= 0) {
-      if (nextEpisode && id) navigate(`/watch/${id}/${nextEpisode.id}`);
-      return;
-    }
-    const t = setTimeout(() => setAutoNextCountdown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [showAutoNext, autoNextCountdown, nextEpisode, id, navigate]);
-
-  const cancelAutoNext = () => {
-    setShowAutoNext(false);
-    if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
-  };
-
-  // ─── 영상 종료 ───────────────────────────────────────────────────────────
+  // ─── 영상 종료 핸들러 (수정: 두 로직이 한 함수 안에서 완전히 동작) ────────
   const handleVideoEnded = useCallback(async () => {
     if (!id || !episodeId) return;
+
     try {
-      if (episodeId) localStorage.removeItem(RESUME_KEY(episodeId));
+      // 1) 시청 완료 기록
       await saveWatchHistory(episodeId, 100);
-      const { error } = await supabase.rpc("increment_series_views", { series_id: id });
+
+      // 2) 시리즈 조회수 증가
+      const { error } = await supabase.rpc("increment_series_views", {
+        series_id: id,
+      });
       if (error) console.error("VIEW 증가 실패:", error);
-      if (nextEpisode) navigate(`/watch/${id}/${nextEpisode.id}`);
+
+      // 3) 다음 에피소드 자동 이동
+      const currentIndex = drama?.episodes.findIndex((e) => e.id === episodeId) ?? -1;
+      const next = drama?.episodes?.[currentIndex + 1];
+      if (next) {
+        navigate(`/watch/${id}/${next.id}`);
+      }
     } catch (err) {
       console.error("handleVideoEnded error:", err);
     }
-  }, [id, episodeId, nextEpisode, navigate]);
+  }, [id, episodeId, drama, navigate]);
 
-  // ─── 재생/일시정지 sync ──────────────────────────────────────────────────
+  // ─── 재생/일시정지 sync ────────────────────────────────────────────────────
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (playing) { v.play().catch(() => {}); } else { v.pause(); }
+    if (playing) {
+      v.play().catch(() => {});
+    } else {
+      v.pause();
+    }
   }, [playing]);
 
-  // ─── 볼륨 sync ───────────────────────────────────────────────────────────
+  // ─── 음소거 sync ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!videoRef.current) return;
-    videoRef.current.muted = muted;
-    videoRef.current.volume = volume;
-  }, [muted, volume]);
+    if (videoRef.current) videoRef.current.muted = muted;
+  }, [muted]);
 
-  // ─── 전체화면 ────────────────────────────────────────────────────────────
+  // ─── 전체화면 토글 ────────────────────────────────────────────────────────
   const handleFullscreen = useCallback(async () => {
     const container = videoContainerRef.current as FullscreenElement | null;
     const video = videoRef.current as FullscreenVideo | null;
     if (!container) return;
+
     try {
       if (getFullscreenElement()) {
-        if (document.exitFullscreen) await document.exitFullscreen();
-        else (document as FullscreenDocument).webkitExitFullscreen?.();
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else {
+          (document as FullscreenDocument).webkitExitFullscreen?.();
+        }
         return;
       }
-      if (container.requestFullscreen) await container.requestFullscreen();
-      else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
-      else if (video?.webkitEnterFullscreen) video.webkitEnterFullscreen();
+
+      if (container.requestFullscreen) {
+        await container.requestFullscreen();
+      } else if (container.webkitRequestFullscreen) {
+        container.webkitRequestFullscreen();
+      } else if (video?.webkitEnterFullscreen) {
+        // iPhone Safari는 컨테이너 단위 Fullscreen API를 지원하지 않아
+        // video 태그 자체의 네이티브 전체화면으로 대체한다.
+        video.webkitEnterFullscreen();
+      }
     } catch (err) {
       console.error("[Player] 전체화면 전환 실패:", err);
     }
   }, []);
 
+  // 브라우저/OS의 전체화면 상태 변화를 감지해서 아이콘과 동기화
   useEffect(() => {
     const handleChange = () => setIsFullscreen(!!getFullscreenElement());
     document.addEventListener("fullscreenchange", handleChange);
@@ -196,23 +157,32 @@ export default function Player() {
     };
   }, []);
 
+  // ─── 키보드 단축키: F = 전체화면 진입/해제, ESC = 전체화면 해제 ──────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "f" || e.key === "F") { e.preventDefault(); handleFullscreen(); }
-      else if (e.key === "Escape" && getFullscreenElement()) {
-        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
-        else (document as FullscreenDocument).webkitExitFullscreen?.();
+      if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        handleFullscreen();
+      } else if (e.key === "Escape" && getFullscreenElement()) {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        } else {
+          (document as FullscreenDocument).webkitExitFullscreen?.();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleFullscreen]);
 
-  // ─── 컨트롤 자동 숨김 ───────────────────────────────────────────────────
+  // ─── 컨트롤 자동 숨김 (넷플릭스 스타일) ──────────────────────────────────
+  // 재생 중에는 마우스가 2초간 멈추면 숨기고, 일시정지 중에는 항상 표시한다.
   const scheduleHideControls = useCallback(() => {
     if (hideControlsTimerRef.current) clearTimeout(hideControlsTimerRef.current);
-    if (!playing) return;
-    hideControlsTimerRef.current = setTimeout(() => setShowControls(false), CONTROLS_HIDE_DELAY_MS);
+    if (!playing) return; // 일시정지 상태에서는 자동으로 숨기지 않음
+    hideControlsTimerRef.current = setTimeout(() => {
+      setShowControls(false);
+    }, CONTROLS_HIDE_DELAY_MS);
   }, [playing]);
 
   const revealControls = useCallback(() => {
@@ -220,42 +190,19 @@ export default function Player() {
     scheduleHideControls();
   }, [scheduleHideControls]);
 
+  // 재생 상태가 바뀔 때마다(재생 시작 / 일시정지) 자동숨김 타이머를 다시 건다.
+  // 즉시 보여주는 처리는 클릭/마우스무브 핸들러(revealControls)에서 이미 하므로
+  // 여기서는 타이머만 (재)예약한다 — effect 안에서 setState를 직접 호출하지 않기 위함.
   useEffect(() => {
     scheduleHideControls();
-    return () => { if (hideControlsTimerRef.current) clearTimeout(hideControlsTimerRef.current); };
+    return () => {
+      if (hideControlsTimerRef.current) clearTimeout(hideControlsTimerRef.current);
+    };
   }, [playing, scheduleHideControls]);
 
-  const handleVideoClick = () => { revealControls(); setPlaying((p) => !p); };
-
-  // ─── 볼륨 슬라이더 자동 숨김 ────────────────────────────────────────────
-  const scheduleHideVolume = useCallback(() => {
-    if (volumeHideTimerRef.current) clearTimeout(volumeHideTimerRef.current);
-    volumeHideTimerRef.current = setTimeout(() => setShowVolumeSlider(false), 3000);
-  }, []);
-
-  const handleVolumeClick = () => {
-    if (!showVolumeSlider) {
-      setShowVolumeSlider(true);
-      scheduleHideVolume();
-    } else {
-      setMuted((m) => !m);
-      scheduleHideVolume();
-    }
-  };
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = parseFloat(e.target.value);
-    setVolume(v);
-    setMuted(v === 0);
-    scheduleHideVolume();
-  };
-
-  // ─── 10초 이동 ───────────────────────────────────────────────────────────
-  const seek = (delta: number) => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + delta));
+  const handleVideoClick = () => {
     revealControls();
+    setPlaying((p) => !p);
   };
 
   if (loading) return <div className="text-white p-10">Loading...</div>;
@@ -283,7 +230,12 @@ export default function Player() {
           muted={muted}
           onClick={handleVideoClick}
           onDoubleClick={handleFullscreen}
-          onTimeUpdate={handleTimeUpdate}
+          onTimeUpdate={() => {
+            const v = videoRef.current;
+            if (v?.duration) {
+              setProgress((v.currentTime / v.duration) * 100);
+            }
+          }}
           onEnded={handleVideoEnded}
         />
       ) : !isLocked ? (
@@ -297,17 +249,17 @@ export default function Player() {
         <div className="absolute inset-0 bg-black" />
       )}
 
-      {/* OVERLAY */}
+      {/* OVERLAY - 컨트롤이 보일 때만 화면을 살짝 어둡게 */}
       <div className={`absolute inset-0 bg-black/40 pointer-events-none ${fadeClass}`} />
 
-      {/* TOP BAR - 뒤로가기 */}
+      {/* TOP BAR: 뒤로가기 버튼 — 항상 표시 (자동숨김 제외) */}
       <div className="absolute top-0 left-0 p-4 z-20">
         <button onClick={() => navigate(-1)} className="p-1">
           <ChevronLeft size={28} />
         </button>
       </div>
 
-      {/* TOP BAR - 제목 */}
+      {/* TOP BAR: 드라마 제목 + 에피소드명 — showControls 연동 자동숨김 */}
       <div className={`absolute top-0 left-0 right-0 flex justify-center items-center p-4 pointer-events-none z-10 ${fadeClass}`}>
         <div className="text-center">
           <div className="font-semibold text-sm">{drama.title}</div>
@@ -317,76 +269,33 @@ export default function Player() {
 
       {/* CENTER CONTROLS */}
       {!isLocked && (
-        <div className={`absolute inset-0 flex flex-col items-center justify-center gap-6 pointer-events-none ${fadeClass}`}>
-          {/* 재생 컨트롤 행 */}
-          <div className="flex items-center gap-8">
-            <button
-              onClick={() => seek(-10)}
-              className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center pointer-events-auto"
-              title="10초 뒤로"
-            >
-              <SkipBack size={28} />
-            </button>
-            <button
-              onClick={() => { revealControls(); setPlaying((p) => !p); }}
-              className="w-16 h-16 rounded-full bg-black/40 flex items-center justify-center pointer-events-auto"
-            >
-              {playing ? <Pause size={40} /> : <Play size={40} />}
-            </button>
-            <button
-              onClick={() => seek(10)}
-              className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center pointer-events-auto"
-              title="10초 앞으로"
-            >
-              <SkipForward size={28} />
-            </button>
-          </div>
-
-          {/* 이전화 / 다음화 행 */}
-          <div className="flex items-center gap-4 pointer-events-auto">
-            {prevEpisode && (
-              <button
-                onClick={() => id && navigate(`/watch/${id}/${prevEpisode.id}`)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black/50 border border-white/20 text-sm font-semibold hover:bg-black/70 transition-colors"
-              >
-                <ChevronLeftIcon size={16} /> 이전화
-              </button>
-            )}
-            {nextEpisode && (
-              <button
-                onClick={() => id && navigate(`/watch/${id}/${nextEpisode.id}`)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black/50 border border-white/20 text-sm font-semibold hover:bg-black/70 transition-colors"
-              >
-                다음화 <ChevronRight size={16} />
-              </button>
-            )}
-          </div>
+        <div className={`absolute inset-0 flex items-center justify-center gap-10 pointer-events-none ${fadeClass}`}>
+          <button
+            onClick={() => {
+              revealControls();
+              setPlaying((p) => !p);
+            }}
+            className="w-14 h-14 rounded-full bg-black/40 flex items-center justify-center pointer-events-auto"
+          >
+            {playing ? <Pause size={36} /> : <Play size={36} />}
+          </button>
         </div>
       )}
 
-      {/* RIGHT ACTIONS */}
+      {/* RIGHT ACTIONS (전체화면 버튼 포함) */}
       <div className={`absolute right-4 bottom-24 flex flex-col gap-5 items-center pointer-events-none ${fadeClass}`}>
         <button onClick={() => setLiked((p) => !p)} className="flex flex-col items-center gap-1 pointer-events-auto">
           <Heart size={26} className={liked ? "text-red-500 fill-red-500" : ""} />
         </button>
-        {/* 볼륨 컨트롤 */}
-        <div className="flex flex-row items-center pointer-events-auto">
-          {showVolumeSlider && (
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={muted ? 0 : volume}
-              onChange={handleVolumeChange}
-              onMouseMove={scheduleHideVolume}
-              className="w-20 mr-2 accent-yellow-400 cursor-pointer"
-            />
-          )}
-          <button onClick={handleVolumeClick} className="flex flex-col items-center gap-1">
-            {muted || volume === 0 ? <VolumeX size={26} /> : <Volume2 size={26} />}
-          </button>
-        </div>
+        <button className="flex flex-col items-center gap-1 pointer-events-auto">
+          <MessageCircle size={26} />
+        </button>
+        <button className="flex flex-col items-center gap-1 pointer-events-auto">
+          <Share2 size={26} />
+        </button>
+        <button onClick={() => setMuted((m) => !m)} className="flex flex-col items-center gap-1 pointer-events-auto">
+          {muted ? <VolumeX size={26} /> : <Volume2 size={26} />}
+        </button>
         <button
           onClick={handleFullscreen}
           aria-label="전체화면"
@@ -404,11 +313,16 @@ export default function Player() {
             const rect = e.currentTarget.getBoundingClientRect();
             const pct = ((e.clientX - rect.left) / rect.width) * 100;
             setProgress(pct);
-            if (videoRef.current?.duration) videoRef.current.currentTime = (pct / 100) * videoRef.current.duration;
+            if (videoRef.current?.duration) {
+              videoRef.current.currentTime = (pct / 100) * videoRef.current.duration;
+            }
             if (episodeId) saveWatchHistory(episodeId, pct);
           }}
         >
-          <div className="h-full bg-yellow-400 rounded transition-all" style={{ width: `${progress}%` }} />
+          <div
+            className="h-full bg-yellow-400 rounded transition-all"
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </div>
 
@@ -425,58 +339,6 @@ export default function Player() {
             >
               구독하기
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* 이어보기 카드 (Netflix 스타일, 우측 하단) */}
-      {showResumeDialog && (
-        <div className="absolute right-6 bottom-24 z-30 w-64">
-          <div className="bg-zinc-900/95 border border-white/10 rounded-xl p-4 space-y-3 shadow-2xl">
-            <div>
-              <p className="text-xs text-white/60 font-semibold uppercase tracking-wider mb-1">이어서 시청하기</p>
-              <p className="text-sm font-bold">
-                {Math.floor(resumeTime / 60)}분 {Math.floor(resumeTime % 60)}초부터 재생
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleStartOver}
-                className="flex-1 py-2 rounded-lg border border-white/20 text-xs font-semibold hover:bg-white/10 transition-colors"
-              >
-                처음부터 보기
-              </button>
-              <button
-                onClick={handleResume}
-                className="flex-1 py-2 rounded-lg bg-yellow-400 text-black text-xs font-bold hover:brightness-110 transition-all"
-              >
-                이어보기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 자동 다음화 오버레이 (Netflix 스타일) */}
-      {showAutoNext && nextEpisode && (
-        <div className="absolute bottom-20 right-4 z-30 flex flex-col items-end gap-2">
-          <div className="bg-zinc-900/95 border border-white/10 rounded-xl p-4 min-w-[200px] space-y-3">
-            <p className="text-xs text-white/60 font-semibold uppercase tracking-wider">다음 화</p>
-            <p className="text-sm font-bold">{nextEpisode.title}</p>
-            <div className="flex items-center justify-between gap-3">
-              <button
-                onClick={cancelAutoNext}
-                className="text-xs text-white/60 hover:text-white transition-colors"
-              >
-                취소
-              </button>
-              <button
-                onClick={() => id && navigate(`/watch/${id}/${nextEpisode.id}`)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-400 text-black text-xs font-bold hover:brightness-110 transition-all"
-              >
-                다음화 ▶ <span className="tabular-nums">{autoNextCountdown}초</span>
-              </button>
-            </div>
           </div>
         </div>
       )}
