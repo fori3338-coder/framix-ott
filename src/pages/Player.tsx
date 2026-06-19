@@ -673,7 +673,7 @@ export default function Player() {
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleSubtitlePanel}
-                className={`p-1 hover:scale-110 transition-transform ${showSubtitlePanel ? "text-yellow-400" : ""}`}
+                className={`p-1 hover:scale-110 transition-transform ${showSubtitlePanel ? "text-gold" : ""}`}
                 aria-label="자막"
               >
                 <Subtitles size={22} />
@@ -768,44 +768,60 @@ export default function Player() {
         </div>
       )}
 
-      {/* ═══ 자막 패널 (우측) ═══════════════════════════════════════════════ */}
+      {/* ═══ 자막 패널 배경 오버레이 (외부 클릭 시 닫기) ══════════════════════ */}
       {showSubtitlePanel && (
-        <div className="absolute inset-y-0 right-0 w-72 bg-zinc-900/97 z-[35] flex flex-col">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-            <span className="font-bold text-sm">자막</span>
-            <button onClick={() => setShowSubtitlePanel(false)} className="p-1">
-              <X size={20} />
-            </button>
-          </div>
-          <div className="overflow-y-auto flex-1 py-2">
-            {SUBTITLE_LANGUAGES.map((lang) => {
-              const isOff = lang.code === "off";
-              const isAvailable = isOff || availableCodes.has(lang.code);
-              const isSelected = subtitleLang === lang.code;
-              return (
-                <button
-                  key={lang.code}
-                  onClick={() => isAvailable && selectSubtitle(lang.code)}
-                  disabled={!isAvailable}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors text-left ${
-                    isSelected
-                      ? "text-yellow-400 bg-white/5"
-                      : isAvailable
-                      ? "text-white hover:bg-white/10"
-                      : "text-white/25 cursor-not-allowed"
-                  }`}
-                >
-                  <span>{lang.label}</span>
-                  {isSelected && <Check size={16} className="flex-shrink-0" />}
-                  {!isOff && !isAvailable && (
-                    <span className="text-[10px] text-white/30">미지원</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <div
+          className="absolute inset-0 z-[34]"
+          onClick={() => setShowSubtitlePanel(false)}
+        />
       )}
+
+      {/* ═══ 자막 패널 (우측, Netflix 스타일) ═══════════════════════════════ */}
+      <div
+        className={`absolute inset-y-0 right-0 w-80 max-w-[320px] bg-zinc-900/90 backdrop-blur-xl z-[35] flex flex-col transform transition-all duration-300 ${
+          showSubtitlePanel ? "translate-x-0" : "translate-x-full pointer-events-none"
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="relative flex items-center justify-center px-4 py-3 border-b border-white/10">
+          <span className="font-bold text-sm">자막</span>
+          <button
+            onClick={() => setShowSubtitlePanel(false)}
+            className="absolute p-1 hover:text-gold transition-colors"
+            style={{ top: "16px", right: "16px" }}
+            aria-label="자막 패널 닫기"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div className="overflow-y-auto flex-1 py-2">
+          {SUBTITLE_LANGUAGES.map((lang) => {
+            const isOff = lang.code === "off";
+            const isAvailable = isOff || availableCodes.has(lang.code);
+            const isSelected = subtitleLang === lang.code;
+            return (
+              <button
+                key={lang.code}
+                onClick={() => isAvailable && selectSubtitle(lang.code)}
+                disabled={!isAvailable}
+                className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors text-left ${
+                  isSelected
+                    ? "text-gold bg-white/5"
+                    : isAvailable
+                    ? "text-white hover:bg-white/10"
+                    : "text-white/50 cursor-not-allowed"
+                }`}
+              >
+                <span>{lang.label}</span>
+                {isSelected && <Check size={16} className="flex-shrink-0 text-gold" />}
+                {!isOff && !isAvailable && (
+                  <span className="text-[10px] text-white/30">미지원</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* ═══ LOCK OVERLAY ═══════════════════════════════════════════════════ */}
       {isLocked && (

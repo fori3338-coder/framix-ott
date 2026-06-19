@@ -4,15 +4,15 @@ import BottomNav from "./BottomNav";
 
 export default function Layout() {
   const { pathname } = useLocation();
-  const isPlayer = pathname.startsWith("/watch/");
+  const isPlayer = pathname.startsWith("/watch");
 
   return (
     <div className="min-h-screen bg-base text-text overflow-x-hidden">
-      <Header />
+      {!isPlayer && <Header />}
       <main className={isPlayer ? "" : "pb-24 md:pb-12"}>
         <Outlet />
       </main>
-      <BottomNav />
+      {!isPlayer && <BottomNav />}
     </div>
   );
 }

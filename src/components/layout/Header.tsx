@@ -30,13 +30,13 @@ export default function Header() {
         scrolled ? "bg-base/95 backdrop-blur-md border-b border-border" : "bg-gradient-to-b from-black/70 to-transparent"
       }`}
     >
-      <div className="flex items-center justify-between px-4 py-2.5 sm:py-3 md:px-8 safe-x">
+      <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-2.5 md:py-3 md:px-8 safe-x gap-2">
 
         <Link to="/" className="flex items-center gap-1.5 shrink-0">
-          <span className="text-xl md:text-2xl font-black tracking-tight text-gradient-gold">FRAMIX</span>
+          <span className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-gradient-gold">FRAMIX</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-text-dim ml-8">
+        <nav className="flex flex-1 md:flex-none items-center gap-4 md:gap-6 text-sm font-medium text-text-dim md:ml-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
           <Link to="/" className="hover:text-gold transition-colors">홈</Link>
           <Link to="/search?cat=trending" className="hover:text-gold transition-colors">트렌딩</Link>
           <Link to="/search?cat=new" className="hover:text-gold transition-colors">신작</Link>
@@ -45,7 +45,7 @@ export default function Header() {
           <Link to="/admin" className="hover:text-gold transition-colors">STUDIO</Link>
         </nav>
 
-        <div className="flex items-center gap-3 md:gap-4 ml-auto">
+        <div className="hidden sm:flex items-center gap-3 md:gap-4 shrink-0">
           <button
             aria-label="검색"
             onClick={() => navigate("/search")}
