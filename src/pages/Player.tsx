@@ -202,42 +202,63 @@ export default function Player() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [episodeId]);
 
-  // ─── 자막 track sync ─────────────────────────────────────────────────────
-  // 선택한 언어 track만 showing, 나머지 hidden
-  const applySubtitleToTracks = useCallback((lang: string) => {
+  // ─── 자막 DOM 주입 (track 요소를 JS로 직접 생성) ─────────────────────────
+  // JSX <track> 대신 JS DOM으로 삽입해야 브라우저가 즉시 mode 제어를 수용함
+  const applySubtitle = useCallback((lang: string, subtitles: Record<string, string>) => {
     const video = videoRef.current;
     if (!video) return;
-    const tracks = video.textTracks;
-    for (let i = 0; i < tracks.length; i++) {
-      tracks[i].mode = tracks[i].language === lang ? "showing" : "hidden";
-    }
+
+    // 1) 기존에 삽입한 자막 track 전부 제거 (data-framix-sub 표시된 것만)
+    const oldTracks = video.querySelectorAll("track[data-framix-sub]");
+    oldTracks.forEach((t) => t.remove());
+
+    // 2) lang === "off" 이면 삽입 없이 종료
+    if (lang === "off") return;
+
+    // 3) 선택 언어의 VTT URL 확인
+    const url = subtitles[lang];
+    if (!url) return;
+
+    // 4) <track> 엘리먼트 생성 → video에 삽입
+    const trackEl = document.createElement("track");
+    trackEl.kind = "subtitles";
+    trackEl.src = url;
+    trackEl.srclang = lang;
+    trackEl.label = SUBTITLE_LANGUAGES.find((l) => l.code === lang)?.label ?? lang;
+    trackEl.setAttribute("data-framix-sub", "1");
+    video.appendChild(trackEl);
+
+    // 5) track 로드 완료 후 mode = "showing"
+    //    loadeddata 이전에도 설정하고, 로드 후에도 재확인 (브라우저 호환성)
+    const setShowing = () => {
+      if (trackEl.track) trackEl.track.mode = "showing";
+    };
+    setShowing();
+    trackEl.addEventListener("load", setShowing, { once: true });
   }, []);
 
   // subtitleLang 변경 → 즉시 적용 + localStorage 저장
   useEffect(() => {
-    applySubtitleToTracks(subtitleLang);
+    const subtitles = episode?.subtitles ?? {};
+    applySubtitle(subtitleLang, subtitles);
     localStorage.setItem(SUBTITLE_KEY, subtitleLang);
-  }, [subtitleLang, applySubtitleToTracks]);
+  }, [subtitleLang, episode?.subtitles, applySubtitle]);
 
-  // 에피소드 변경 시 새 video의 tracks에 재적용
-  // addtrack 이벤트 이후 mode 설정해야 확실히 동작
+  // 에피소드 변경 시 → 저장된 언어로 자막 재적용
   useEffect(() => {
+    if (!episode?.id) return;
+    const subtitles = episode.subtitles ?? {};
+    // video src 변경 후 loadedmetadata 이후에 track 삽입해야 안정적
     const video = videoRef.current;
     if (!video) return;
-
-    // 브라우저 자체 자막 UI 비활성화 후 선택 언어만 showing
-    const handleAddTrack = () => {
-      applySubtitleToTracks(subtitleLang);
-    };
-
-    // 이미 로드된 track 처리
-    applySubtitleToTracks(subtitleLang);
-    video.textTracks.addEventListener("addtrack", handleAddTrack);
-    return () => {
-      video.textTracks.removeEventListener("addtrack", handleAddTrack);
-    };
+    const doApply = () => applySubtitle(subtitleLang, subtitles);
+    if (video.readyState >= 1) {
+      doApply();
+    } else {
+      video.addEventListener("loadedmetadata", doApply, { once: true });
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [episode?.id, applySubtitleToTracks]);
+  }, [episode?.id]);
 
   // ─── 영상 진행 저장 ───────────────────────────────────────────────────────
   const handleTimeUpdate = useCallback(() => {
@@ -439,7 +460,7 @@ export default function Player() {
   // 추가로 직접 DOM 즉시 적용(React state 반영 전 1프레임 gap 제거)
   const selectSubtitle = (code: string) => {
     setSubtitleLang(code);
-    applySubtitleToTracks(code);   // 즉시 DOM 반영
+    applySubtitle(code, episode?.subtitles ?? {}); // 즉시 DOM 반영
     localStorage.setItem(SUBTITLE_KEY, code);
     setShowSubtitlePanel(false);
   };
@@ -494,19 +515,7 @@ export default function Player() {
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleVideoEnded}
           playsInline
-        >
-          {/* 자막 트랙 동적 삽입 */}
-          {/* default prop 미사용: 브라우저 자동 활성화 방지, mode는 useEffect에서 제어 */}
-          {Object.entries(availableSubtitles).map(([code, url]) => (
-            <track
-              key={code}
-              kind="subtitles"
-              src={url}
-              srcLang={code}
-              label={SUBTITLE_LANGUAGES.find((l) => l.code === code)?.label ?? code}
-            />
-          ))}
-        </video>
+        />
       ) : !isLocked ? (
         <div className="absolute inset-0 flex items-center justify-center bg-black">
           <div className="text-center space-y-2">
