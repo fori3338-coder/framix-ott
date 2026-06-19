@@ -264,7 +264,7 @@ export default function Player() {
     setShowing();
     trackEl.addEventListener("load", setShowing, { once: true });
 
-    // [HOTFIX2] DEBUG — track load 완료 후 실제 상태 전수 로그 + 강제 표시 테스트
+    // [HOTFIX2/3] DEBUG — track load 완료 후 실제 상태 전수 로그 + 강제 표시 테스트
     trackEl.addEventListener("load", () => {
       console.log("subtitleLang", subtitleLang);
       console.log("textTracks.length", video.textTracks.length);
@@ -273,14 +273,27 @@ export default function Player() {
           language: video.textTracks[i].language,
           label: video.textTracks[i].label,
           mode: video.textTracks[i].mode,
+          kind: video.textTracks[i].kind,
         });
       }
       // 강제 표시 테스트 — 모든 조건 무시하고 첫 번째 track을 강제로 showing
       if (video.textTracks.length > 0) {
         video.textTracks[0].mode = "showing";
+        console.log("force showing applied");
       }
       console.log(video.querySelectorAll("track"));
+
+      // [HOTFIX3] cues / activeCues 확인 — 실제로 큐 데이터가 파싱되었는지 검증
+      setTimeout(() => {
+        const t = video.textTracks[0];
+        console.log("cues", t?.cues);
+        console.log("activeCues", t?.activeCues);
+      }, 1000);
     }, { once: true });
+
+    // [HOTFIX3] video native subtitle test — track.default = true 적용 시
+    // 브라우저 기본 자막 엔진이 활성화되는지 확인 (기존 로직은 변경하지 않음)
+    trackEl.default = true;
 
     // [수정 5] TRACK MODE 강제 적용 — video.textTracks 기준으로 재확인
     setTimeout(() => {
