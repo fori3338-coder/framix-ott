@@ -430,26 +430,24 @@ export default function Player() {
         </div>
       )}
 
-      {/* 이어보기 카드 (Netflix 스타일 - 우측 하단) */}
+      {/* 이어보기 다이얼로그 */}
       {showResumeDialog && (
-        <div className="absolute z-30" style={{ right: 24, bottom: 100 }}>
-          <div className="bg-zinc-900/95 border border-white/10 rounded-xl p-4 min-w-[220px] space-y-3 shadow-2xl">
-            <div>
-              <p className="text-xs text-white/60 font-semibold uppercase tracking-wider mb-1">이어서 시청하기</p>
-              <p className="text-sm text-white/80">
-                {Math.floor(resumeTime / 60)}분 {Math.floor(resumeTime % 60)}초부터 재생
-              </p>
-            </div>
-            <div className="flex gap-2">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-30">
+          <div className="bg-zinc-900 border border-white/10 rounded-2xl p-6 mx-4 max-w-sm w-full text-center space-y-4">
+            <p className="font-bold text-base">이어서 시청하시겠습니까?</p>
+            <p className="text-sm text-white/60">
+              {Math.floor(resumeTime / 60)}분 {Math.floor(resumeTime % 60)}초부터 이어볼 수 있습니다
+            </p>
+            <div className="flex gap-3">
               <button
                 onClick={handleStartOver}
-                className="flex-1 py-2 rounded-lg border border-white/20 text-xs font-semibold hover:bg-white/10 transition-colors"
+                className="flex-1 py-2.5 rounded-full border border-white/20 text-sm font-semibold hover:bg-white/10 transition-colors"
               >
                 처음부터 보기
               </button>
               <button
                 onClick={handleResume}
-                className="flex-1 py-2 rounded-lg bg-yellow-400 text-black text-xs font-bold hover:brightness-110 transition-all"
+                className="flex-1 py-2.5 rounded-full bg-yellow-400 text-black text-sm font-bold hover:brightness-110 transition-all"
               >
                 이어보기
               </button>

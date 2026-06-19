@@ -76,15 +76,13 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const [seriesRes, profilesRes] = await Promise.all([
+        const [seriesRes] = await Promise.all([
           supabase.from("series").select("id, views", { count: "exact" }),
-          supabase.from("profiles").select("id", { count: "exact" }),
+          supabase.from("episodes").select("id", { count: "exact" }),
         ]);
         const totalViews = (seriesRes.data ?? []).reduce((sum: number, s: { views?: number }) => sum + (s.views ?? 0), 0);
-        const totalMembers = profilesRes.count ?? 0;
         setLiveStats((prev) => ({
           ...prev,
-          totalMembers,
           totalContents: seriesRes.count ?? dramas.length,
           totalViews,
           newSignups: 320,
