@@ -128,6 +128,84 @@ export default function Player() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ─── 댓글 state ─────────────────────────────────────────────────────────
+  interface Comment {
+    id: string;
+    user_name: string;
+    content: string;
+    created_at: string;
+  }
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [commentCount, setCommentCount] = useState(0);
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const commentInputRef = useRef<HTMLInputElement>(null);
+
+  // ─── 댓글 로드 ───────────────────────────────────────────────────────────
+  const loadComments = useCallback(async () => {
+    if (!episodeId) return;
+    setCommentLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("comments")
+        .select("id, user_name, content, created_at")
+        .eq("episode_id", episodeId)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (!error && data) {
+        setComments(data as Comment[]);
+        setCommentCount(data.length);
+      }
+    } catch (e) {
+      console.error("loadComments error:", e);
+    } finally {
+      setCommentLoading(false);
+    }
+  }, [episodeId]);
+
+  const handleOpenComments = useCallback(() => {
+    setShowComments(true);
+    loadComments();
+  }, [loadComments]);
+
+  const handleSubmitComment = useCallback(async () => {
+    if (!commentText.trim()) return;
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user;
+    if (!user) {
+      showToast("댓글을 작성하려면 로그인이 필요합니다");
+      return;
+    }
+    if (!episodeId) return;
+    setCommentSubmitting(true);
+    try {
+      const userName =
+        user.user_metadata?.name ||
+        user.user_metadata?.full_name ||
+        user.email?.split("@")[0] ||
+        "익명";
+      const { error } = await supabase.from("comments").insert({
+        episode_id: episodeId,
+        user_id: user.id,
+        user_name: userName,
+        content: commentText.trim(),
+      });
+      if (!error) {
+        setCommentText("");
+        await loadComments();
+      } else {
+        console.error("comment insert error:", error);
+        showToast("댓글 등록에 실패했습니다");
+      }
+    } catch (e) {
+      console.error("handleSubmitComment error:", e);
+    } finally {
+      setCommentSubmitting(false);
+    }
+  }, [commentText, episodeId, loadComments]);
+
   // ─── 조회수 기록 (재생 시작 시점) ───────────────────────────────────────
   // video의 'play' 이벤트는 일시정지 후 재생 등으로 여러 번 발생할 수 있으므로,
   // 같은 episode에 대해 이 Player 세션 안에서는 최초 1회만 RPC를 호출한다.
@@ -543,8 +621,9 @@ export default function Player() {
         <button onClick={() => setLiked((p) => !p)} className="flex flex-col items-center gap-1 pointer-events-auto">
           <Heart size={26} className={liked ? "text-red-500 fill-red-500" : ""} />
         </button>
-        <button className="flex flex-col items-center gap-1 pointer-events-auto">
+        <button className="flex flex-col items-center gap-1 pointer-events-auto" onClick={(e) => { e.stopPropagation(); handleOpenComments(); }}>
           <MessageCircle size={26} />
+          {commentCount > 0 && <span className="text-xs text-white/80">{commentCount}</span>}
         </button>
         <button onClick={(e) => { e.stopPropagation(); void handleShare(); }} aria-label="공유" className="flex flex-col items-center gap-1 pointer-events-auto">
           <Share2 size={26} />
@@ -715,6 +794,73 @@ export default function Player() {
           style={{ left: "50%", transform: "translateX(-50%)" }}
         >
           {toastMsg}
+        </div>
+      )}
+
+      {/* 댓글 패널 */}
+      {showComments && (
+        <div
+          className="absolute inset-0 z-50 flex justify-end"
+          onClick={() => setShowComments(false)}
+        >
+          <div
+            className="relative h-full w-full max-w-sm flex flex-col"
+            style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(12px)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 헤더 */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <span className="font-bold text-base text-white">댓글 {commentCount > 0 ? commentCount : ""}</span>
+              <button
+                onClick={() => setShowComments(false)}
+                className="text-white/60 hover:text-white transition-colors text-xl leading-none"
+                aria-label="닫기"
+              >×</button>
+            </div>
+
+            {/* 댓글 목록 */}
+            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3">
+              {commentLoading ? (
+                <div className="flex items-center justify-center h-24 text-white/40 text-sm">불러오는 중...</div>
+              ) : comments.length === 0 ? (
+                <div className="flex items-center justify-center h-24 text-white/40 text-sm">첫 댓글을 남겨보세요</div>
+              ) : (
+                comments.map((c) => (
+                  <div key={c.id} className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-yellow-400">{c.user_name}</span>
+                      <span className="text-xs text-white/30">
+                        {new Date(c.created_at).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    <p className="text-sm text-white/90 leading-snug">{c.content}</p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* 입력창 */}
+            <div className="px-4 py-3 border-t border-white/10 flex gap-2">
+              <input
+                ref={commentInputRef}
+                type="text"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleSubmitComment(); } }}
+                placeholder="댓글을 입력하세요..."
+                maxLength={200}
+                className="flex-1 bg-white/10 border border-white/20 rounded-full px-4 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-yellow-400/60 transition-colors"
+              />
+              <button
+                onClick={() => { void handleSubmitComment(); }}
+                disabled={commentSubmitting || !commentText.trim()}
+                className="px-4 py-2 rounded-full text-sm font-bold transition-all disabled:opacity-40"
+                style={{ background: "linear-gradient(135deg,#D4AF37,#F5D060)", color: "#000" }}
+              >
+                {commentSubmitting ? "..." : "등록"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
