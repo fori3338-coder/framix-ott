@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Play, Star } from "lucide-react";
 import type { Drama } from "../types";
 
@@ -10,7 +10,6 @@ interface DramaCardProps {
 }
 
 export default function DramaCard({ drama, rank, progress, size = "md" }: DramaCardProps) {
-  const navigate = useNavigate();
   const widthClass =
     size === "sm"
       ? "w-[90px] sm:w-[108px] md:w-[130px]"
@@ -80,14 +79,7 @@ export default function DramaCard({ drama, rank, progress, size = "md" }: DramaC
             "opacity-0 group-hover:opacity-100",
           ].join(" ")}
         >
-          <div
-            onClick={(e) => {
-              e.preventDefault();
-              const firstEpisode = drama.episodes?.[0];
-              if (firstEpisode) navigate(`/watch/${drama.id}/${firstEpisode.id}`);
-            }}
-            className="w-10 h-10 rounded-full bg-gold/90 flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-200 cursor-pointer"
-          >
+          <div className="w-10 h-10 rounded-full bg-gold/90 flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-200">
             <Play size={17} className="text-black fill-black ml-0.5" />
           </div>
         </div>

@@ -32,7 +32,6 @@ export default function DramaDetail() {
   const { drama, loading, error } = useDramaDetail(id);
   const { dramas: allDramas } = useDramas();
   const [inList, setInList] = useState(false);
-  const [showLockModal, setShowLockModal] = useState(false);
 
   // ── 로딩 상태 ──────────────────────────────────────────────────────────────
   if (loading) return <DetailSkeleton />;
@@ -146,14 +145,13 @@ export default function DramaDetail() {
         ) : (
           <div className="space-y-2">
             {drama.episodes.map((ep) => (
-              ep.isFree ? (
               <Link
                 key={ep.id}
                 to={`/watch/${drama.id}/${ep.id}`}
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-2 transition-colors group"
               >
                 <div className="relative w-28 md:w-36 aspect-video rounded-md overflow-hidden shrink-0 bg-surface-2">
-                  <img src={drama.poster} alt={ep.title} className="w-full h-full object-cover" />
+                  <img src={ep.thumbnail} alt={ep.title} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-colors">
                     <Play size={20} className="text-white opacity-0 group-hover:opacity-100" />
                   </div>
@@ -175,34 +173,6 @@ export default function DramaDetail() {
                   </p>
                 </div>
               </Link>
-              ) : (
-              <button
-                key={ep.id}
-                onClick={() => setShowLockModal(true)}
-                className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-surface-2 transition-colors group text-left"
-              >
-                <div className="relative w-28 md:w-36 aspect-video rounded-md overflow-hidden shrink-0 bg-surface-2">
-                  <img src={drama.poster} alt={ep.title} className="w-full h-full object-cover opacity-50" />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                    <Lock size={22} className="text-gold" />
-                  </div>
-                  <span className="absolute bottom-1 right-1 text-[10px] bg-black/70 text-white px-1 rounded">
-                    {ep.duration}
-                  </span>
-                  <span className="absolute top-1 left-1 bg-black/70 rounded p-0.5">
-                    <Lock size={11} className="text-gold" />
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-text">
-                    {ep.number}화 <span className="text-gold text-xs ml-1">VIP</span>
-                  </p>
-                  <p className="text-xs text-text-muted mt-0.5 line-clamp-2">
-                    프리미엄 구독 후 시청할 수 있습니다.
-                  </p>
-                </div>
-              </button>
-              )
             ))}
           </div>
         )}
@@ -211,56 +181,6 @@ export default function DramaDetail() {
       <div className="mt-8">
         <DramaRow title="비슷한 작품" dramas={similar} />
       </div>
-
-      {/* 잠금 에피소드 구독 안내 모달 */}
-      {showLockModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-6"
-          onClick={() => setShowLockModal(false)}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl"
-            style={{ background: "linear-gradient(160deg,#1a1a1a 0%,#0f0f10 100%)", border: "1px solid rgba(212,175,55,0.3)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* 상단 골드 라인 */}
-            <div style={{ height: "3px", background: "linear-gradient(90deg,#D4AF37,#F5D060,#D4AF37)" }} />
-
-            <div className="px-6 py-7 flex flex-col items-center text-center gap-4">
-              <div
-                className="w-14 h-14 rounded-full flex items-center justify-center"
-                style={{ background: "rgba(212,175,55,0.15)", border: "1px solid rgba(212,175,55,0.4)" }}
-              >
-                <Lock size={26} className="text-gold" />
-              </div>
-
-              <div>
-                <p className="text-lg font-bold text-white mb-1">프리미엄 콘텐츠</p>
-                <p className="text-sm text-white/60 leading-relaxed">
-                  4화부터는 프리미엄 구독이 필요합니다.<br />
-                  1~3화는 무료로 시청 가능합니다.
-                </p>
-              </div>
-
-              <div className="w-full flex flex-col gap-2 mt-1">
-                <button
-                  onClick={() => { setShowLockModal(false); navigate("/subscription"); }}
-                  className="w-full py-3 rounded-xl font-bold text-sm text-black transition-all active:scale-95"
-                  style={{ background: "linear-gradient(135deg,#D4AF37,#F5D060)" }}
-                >
-                  구독하기
-                </button>
-                <button
-                  onClick={() => setShowLockModal(false)}
-                  className="w-full py-2.5 rounded-xl text-sm text-white/60 hover:text-white transition-colors"
-                >
-                  닫기
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

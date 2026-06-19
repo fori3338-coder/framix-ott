@@ -3,8 +3,8 @@ import {
   Users, Film, Eye, DollarSign, TrendingUp, TrendingDown, Upload, Settings, Star,
   BarChart3, Activity, Sparkles, PlayCircle, MoreVertical, Search, Bell, Crown,
 } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
-import { supabase } from "../../lib/supabase";
+import { useMemo, useState } from "react";
+import { dramas } from "../../data/mockData";
 
 type Range = "7D" | "30D" | "90D";
 
@@ -18,24 +18,16 @@ interface StatCard {
   accent: string;
 }
 
-interface TopDrama {
-  id: string;
-  title: string;
-  genres: string[] | null;
-  rating: number;
-  views: number;
-  poster: string | null;
-}
-
-interface RecentSeries {
-  id: string;
-  title: string;
-  created_at: string;
-}
-
-function formatNumber(n: number): string {
-  return n.toLocaleString("ko-KR");
-}
+const stats: StatCard[] = [
+  { label: "총 구독자", value: "284,920", change: "+4.2%", trend: "up", icon: Users, accent: "from-gold to-gold-dark",
+    spark: [30, 36, 34, 42, 48, 52, 60, 58, 66, 72, 78, 84] },
+  { label: "총 콘텐츠", value: dramas.length.toString(), change: "+2", trend: "up", icon: Film, accent: "from-amber-200 to-gold",
+    spark: [10, 12, 14, 18, 22, 24, 26, 28, 30, 30, 32, 34] },
+  { label: "월 누적 조회수", value: "12.8M", change: "+18.5%", trend: "up", icon: Eye, accent: "from-gold-light to-gold",
+    spark: [50, 48, 55, 62, 58, 70, 68, 78, 82, 90, 88, 96] },
+  { label: "월 매출", value: "₩482M", change: "-1.2%", trend: "down", icon: DollarSign, accent: "from-gold to-gold-light",
+    spark: [88, 90, 86, 80, 84, 82, 78, 76, 80, 78, 74, 72] },
+];
 
 const sparkPath = (data: number[], w = 100, h = 32) => {
   const max = Math.max(...data); const min = Math.min(...data);
@@ -58,119 +50,26 @@ const labelMap: Record<Range, string[]> = {
   "90D": ["W1","W2","W3","W4","W5","W6","W7","W8","W9","W10","W11","W12"],
 };
 
+const recentActivity = [
+  { who: "관리자", what: "신작 '재벌집 그녀의 계약' 업로드 완료", when: "방금" },
+  { who: "시스템", what: "월간 정산 리포트가 생성되었습니다", when: "12분 전" },
+  { who: "관리자", what: "에피소드 4 무료 전환", when: "1시간 전" },
+  { who: "시스템", what: "신규 구독자 320명 유입", when: "오늘 09:24" },
+  { who: "관리자", what: "추천 알고리즘 가중치 업데이트", when: "어제" },
+];
+
 const genreShare = [
   { name: "로맨스", pct: 32 }, { name: "복수", pct: 22 }, { name: "재벌", pct: 16 },
   { name: "회귀", pct: 12 }, { name: "스릴러", pct: 10 }, { name: "기타", pct: 8 },
 ];
+
+const topDramas = [...dramas].sort((a, b) => b.views - a.views).slice(0, 6);
 
 export default function AdminDashboard() {
   const [range, setRange] = useState<Range>("7D");
   const chartData = dataMap[range];
   const chartLabels = labelMap[range];
   const maxVal = Math.max(...chartData);
-
-  // Supabase data state
-  const [totalContent, setTotalContent] = useState<number>(0);
-  const [monthlyViews, setMonthlyViews] = useState<number>(0);
-  const [totalUsers, setTotalUsers] = useState<number>(0);
-  const [topDramas, setTopDramas] = useState<TopDrama[]>([]);
-  const [recentActivity, setRecentActivity] = useState<{ who: string; what: string; when: string }[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      try {
-        // 총 콘텐츠 (series count)
-        const { count: seriesCount } = await supabase
-          .from("series")
-          .select("*", { count: "exact", head: true });
-
-        // 월 누적 조회수 (이번 달 1일 00:00 ~ 현재까지 episode_views 기준 집계)
-        // ※ episode_views는 episode 재생 "시작" 시점에 기록되며, 동일 사용자가
-        //    일정 시간 내 재시청한 경우는 record_episode_view() RPC에서 이미
-        //    제외되어 있으므로 여기서는 단순 카운트만 하면 된다.
-        const now = new Date();
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-        const { count: monthlyViewCount } = await supabase
-          .from("episode_views")
-          .select("*", { count: "exact", head: true })
-          .gte("viewed_at", monthStart);
-        const totalViews = monthlyViewCount ?? 0;
-
-        // 인기 콘텐츠 TOP6
-        const { data: topData } = await supabase
-          .from("series")
-          .select("id, title, genres, rating, views, thumbnail_url")
-          .order("views", { ascending: false })
-          .limit(6);
-
-        // 최근 생성된 series 5개
-        const { data: recentData } = await supabase
-          .from("series")
-          .select("id, title, created_at")
-          .order("created_at", { ascending: false })
-          .limit(5);
-
-        setTotalContent(seriesCount ?? 0);
-        setMonthlyViews(totalViews);
-
-        // 총 회원수 (public.users 테이블)
-        const { count: userCount } = await supabase
-          .from("users")
-          .select("*", { count: "exact", head: true });
-        setTotalUsers(userCount ?? 0);
-
-        setTopDramas(
-          (topData ?? []).map((d) => ({
-            id: d.id,
-            title: d.title,
-            genres: d.genres,
-            rating: d.rating ?? 0,
-            views: d.views ?? 0,
-            poster: d.thumbnail_url,
-          }))
-        );
-
-        setRecentActivity(
-          (recentData ?? []).map((s: RecentSeries) => {
-            const dt = new Date(s.created_at);
-            const now = new Date();
-            const diffMs = now.getTime() - dt.getTime();
-            const diffMin = Math.floor(diffMs / 60000);
-            const diffHour = Math.floor(diffMin / 60);
-            const diffDay = Math.floor(diffHour / 24);
-            let when = "";
-            if (diffMin < 1) when = "방금";
-            else if (diffMin < 60) when = `${diffMin}분 전`;
-            else if (diffHour < 24) when = `${diffHour}시간 전`;
-            else when = `${diffDay}일 전`;
-            return {
-              who: "관리자",
-              what: `'${s.title}' 콘텐츠 등록`,
-              when,
-            };
-          })
-        );
-      } catch (e) {
-        console.error("[AdminDashboard] fetch error", e);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
-  const stats: StatCard[] = [
-    { label: "총 회원수", value: loading ? "…" : formatNumber(totalUsers), change: "+4.2%", trend: "up", icon: Users, accent: "from-gold to-gold-dark",
-      spark: [30, 36, 34, 42, 48, 52, 60, 58, 66, 72, 78, 84] },
-    { label: "총 콘텐츠", value: loading ? "…" : formatNumber(totalContent), change: "+2", trend: "up", icon: Film, accent: "from-amber-200 to-gold",
-      spark: [10, 12, 14, 18, 22, 24, 26, 28, 30, 30, 32, 34] },
-    { label: "월 누적 조회수", value: loading ? "…" : formatNumber(monthlyViews), change: "+18.5%", trend: "up", icon: Eye, accent: "from-gold-light to-gold",
-      spark: [50, 48, 55, 62, 58, 70, 68, 78, 82, 90, 88, 96] },
-    { label: "월 매출", value: "₩482,000,000", change: "-1.2%", trend: "down", icon: DollarSign, accent: "from-gold to-gold-light",
-      spark: [88, 90, 86, 80, 84, 82, 78, 76, 80, 78, 74, 72] },
-  ];
 
   const areaPath = useMemo(() => {
     const w = 600, h = 180;
@@ -193,8 +92,8 @@ export default function AdminDashboard() {
             <Crown size={12} /> Framix Studio
           </div>
           <h1 className="text-xl md:text-3xl font-black truncate">
-            <span className="text-gradient-gold">관리자</span>{" "}
-            <span className="text-text">통합 대시보드</span>
+            <span className="text-gradient-gold">Admin</span>{" "}
+            <span className="text-text">Control Center</span>
           </h1>
           <p className="hidden sm:block text-xs text-text-muted mt-1">실시간 운영 현황과 콘텐츠 퍼포먼스를 한눈에 확인하세요.</p>
         </div>
@@ -365,83 +264,45 @@ export default function AdminDashboard() {
               <span>#</span><span /><span>제목</span><span>평점</span><span>조회수</span><span>변동</span><span />
             </div>
             <div className="divide-y divide-border">
-              {loading
-                ? Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="grid grid-cols-[24px_56px_minmax(0,1fr)_90px_90px_90px_30px] gap-3 items-center px-5 py-3">
-                      <span className="text-gold font-black text-sm tabular-nums">{i + 1}</span>
-                      <div className="w-12 h-16 rounded-md bg-surface-2 animate-pulse" />
-                      <div className="space-y-1.5">
-                        <div className="h-3 bg-surface-2 rounded animate-pulse w-3/4" />
-                        <div className="h-2.5 bg-surface-2 rounded animate-pulse w-1/2" />
-                      </div>
-                      <div className="h-3 bg-surface-2 rounded animate-pulse" />
-                      <div className="h-3 bg-surface-2 rounded animate-pulse" />
-                      <div className="h-3 bg-surface-2 rounded animate-pulse" />
-                      <div />
-                    </div>
-                  ))
-                : topDramas.map((d, i) => (
-                    <div key={d.id} className="grid grid-cols-[24px_56px_minmax(0,1fr)_90px_90px_90px_30px] gap-3 items-center px-5 py-3 hover:bg-surface-2/40 transition-colors">
-                      <span className="text-gold font-black text-sm tabular-nums">{i + 1}</span>
-                      {d.poster
-                        ? <img src={d.poster} alt={d.title} className="w-12 h-16 object-cover rounded-md" />
-                        : <div className="w-12 h-16 rounded-md bg-surface-2 flex items-center justify-center text-text-muted text-[10px]">없음</div>
-                      }
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold truncate">{d.title}</p>
-                        <p className="text-[11px] text-text-muted truncate mt-0.5">{(d.genres ?? []).slice(0, 2).join(" · ")}</p>
-                      </div>
-                      <span className="text-sm font-semibold flex items-center gap-1"><Star size={12} className="text-gold fill-gold" />{d.rating.toFixed(1)}</span>
-                      <span className="text-sm font-bold tabular-nums">{formatNumber(d.views)}</span>
-                      <span className={`text-xs font-semibold flex items-center gap-0.5 ${i % 3 === 2 ? "text-rose-300" : "text-emerald-300"}`}>
-                        {i % 3 === 2 ? <TrendingDown size={11} /> : <TrendingUp size={11} />}
-                        {(2 + i * 1.7).toFixed(1)}%
-                      </span>
-                      <button className="text-text-muted hover:text-gold" aria-label="더보기"><MoreVertical size={15} /></button>
-                    </div>
-                  ))
-              }
+              {topDramas.map((d, i) => (
+                <div key={d.id} className="grid grid-cols-[24px_56px_minmax(0,1fr)_90px_90px_90px_30px] gap-3 items-center px-5 py-3 hover:bg-surface-2/40 transition-colors">
+                  <span className="text-gold font-black text-sm tabular-nums">{i + 1}</span>
+                  <img src={d.poster} alt={d.title} className="w-12 h-16 object-cover rounded-md" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate">{d.title}</p>
+                    <p className="text-[11px] text-text-muted truncate mt-0.5">{d.genres.slice(0, 2).join(" · ")}</p>
+                  </div>
+                  <span className="text-sm font-semibold flex items-center gap-1"><Star size={12} className="text-gold fill-gold" />{d.rating.toFixed(1)}</span>
+                  <span className="text-sm font-bold tabular-nums">{(d.views / 10000).toFixed(0)}만</span>
+                  <span className={`text-xs font-semibold flex items-center gap-0.5 ${i % 3 === 2 ? "text-rose-300" : "text-emerald-300"}`}>
+                    {i % 3 === 2 ? <TrendingDown size={11} /> : <TrendingUp size={11} />}
+                    {(2 + i * 1.7).toFixed(1)}%
+                  </span>
+                  <button className="text-text-muted hover:text-gold" aria-label="더보기"><MoreVertical size={15} /></button>
+                </div>
+              ))}
             </div>
           </div>
           {/* Mobile list */}
           <div className="md:hidden divide-y divide-border">
-            {loading
-              ? Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="grid grid-cols-[20px_44px_minmax(0,1fr)_auto] gap-3 items-center p-3">
-                    <span className="text-gold font-black text-sm tabular-nums">{i + 1}</span>
-                    <div className="w-11 h-14 rounded-md bg-surface-2 animate-pulse" />
-                    <div className="space-y-1.5">
-                      <div className="h-3 bg-surface-2 rounded animate-pulse w-3/4" />
-                      <div className="h-2.5 bg-surface-2 rounded animate-pulse w-1/2" />
-                    </div>
-                    <div className="text-right space-y-1">
-                      <div className="h-3 bg-surface-2 rounded animate-pulse w-12" />
-                      <div className="h-2.5 bg-surface-2 rounded animate-pulse w-10" />
-                    </div>
-                  </div>
-                ))
-              : topDramas.map((d, i) => (
-                  <div key={d.id} className="grid grid-cols-[20px_44px_minmax(0,1fr)_auto] gap-3 items-center p-3">
-                    <span className="text-gold font-black text-sm tabular-nums">{i + 1}</span>
-                    {d.poster
-                      ? <img src={d.poster} alt={d.title} className="w-11 h-14 object-cover rounded-md" />
-                      : <div className="w-11 h-14 rounded-md bg-surface-2 flex items-center justify-center text-text-muted text-[10px]">없음</div>
-                    }
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold truncate">{d.title}</p>
-                      <p className="text-[11px] text-text-muted mt-0.5 flex items-center gap-1">
-                        <Star size={10} className="text-gold fill-gold" />{d.rating.toFixed(1)} · {(d.genres ?? [])[0]}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-bold tabular-nums">{formatNumber(d.views)}</p>
-                      <p className={`text-[10px] ${i % 3 === 2 ? "text-rose-300" : "text-emerald-300"}`}>
-                        {i % 3 === 2 ? "▼" : "▲"} {(2 + i * 1.7).toFixed(1)}%
-                      </p>
-                    </div>
-                  </div>
-                ))
-            }
+            {topDramas.map((d, i) => (
+              <div key={d.id} className="grid grid-cols-[20px_44px_minmax(0,1fr)_auto] gap-3 items-center p-3">
+                <span className="text-gold font-black text-sm tabular-nums">{i + 1}</span>
+                <img src={d.poster} alt={d.title} className="w-11 h-14 object-cover rounded-md" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">{d.title}</p>
+                  <p className="text-[11px] text-text-muted mt-0.5 flex items-center gap-1">
+                    <Star size={10} className="text-gold fill-gold" />{d.rating.toFixed(1)} · {d.genres[0]}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-bold tabular-nums">{(d.views / 10000).toFixed(0)}만</p>
+                  <p className={`text-[10px] ${i % 3 === 2 ? "text-rose-300" : "text-emerald-300"}`}>
+                    {i % 3 === 2 ? "▼" : "▲"} {(2 + i * 1.7).toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -452,22 +313,13 @@ export default function AdminDashboard() {
             <h2 className="font-bold text-sm md:text-base">최근 활동</h2>
           </div>
           <ol className="relative space-y-4 before:absolute before:left-[5px] before:top-1 before:bottom-1 before:w-px before:bg-border">
-            {loading
-              ? Array.from({ length: 5 }).map((_, i) => (
-                  <li key={i} className="pl-5 relative">
-                    <span className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full bg-gold ring-2 ring-base" />
-                    <div className="h-3 bg-surface-2 rounded animate-pulse w-3/4 mb-1" />
-                    <div className="h-2.5 bg-surface-2 rounded animate-pulse w-1/2" />
-                  </li>
-                ))
-              : recentActivity.map((a, i) => (
-                  <li key={i} className="pl-5 relative">
-                    <span className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full bg-gold ring-2 ring-base" />
-                    <p className="text-xs md:text-sm leading-snug">{a.what}</p>
-                    <p className="text-[10px] text-text-muted mt-0.5">{a.who} · {a.when}</p>
-                  </li>
-                ))
-            }
+            {recentActivity.map((a, i) => (
+              <li key={i} className="pl-5 relative">
+                <span className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full bg-gold ring-2 ring-base" />
+                <p className="text-xs md:text-sm leading-snug">{a.what}</p>
+                <p className="text-[10px] text-text-muted mt-0.5">{a.who} · {a.when}</p>
+              </li>
+            ))}
           </ol>
         </div>
       </div>

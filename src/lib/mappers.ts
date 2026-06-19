@@ -27,7 +27,7 @@ export function toFrontendEpisode(e: DbEpisode): Episode {
     title: e.title,
     duration: e.duration ?? "00:00",
     thumbnail: e.thumbnail_url ?? `https://picsum.photos/seed/${e.id}/400/225`,
-    isFree: e.episode_number != null ? e.episode_number <= 3 : (e.is_free ?? true),
+    isFree: e.is_free ?? true,
     videoUrl: e.video_url ?? undefined,
     progress: 0,
   };
