@@ -7,6 +7,7 @@ import {
   SkipBack, SkipForward,
   SkipForward as NextEpisodeIcon,
   List, Subtitles, Check, X,
+  ArrowLeft,
 } from "lucide-react";
 import { useDramaDetail } from "../hooks/useDramaDetail";
 import { useSubscription } from "../hooks/useSubscription";
@@ -577,16 +578,17 @@ export default function Player() {
         }}
       />
 
-      {/* ═══ TOP BAR — Netflix 스타일 좌측 상단 제목 (뒤로가기 제거) ══════ */}
+      {/* ═══ TOP BAR — Netflix 스타일 뒤로가기 버튼만 표시 ═══════════════════ */}
       <div className={`absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-20 ${fadeClass}`}>
-        <div className="flex flex-col">
-          <div className="font-bold text-sm leading-tight" style={{ textShadow: "0 1px 4px rgba(0,0,0,.9)" }}>
-            {drama.title}
-          </div>
-          <div className="text-xs opacity-70" style={{ textShadow: "0 1px 4px rgba(0,0,0,.9)" }}>
-            {episode.title}
-          </div>
-        </div>
+        <button
+          onClick={() => navigate(-1)}
+          aria-label="뒤로가기"
+          className="p-1.5 text-white bg-transparent hover:opacity-70 transition-opacity shrink-0"
+          style={{ position: "absolute", top: "16px", left: "16px", zIndex: 50 }}
+        >
+          <ArrowLeft size={26} />
+        </button>
+        <span />
         <button onClick={() => setLiked((p) => !p)} className="p-1 shrink-0">
           <Heart size={22} className={liked ? "text-red-500 fill-red-500" : ""} />
         </button>
@@ -616,6 +618,16 @@ export default function Player() {
             >
               <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
+          </div>
+
+          {/* 제목 — 하단 중앙 정렬 (진행바 아래 / 컨트롤 버튼 위) */}
+          <div className="flex justify-center px-20 sm:px-24 mb-2 pointer-events-none">
+            <span
+              className="text-white font-semibold text-center truncate max-w-full text-base sm:text-lg"
+              style={{ textShadow: "0 1px 4px rgba(0,0,0,.9)" }}
+            >
+              {drama.title} {episode.title}
+            </span>
           </div>
 
           {/* 버튼 행 */}
