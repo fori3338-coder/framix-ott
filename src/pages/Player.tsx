@@ -546,23 +546,33 @@ export default function Player() {
       {/* ═══ CUSTOM SUBTITLE OVERLAY ════════════════════════════════════════ */}
       {currentSubtitle && (
         <div
-          className="framix-subtitle"
+          className="framix-subtitle text-[18px] sm:text-[20px] lg:text-[24px]"
           style={{
             position: "absolute",
-            bottom: "120px",
+            bottom: "calc(150px + env(safe-area-inset-bottom, 0px))",
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 9999,
-            maxWidth: "80%",
+            maxWidth: "85%",
             textAlign: "center",
             whiteSpace: "pre-wrap",
-            fontSize: "24px",
+            wordBreak: "keep-all",
+            overflowWrap: "break-word",
             fontWeight: 700,
             lineHeight: 1.5,
             color: "white",
             textShadow:
               "0 0 6px rgba(0,0,0,.9), 0 0 12px rgba(0,0,0,.9)",
             pointerEvents: "none",
+            background: "rgba(0,0,0,0.55)",
+            padding: "10px 16px",
+            borderRadius: "12px",
+            backdropFilter: "blur(4px)",
+            WebkitBackdropFilter: "blur(4px)",
+            display: "-webkit-box",
+            WebkitBoxOrient: "vertical",
+            WebkitLineClamp: 3,
+            overflow: "hidden",
           }}
         >
           {currentSubtitle}
@@ -624,7 +634,7 @@ export default function Player() {
           </div>
 
           {/* 제목 — 하단 중앙 정렬 (진행바 아래 / 컨트롤 버튼 위) */}
-          <div className="flex justify-center px-20 sm:px-24 mb-2 pointer-events-none">
+          <div className="flex justify-center px-20 sm:px-24 mb-3 pointer-events-none">
             <span
               className="text-white font-semibold text-center truncate max-w-full text-base sm:text-lg"
               style={{ textShadow: "0 1px 4px rgba(0,0,0,.9)" }}
