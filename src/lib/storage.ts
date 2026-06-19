@@ -5,7 +5,32 @@ export const BUCKET = {
   THUMBNAILS: 'thumbnails',
   POSTERS: 'posters',
   BANNERS: 'banners',
+  SUBTITLES: 'subtitles',
 } as const;
+
+// ─── VTT 자막 업로드 ──────────────────────────────────────────────────────────
+// path: {dramaId}/{episodeId}/{lang}.vtt
+// 반환: public URL
+export async function uploadSubtitle(
+  dramaId: string,
+  episodeId: string,
+  lang: string,
+  file: File,
+  onProgress?: UploadProgressCallback
+): Promise<string> {
+  const path = `${dramaId}/${episodeId}/${lang}.vtt`;
+  onProgress?.(10);
+  const { error } = await supabase.storage
+    .from(BUCKET.SUBTITLES)
+    .upload(path, file, {
+      upsert: true,
+      contentType: 'text/vtt',
+    });
+  if (error) throw new Error(`자막 업로드 실패: ${error.message}`);
+  onProgress?.(100);
+  const { data } = supabase.storage.from(BUCKET.SUBTITLES).getPublicUrl(path);
+  return data.publicUrl;
+}
 
 export type UploadProgressCallback = (percent: number) => void;
 

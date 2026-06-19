@@ -3,10 +3,11 @@ import {
   Users, Film, Eye, TrendingUp, TrendingDown, Upload, Settings, Star,
   BarChart3, Activity, Sparkles, PlayCircle, MoreVertical, Search, Bell, Crown, UserPlus, Clapperboard,
   Edit2, Trash2, EyeOff, CheckCircle, AlertCircle,
-  Megaphone, Save, Gem, CalendarPlus, XCircle, RefreshCw, UserCog,
+  Megaphone, Save, Gem, CalendarPlus, XCircle, RefreshCw, UserCog, Subtitles,
 } from "lucide-react";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { supabase } from "../../lib/supabase";
+import SubtitleManager from "../../components/admin/SubtitleManager";
 
 type Range = "7D" | "30D" | "90D";
 
@@ -137,6 +138,9 @@ export default function AdminDashboard() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [showContentManager, setShowContentManager] = useState(false);
+
+  // ── 자막 관리 패널 상태 ───────────────────────────────────────────────────
+  const [subtitleTarget, setSubtitleTarget] = useState<{ id: string; title: string } | null>(null);
 
   // ── 구독자 관리 상태 ──────────────────────────────────────────────────────
   const [showMemberManager, setShowMemberManager] = useState(false);
@@ -1113,6 +1117,15 @@ export default function AdminDashboard() {
                   </div>
                   {/* 액션 버튼 */}
                   <div className="flex items-center gap-1.5 shrink-0">
+                    {/* 자막 관리 */}
+                    <button
+                      onClick={() => setSubtitleTarget({ id: d.id, title: d.title })}
+                      className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-text-dim hover:text-[#D4AF37] hover:border-[#D4AF37]/40 transition-colors"
+                      aria-label="자막 관리"
+                      title="자막 관리"
+                    >
+                      <Subtitles size={13} />
+                    </button>
                     {/* 수정 */}
                     <button
                       onClick={() => { setEditingId(d.id); setEditTitle(d.title); }}
@@ -1411,6 +1424,15 @@ export default function AdminDashboard() {
           );
         })}
       </div>
+
+      {/* ── 자막 관리 모달 ─────────────────────────────────────────────────── */}
+      {subtitleTarget && (
+        <SubtitleManager
+          seriesId={subtitleTarget.id}
+          seriesTitle={subtitleTarget.title}
+          onClose={() => setSubtitleTarget(null)}
+        />
+      )}
     </div>
   );
 }
