@@ -41,20 +41,21 @@ export function useSubscription(): UseSubscriptionResult {
 
         const now = new Date().toISOString();
 
-        // 만료 판정: end_date가 현재 시각보다 이전인 active 구독 → inactive 처리
+        // 만료 판정: end_date 경과한 active/cancelled 구독 → inactive 처리 (STEP1 + 해지 만료)
         await supabase
           .from("subscriptions")
           .update({ status: "inactive" })
           .eq("user_id", userId)
-          .eq("status", "active")
+          .in("status", ["active", "cancelled"])
           .not("end_date", "is", null)
           .lt("end_date", now);
 
+        // 조회: active(정상) + cancelled(해지했지만 기간 내) 모두 유효 구독으로 취급
         const { data, error } = await supabase
           .from("subscriptions")
           .select("*")
           .eq("user_id", userId)
-          .eq("status", "active")
+          .in("status", ["active", "cancelled"])
           .or(`end_date.is.null,end_date.gt.${now}`)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -82,7 +83,10 @@ export function useSubscription(): UseSubscriptionResult {
     };
   }, [tick]);
 
-  const isActive = subscription?.status === "active";
+  // active: 정상 구독 / cancelled: 해지했지만 end_date 전까지 시청 가능 → 둘 다 isActive=true
+  const isActive =
+    subscription !== null &&
+    (subscription.status === "active" || subscription.status === "cancelled");
 
   return { subscription, isActive, loading, refetch };
 }

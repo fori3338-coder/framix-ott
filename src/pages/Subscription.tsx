@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Check, Crown, Sparkles, Gem } from "lucide-react";
+import { Check, Crown, Sparkles, Gem, AlertTriangle } from "lucide-react";
 import { loadTossPayments, ANONYMOUS } from "@tosspayments/tosspayments-sdk";
+import { supabase } from "../lib/supabase";
+import { useSubscription } from "../hooks/useSubscription";
 
 // 토스페이먼츠 테스트 클라이언트 키
 const TOSS_CLIENT_KEY = "test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq";
@@ -44,6 +46,11 @@ const PLANS: {
 
 export default function Subscription() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  const { subscription, isActive, refetch } = useSubscription();
 
   async function handleSubscribe(planId: string, price: number) {
     if (loadingPlan) return;
@@ -73,6 +80,38 @@ export default function Subscription() {
     }
   }
 
+  // 구독 해지: status='active' → 'cancelled' (end_date 유지 → 기간 내 시청 가능)
+  async function handleCancelConfirm() {
+    if (cancelling) return;
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      if (!userId) { setCancelError("로그인 정보를 확인할 수 없습니다."); return; }
+
+      const { error } = await supabase
+        .from("subscriptions")
+        .update({ status: "cancelled" })
+        .eq("user_id", userId)
+        .eq("status", "active");
+
+      if (error) { setCancelError(error.message); return; }
+
+      setShowCancelModal(false);
+      refetch();
+    } catch (e: unknown) {
+      setCancelError(e instanceof Error ? e.message : "해지 중 오류가 발생했습니다.");
+    } finally {
+      setCancelling(false);
+    }
+  }
+
+  // end_date 포맷
+  const endDateLabel = subscription?.end_date
+    ? new Date(subscription.end_date).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })
+    : null;
+
   return (
     <div className="min-h-screen px-4 md:px-8 pt-20 md:pt-28 pb-16 animate-fade-in flex flex-col items-center">
 
@@ -92,6 +131,46 @@ export default function Subscription() {
         </p>
       </div>
 
+      {/* 구독 해지 영역 - 활성 구독(active)인 경우만 표시 */}
+      {isActive && subscription?.status === "active" && (
+        <div
+          className="w-full max-w-4xl mb-6 rounded-2xl border border-border p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+          style={{ background: "rgba(255,255,255,0.03)" }}
+        >
+          <div>
+            <p className="text-sm font-bold text-text mb-0.5">
+              현재 구독 중: <span className="text-gold uppercase">{subscription.plan}</span>
+            </p>
+            {endDateLabel && (
+              <p className="text-xs text-text-muted">
+                {subscription.status === "cancelled"
+                  ? `${endDateLabel}까지 이용 가능 (해지 완료)`
+                  : `다음 갱신일: ${endDateLabel}`}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={() => { setCancelError(null); setShowCancelModal(true); }}
+            className="shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold text-text-muted border border-border hover:border-red-500/50 hover:text-red-400 transition-all"
+          >
+            구독 해지
+          </button>
+        </div>
+      )}
+
+      {/* 해지 완료 안내 - cancelled 상태 */}
+      {isActive && subscription?.status === "cancelled" && endDateLabel && (
+        <div
+          className="w-full max-w-4xl mb-6 rounded-2xl border border-border p-5"
+          style={{ background: "rgba(255,255,255,0.03)" }}
+        >
+          <p className="text-sm font-bold text-text mb-0.5">
+            구독 해지 완료 · <span className="text-gold uppercase">{subscription.plan}</span>
+          </p>
+          <p className="text-xs text-text-muted">{endDateLabel}까지 계속 이용하실 수 있습니다.</p>
+        </div>
+      )}
+
       {/* 플랜 카드 그룹 */}
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6">
         {PLANS.map((plan) => {
@@ -105,7 +184,7 @@ export default function Subscription() {
                 boxShadow: "0 0 60px rgba(212,175,55,0.08), 0 20px 60px rgba(0,0,0,0.6)",
               }}
             >
-              {/* 배경 글로우 (카드 모서리 안쪽으로만 클리핑, 배지는 클리핑 대상 아님) */}
+              {/* 배경 글로우 */}
               <div className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden">
                 <div
                   className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-10"
@@ -183,6 +262,50 @@ export default function Subscription() {
           </div>
         ))}
       </div>
+
+      {/* 구독 해지 확인 모달 */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: "rgba(0,0,0,0.75)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowCancelModal(false); }}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-border p-7 flex flex-col gap-5"
+            style={{ background: "#111113", boxShadow: "0 20px 60px rgba(0,0,0,0.8)" }}
+          >
+            <div className="flex flex-col items-center gap-3 text-center">
+              <AlertTriangle size={36} className="text-red-400" />
+              <h2 className="text-lg font-black text-text">구독을 해지하시겠습니까?</h2>
+              <p className="text-sm text-text-muted leading-relaxed">
+                해지 후에도 <span className="text-text font-bold">현재 결제 기간이 끝날 때까지</span> 계속 이용하실 수 있습니다.
+                {endDateLabel && (
+                  <><br /><span className="text-gold font-bold">{endDateLabel}</span> 이후 자동 만료됩니다.</>
+                )}
+              </p>
+            </div>
+
+            {cancelError && (
+              <p className="text-red-400 text-xs text-center">{cancelError}</p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="flex-1 py-3 rounded-xl font-bold text-sm text-text border border-border hover:border-text/40 transition-all"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleCancelConfirm}
+                disabled={cancelling}
+                className="flex-1 py-3 rounded-xl font-bold text-sm text-white bg-red-500/80 hover:bg-red-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {cancelling ? "처리 중..." : "해지하기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
