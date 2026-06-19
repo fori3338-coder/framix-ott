@@ -340,7 +340,15 @@ export default function Player() {
       await saveWatchHistory(episodeId, v?.duration ?? 0, v?.duration ?? 1);
       const { error } = await supabase.rpc("increment_series_views", { series_id: id });
       if (error) console.error("VIEW 증가 실패:", error);
-      if (nextEpisode) navigate(`/watch/${id}/${nextEpisode.id}`);
+
+      if (nextEpisode) {
+        // 카운트다운이 아직 시작되지 않은 경우(짧은 영상 등) 대비 안전장치
+        setShowAutoNext(true);
+        setAutoNextCountdown((c) => (c > 0 ? c : 5));
+      } else {
+        // 다음화 없음 → 시리즈 상세 페이지로 이동
+        navigate(`/drama/${id}`);
+      }
     } catch (err) {
       console.error("handleVideoEnded error:", err);
     }
@@ -868,21 +876,28 @@ export default function Player() {
       {/* ═══ 자동 다음화 오버레이 ═══════════════════════════════════════════ */}
       {showAutoNext && nextEpisode && (
         <div className="absolute bottom-20 right-4 z-30">
-          <div className="bg-zinc-900/95 border border-white/10 rounded-xl p-4 min-w-[200px] space-y-3">
-            <p className="text-xs text-white/60 font-semibold uppercase tracking-wider">다음 화</p>
-            <p className="text-sm font-bold">{nextEpisode.title}</p>
+          <div className="bg-zinc-900/95 border border-white/10 rounded-xl p-4 min-w-[220px] space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-white/60 font-semibold uppercase tracking-wider">
+                다음화 자동재생
+              </p>
+              <span className="tabular-nums text-2xl font-extrabold text-yellow-400 leading-none">
+                {autoNextCountdown}
+              </span>
+            </div>
+            <p className="text-sm font-bold truncate">{nextEpisode.title}</p>
             <div className="flex items-center justify-between gap-3">
               <button
                 onClick={cancelAutoNext}
                 className="text-xs text-white/60 hover:text-white transition-colors"
               >
-                취소
+                자동재생 취소
               </button>
               <button
                 onClick={() => id && navigate(`/watch/${id}/${nextEpisode.id}`)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-400 text-black text-xs font-bold hover:brightness-110 transition-all"
               >
-                다음화 ▶ <span className="tabular-nums">{autoNextCountdown}초</span>
+                지금 보기 ▶
               </button>
             </div>
           </div>
