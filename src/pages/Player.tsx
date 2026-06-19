@@ -16,6 +16,25 @@ import { supabase } from "../lib/supabase";
 const CONTROLS_HIDE_DELAY_MS = 3000;
 const RESUME_KEY = (id: string) => `framix_resume_${id}`;
 const SUBTITLE_KEY = "framix_subtitle_lang";
+const SUBTITLE_ENABLED_KEY = "framix_subtitle_enabled";
+const SUBTITLE_SIZE_KEY = "framix_subtitle_size";
+const SUBTITLE_POSITION_KEY = "framix_subtitle_position";
+
+type SubtitleSize = "small" | "medium" | "large";
+type SubtitlePosition = "bottom" | "center";
+
+// ─── 자막 크기 옵션 (모바일 / 태블릿 / 데스크톱 font-size) ───────────────────
+const SUBTITLE_SIZE_OPTIONS: { value: SubtitleSize; label: string; className: string }[] = [
+  { value: "small", label: "작게", className: "text-[14px] sm:text-[16px] lg:text-[18px]" },
+  { value: "medium", label: "보통", className: "text-[18px] sm:text-[20px] lg:text-[24px]" },
+  { value: "large", label: "크게", className: "text-[22px] sm:text-[26px] lg:text-[30px]" },
+];
+
+// ─── 자막 위치 옵션 ──────────────────────────────────────────────────────
+const SUBTITLE_POSITION_OPTIONS: { value: SubtitlePosition; label: string }[] = [
+  { value: "bottom", label: "하단" },
+  { value: "center", label: "중앙" },
+];
 
 // ─── 지원 자막 언어 목록 ─────────────────────────────────────────────────────
 const SUBTITLE_LANGUAGES = [
@@ -186,6 +205,18 @@ export default function Player() {
   const [subtitleLang, setSubtitleLang] = useState<string>(() =>
     localStorage.getItem(SUBTITLE_KEY) ?? "off"
   );
+  const [subtitleEnabled, setSubtitleEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem(SUBTITLE_ENABLED_KEY);
+    return saved === null ? true : saved === "true";
+  });
+  const [subtitleSize, setSubtitleSize] = useState<SubtitleSize>(() => {
+    const saved = localStorage.getItem(SUBTITLE_SIZE_KEY) as SubtitleSize | null;
+    return saved === "small" || saved === "medium" || saved === "large" ? saved : "medium";
+  });
+  const [subtitlePosition, setSubtitlePosition] = useState<SubtitlePosition>(() => {
+    const saved = localStorage.getItem(SUBTITLE_POSITION_KEY) as SubtitlePosition | null;
+    return saved === "bottom" || saved === "center" ? saved : "bottom";
+  });
 
   const currentIndex = drama?.episodes.findIndex((e) => e.id === episodeId) ?? -1;
 
@@ -498,6 +529,27 @@ export default function Player() {
     setShowSubtitlePanel(false);
   };
 
+  // ─── 자막 ON/OFF ─────────────────────────────────────────────────────────
+  const toggleSubtitleEnabled = () => {
+    setSubtitleEnabled((prev) => {
+      const next = !prev;
+      localStorage.setItem(SUBTITLE_ENABLED_KEY, String(next));
+      return next;
+    });
+  };
+
+  // ─── 자막 크기 ───────────────────────────────────────────────────────────
+  const changeSubtitleSize = (size: SubtitleSize) => {
+    setSubtitleSize(size);
+    localStorage.setItem(SUBTITLE_SIZE_KEY, size);
+  };
+
+  // ─── 자막 위치 ───────────────────────────────────────────────────────────
+  const changeSubtitlePosition = (position: SubtitlePosition) => {
+    setSubtitlePosition(position);
+    localStorage.setItem(SUBTITLE_POSITION_KEY, position);
+  };
+
   // ─── 패널 토글 ───────────────────────────────────────────────────────────
   const toggleEpisodePanel = () => {
     setShowEpisodePanel((v) => !v);
@@ -562,14 +614,20 @@ export default function Player() {
       )}
 
       {/* ═══ CUSTOM SUBTITLE OVERLAY ════════════════════════════════════════ */}
-      {currentSubtitle && (
+      {subtitleEnabled && currentSubtitle && (
         <div
-          className="framix-subtitle text-[18px] sm:text-[20px] lg:text-[24px]"
+          className={`framix-subtitle ${
+            SUBTITLE_SIZE_OPTIONS.find((s) => s.value === subtitleSize)?.className ?? ""
+          }`}
           style={{
             position: "absolute",
-            bottom: "calc(150px + env(safe-area-inset-bottom, 0px))",
-            left: "50%",
-            transform: "translateX(-50%)",
+            ...(subtitlePosition === "center"
+              ? { top: "50%", left: "50%", transform: "translate(-50%, -50%)" }
+              : {
+                  bottom: "calc(150px + env(safe-area-inset-bottom, 0px))",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                }),
             zIndex: 9999,
             maxWidth: "85%",
             textAlign: "center",
@@ -838,6 +896,70 @@ export default function Player() {
           </button>
         </div>
         <div className="overflow-y-auto flex-1 py-2">
+          {/* ─── 자막 ON/OFF ─────────────────────────────────────────── */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <span className="text-sm font-semibold text-white">자막 표시</span>
+            <button
+              onClick={toggleSubtitleEnabled}
+              role="switch"
+              aria-checked={subtitleEnabled}
+              aria-label="자막 ON/OFF"
+              className={`relative w-11 h-6 rounded-full transition-colors ${
+                subtitleEnabled ? "bg-gold" : "bg-white/20"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                  subtitleEnabled ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* ─── 자막 크기 ───────────────────────────────────────────── */}
+          <div className="px-4 py-3 border-b border-white/10 space-y-2">
+            <span className="text-sm font-semibold text-white">자막 크기</span>
+            <div className="flex gap-2">
+              {SUBTITLE_SIZE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => changeSubtitleSize(opt.value)}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    subtitleSize === opt.value
+                      ? "bg-gold text-black"
+                      : "bg-white/10 text-white hover:bg-white/20"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ─── 자막 위치 ───────────────────────────────────────────── */}
+          <div className="px-4 py-3 border-b border-white/10 space-y-2">
+            <span className="text-sm font-semibold text-white">자막 위치</span>
+            <div className="flex gap-2">
+              {SUBTITLE_POSITION_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => changeSubtitlePosition(opt.value)}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    subtitlePosition === opt.value
+                      ? "bg-gold text-black"
+                      : "bg-white/10 text-white hover:bg-white/20"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ─── 자막 언어 ───────────────────────────────────────────── */}
+          <div className="px-4 pt-3 pb-1">
+            <span className="text-sm font-semibold text-white">자막 언어</span>
+          </div>
           {SUBTITLE_LANGUAGES.map((lang) => {
             const isOff = lang.code === "off";
             const isAvailable = isOff || availableCodes.has(lang.code);
