@@ -204,7 +204,9 @@ export default function Player() {
 
   // ─── 자막 DOM 주입 (track 요소를 JS로 직접 생성) ─────────────────────────
   // JSX <track> 대신 JS DOM으로 삽입해야 브라우저가 즉시 mode 제어를 수용함
-  const applySubtitle = useCallback((lang: string, subtitles: Record<string, string>) => {
+  // HOTFIX STEP7-2A: 영상(framix-ott.pages.dev)과 자막(*.supabase.co) 도메인이
+  // 달라 HTML5 track이 Cross-Origin으로 차단되는 문제 수정
+  const applySubtitle = useCallback(async (lang: string, subtitles: Record<string, string>) => {
     const video = videoRef.current;
     if (!video) return;
 
@@ -219,6 +221,20 @@ export default function Player() {
     const url = subtitles[lang];
     if (!url) return;
 
+    // [수정 3] FETCH 사전 검증 — track 생성 전 실제 URL 접근 가능 여부 확인
+    try {
+      const response = await fetch(url, { mode: "cors" });
+      if (!response.ok) {
+        throw new Error(`subtitle fetch failed with status ${response.status}`);
+      }
+    } catch (error) {
+      console.error("subtitle fetch failed", url, error);
+      return;
+    }
+
+    // 같은 lang 재선택 도중 다른 언어로 바뀌었으면 중단 (race condition 방지)
+    if (videoRef.current !== video) return;
+
     // 4) <track> 엘리먼트 생성 → video에 삽입
     const trackEl = document.createElement("track");
     trackEl.kind = "subtitles";
@@ -226,6 +242,18 @@ export default function Player() {
     trackEl.srclang = lang;
     trackEl.label = SUBTITLE_LANGUAGES.find((l) => l.code === lang)?.label ?? lang;
     trackEl.setAttribute("data-framix-sub", "1");
+    // [수정 2] TRACK CORS — 자막 VTT가 영상과 다른 도메인(Supabase)에서 오므로 명시
+    // HTMLTrackElement 타입에 crossOrigin 프로퍼티가 없어 setAttribute로 설정
+    trackEl.setAttribute("crossorigin", "anonymous");
+
+    // [수정 4] TRACK LOAD DEBUG — 실제 원인 확인용 로그
+    trackEl.addEventListener("load", () => {
+      console.log("subtitle loaded", url);
+    });
+    trackEl.addEventListener("error", () => {
+      console.error("subtitle load failed", url);
+    });
+
     video.appendChild(trackEl);
 
     // 5) track 로드 완료 후 mode = "showing"
@@ -235,6 +263,14 @@ export default function Player() {
     };
     setShowing();
     trackEl.addEventListener("load", setShowing, { once: true });
+
+    // [수정 5] TRACK MODE 강제 적용 — video.textTracks 기준으로 재확인
+    setTimeout(() => {
+      const tracks = video.textTracks;
+      for (let i = 0; i < tracks.length; i++) {
+        tracks[i].mode = tracks[i].language === lang ? "showing" : "hidden";
+      }
+    }, 500);
   }, []);
 
   // subtitleLang 변경 → 즉시 적용 + localStorage 저장
@@ -507,6 +543,7 @@ export default function Player() {
         <video
           ref={videoRef}
           src={episode.videoUrl}
+          crossOrigin="anonymous"
           className="w-full h-full object-cover cursor-pointer"
           autoPlay
           muted={muted}
