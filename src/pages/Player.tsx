@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   Play, Pause,
   Heart,
-  VolumeX, Volume2, Lock, Maximize, Minimize,
+  VolumeX, Volume2, Maximize, Minimize,
   SkipBack, SkipForward,
   SkipForward as NextEpisodeIcon,
   List, Subtitles, Check, X,
@@ -183,6 +183,89 @@ async function loadWatchHistory(episodeId: string): Promise<{ progressSeconds: n
   } catch {
     return null;
   }
+}
+
+// ─── 전환(Conversion) 최적화 멤버십/코인 잠금 오버레이 ──────────────────────
+// ReelShort / DramaBox / ShortMax 스타일: 배지 → 헤드라인 → 혜택 → 주 CTA(멤버십) → 보조 CTA(코인) → 하단 보류
+const MEMBERSHIP_BENEFITS = [
+  "광고 없이 시청",
+  "전체 에피소드 이용",
+  "신규 콘텐츠 우선 공개",
+];
+
+function MembershipConversionOverlay({
+  headline,
+  dismissLabel,
+  onStartMembership,
+  onWatchWithCoin,
+  onDismiss,
+}: {
+  headline: [string, string];
+  dismissLabel: string;
+  onStartMembership: () => void;
+  onWatchWithCoin: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="relative w-[300px] max-w-[88vw] rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-b from-zinc-900 to-black border border-yellow-400/20">
+      <button
+        onClick={onDismiss}
+        aria-label="닫기"
+        className="absolute top-3 right-3 z-10 p-1.5 text-white/50 hover:text-white transition-colors"
+      >
+        <X size={18} />
+      </button>
+
+      <div className="px-6 pt-7 pb-6 text-center space-y-5">
+        {/* ─── 상단: 잠긴 에피소드 배지 ─────────────────────────────── */}
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/30">
+          <span className="text-sm leading-none">🔒</span>
+          <span className="text-xs font-bold text-yellow-400 tracking-wide">잠긴 에피소드</span>
+        </div>
+
+        {/* ─── 중앙: 헤드라인 ───────────────────────────────────────── */}
+        <p className="text-lg font-extrabold leading-snug">
+          {headline[0]}
+          <br />
+          {headline[1]}
+        </p>
+
+        {/* ─── 혜택 표시 ────────────────────────────────────────────── */}
+        <ul className="text-left bg-white/5 rounded-xl px-4 py-3 space-y-2">
+          {MEMBERSHIP_BENEFITS.map((benefit) => (
+            <li key={benefit} className="flex items-center gap-2 text-sm text-white/90">
+              <Check size={16} className="text-yellow-400 flex-shrink-0" />
+              <span>{benefit}</span>
+            </li>
+          ))}
+        </ul>
+
+        {/* ─── 버튼: 주 CTA(멤버십) + 보조 CTA(코인) ───────────────────── */}
+        <div className="space-y-2 pt-1">
+          <button
+            onClick={onStartMembership}
+            className="w-full px-4 py-3 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-extrabold text-sm shadow-lg shadow-yellow-500/20 hover:brightness-110 transition-all"
+          >
+            멤버십 시작하기
+          </button>
+          <button
+            onClick={onWatchWithCoin}
+            className="w-full px-4 py-2.5 rounded-full border border-white/20 text-white font-semibold text-sm hover:bg-white/10 transition-colors"
+          >
+            코인으로 보기
+          </button>
+        </div>
+
+        {/* ─── 하단: 보류 ───────────────────────────────────────────── */}
+        <button
+          onClick={onDismiss}
+          className="text-xs text-white/40 hover:text-white/70 transition-colors pt-1"
+        >
+          {dismissLabel}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function Player() {
@@ -1049,17 +1132,16 @@ export default function Player() {
       {/* ═══ LOCK OVERLAY ═══════════════════════════════════════════════════ */}
       {isLocked && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-30">
-          <div className="text-center space-y-3">
-            <Lock size={40} className="mx-auto text-yellow-400" />
-            <p className="font-bold text-lg">VIP 전용 콘텐츠</p>
-            <p className="text-sm text-white/60">구독 후 무제한 시청하세요</p>
-            <button
-              onClick={() => navigate("/subscription")}
-              className="mt-2 px-6 py-2 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-bold text-sm"
-            >
-              구독하기
-            </button>
-          </div>
+          <MembershipConversionOverlay
+            headline={["이 에피소드를 시청하려면", "멤버십 또는 코인이 필요합니다"]}
+            dismissLabel="나중에 보기"
+            onStartMembership={() => navigate("/subscription")}
+            onWatchWithCoin={() => navigate("/subscription")}
+            onDismiss={() => {
+              if (id && drama) navigate(`/drama/${drama.id}`);
+              else navigate("/");
+            }}
+          />
         </div>
       )}
 
@@ -1110,56 +1192,13 @@ export default function Player() {
           className="absolute inset-0 z-40 flex items-center justify-center bg-black/70"
           style={{ backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
         >
-          <div className="relative w-[280px] bg-zinc-900/95 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-            <button
-              onClick={() => setDismissedNextLock(true)}
-              aria-label="닫기"
-              className="absolute top-2 right-2 z-10 p-1.5 text-white/70 hover:text-white transition-colors"
-            >
-              <X size={18} />
-            </button>
-
-            {/* 에피소드 썸네일 */}
-            <div className="relative w-full aspect-video bg-zinc-800">
-              <img
-                src={nextEpisode.thumbnail || drama?.poster}
-                alt={nextEpisode.title}
-                className="w-full h-full object-cover opacity-60"
-              />
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                <Lock size={34} className="text-yellow-400" />
-              </div>
-            </div>
-
-            <div className="p-4 text-center space-y-3">
-              <p className="text-sm font-bold truncate">{nextEpisode.title}</p>
-              <p className="text-sm text-white/80 leading-relaxed">
-                다음 화를 시청하려면
-                <br />
-                멤버십 또는 코인이 필요합니다
-              </p>
-              <div className="space-y-2 pt-1">
-                <button
-                  onClick={() => navigate("/subscription")}
-                  className="w-full px-4 py-2 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-bold text-sm"
-                >
-                  코인으로 보기
-                </button>
-                <button
-                  onClick={() => navigate("/subscription")}
-                  className="w-full px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-sm transition-colors"
-                >
-                  멤버십 가입
-                </button>
-                <button
-                  onClick={() => setDismissedNextLock(true)}
-                  className="w-full px-4 py-2 text-xs text-white/60 hover:text-white transition-colors"
-                >
-                  닫기
-                </button>
-              </div>
-            </div>
-          </div>
+          <MembershipConversionOverlay
+            headline={["다음 화를 시청하려면", "멤버십 또는 코인이 필요합니다"]}
+            dismissLabel="나중에 보기"
+            onStartMembership={() => navigate("/subscription")}
+            onWatchWithCoin={() => navigate("/subscription")}
+            onDismiss={() => setDismissedNextLock(true)}
+          />
         </div>
       )}
     </div>
