@@ -319,35 +319,37 @@ export default function Player() {
       {!isLocked && (
         <div className={`absolute inset-0 flex flex-col items-center justify-center gap-6 pointer-events-none ${fadeClass}`}>
           {/* 재생 컨트롤 행 */}
-          <div className="flex items-center gap-8">
+          <div className="flex items-center justify-center gap-10 sm:gap-12">
             <button
               onClick={() => seek(-10)}
-              className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center pointer-events-auto"
+              className="flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-full bg-black/40 pointer-events-auto"
               title="10초 뒤로"
             >
-              <SkipBack size={28} />
+              <SkipBack size={24} />
+              <span className="text-[10px] font-semibold leading-none">10초</span>
             </button>
             <button
               onClick={() => { revealControls(); setPlaying((p) => !p); }}
-              className="w-16 h-16 rounded-full bg-black/40 flex items-center justify-center pointer-events-auto"
+              className="w-20 h-20 rounded-full bg-black/40 flex items-center justify-center pointer-events-auto"
             >
-              {playing ? <Pause size={40} /> : <Play size={40} />}
+              {playing ? <Pause size={44} /> : <Play size={44} />}
             </button>
             <button
               onClick={() => seek(10)}
-              className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center pointer-events-auto"
+              className="flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-full bg-black/40 pointer-events-auto"
               title="10초 앞으로"
             >
-              <SkipForward size={28} />
+              <SkipForward size={24} />
+              <span className="text-[10px] font-semibold leading-none">10초</span>
             </button>
           </div>
 
           {/* 이전화 / 다음화 행 */}
-          <div className="flex items-center gap-4 pointer-events-auto">
+          <div className="flex items-center justify-center gap-6 pointer-events-auto">
             {prevEpisode && (
               <button
                 onClick={() => id && navigate(`/watch/${id}/${prevEpisode.id}`)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black/50 border border-white/20 text-sm font-semibold hover:bg-black/70 transition-colors"
+                className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-black/50 border border-white/20 text-sm font-semibold hover:bg-black/70 transition-colors"
               >
                 <ChevronLeftIcon size={16} /> 이전화
               </button>
@@ -355,7 +357,7 @@ export default function Player() {
             {nextEpisode && (
               <button
                 onClick={() => id && navigate(`/watch/${id}/${nextEpisode.id}`)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black/50 border border-white/20 text-sm font-semibold hover:bg-black/70 transition-colors"
+                className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-black/50 border border-white/20 text-sm font-semibold hover:bg-black/70 transition-colors"
               >
                 다음화 <ChevronRight size={16} />
               </button>
@@ -434,7 +436,7 @@ export default function Player() {
       {showResumeDialog && (
         <div
           className="absolute z-30"
-          style={{ right: 24, bottom: 100 }}
+          style={{ right: 100, bottom: 40 }}
         >
           <div className="bg-zinc-900/95 border border-white/10 rounded-xl p-4 min-w-[240px] space-y-3">
             <p className="text-sm font-bold">이어서 시청하기</p>
