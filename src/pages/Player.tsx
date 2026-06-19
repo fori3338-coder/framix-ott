@@ -54,32 +54,44 @@ const SUBTITLE_SIZE_CLASSNAME_LARGE_TEXT: Record<SubtitleSize, string> = {
 
 // ─── 지원 자막 언어 목록 ─────────────────────────────────────────────────────
 const SUBTITLE_LANGUAGES = [
-  { code: "off",   label: "자막 끄기" },
-  { code: "ko",    label: "한국어 (CC)" },
-  { code: "en",    label: "English" },
-  { code: "en_cc", label: "English (CC)" },
-  { code: "ja",    label: "日本語" },
-  { code: "zh_cn", label: "中文 (简体)" },
-  { code: "zh_tw", label: "中文 (繁體)" },
-  { code: "es",    label: "Español" },
-  { code: "fr",    label: "Français" },
-  { code: "de",    label: "Deutsch" },
-  { code: "it",    label: "Italiano" },
-  { code: "pt",    label: "Português (Brasil)" },
-  { code: "ru",    label: "Русский" },
-  { code: "ar",    label: "العربية" },
-  { code: "th",    label: "ภาษาไทย" },
-  { code: "vi",    label: "Tiếng Việt" },
-  { code: "id",    label: "Bahasa Indonesia" },
-  { code: "ms",    label: "Bahasa Melayu" },
-  { code: "tr",    label: "Türkçe" },
-  { code: "nl",    label: "Nederlands" },
-  { code: "no",    label: "Norsk" },
-  { code: "hi",    label: "हिन्दी" },
-  { code: "bn",    label: "বাংলা" },
-  { code: "ta",    label: "தமிழ்" },
-  { code: "te",    label: "తెలుగు" },
+  { code: "off", label: "자막 끄기" },
+  { code: "ko",  label: "한국어 (CC)" },
+  { code: "en",  label: "English (CC)" },
+  { code: "ja",  label: "日本語 (CC)" },
+  { code: "zh",  label: "中文 (CC)" },
+  { code: "es",  label: "Español (CC)" },
+  { code: "fr",  label: "Français (CC)" },
+  { code: "de",  label: "Deutsch (CC)" },
+  { code: "it",  label: "Italiano (CC)" },
+  { code: "pt",  label: "Português (CC)" },
+  { code: "ru",  label: "Русский (CC)" },
+  { code: "ar",  label: "العربية (CC)" },
+  { code: "th",  label: "ภาษาไทย (CC)" },
+  { code: "vi",  label: "Tiếng Việt (CC)" },
+  { code: "id",  label: "Bahasa Indonesia (CC)" },
+  { code: "ms",  label: "Bahasa Melayu (CC)" },
+  { code: "tr",  label: "Türkçe (CC)" },
+  { code: "nl",  label: "Nederlands (CC)" },
+  { code: "no",  label: "Norsk (CC)" },
+  { code: "hi",  label: "हिन्दी (CC)" },
+  { code: "bn",  label: "বাংলা (CC)" },
+  { code: "ta",  label: "தமிழ் (CC)" },
+  { code: "te",  label: "తెలుగు (CC)" },
 ];
+
+// 실제 DB의 subtitles 키가 SUBTITLE_LANGUAGES.code와 다른 표기로 저장된 경우를 위한 별칭 매핑
+// (예: 중국어가 "zh" 대신 "zh_cn" / "zh-cn" / "zh_tw" 등으로 저장된 경우에도 자동 인식)
+const SUBTITLE_CODE_ALIASES: Record<string, string[]> = {
+  zh: ["zh", "zh_cn", "zh-cn", "zh_tw", "zh-tw", "zh_hans", "zh_hant"],
+  en: ["en", "en_cc", "en-us", "en_us"],
+  pt: ["pt", "pt_br", "pt-br"],
+};
+
+// episode.subtitles(실제 보유 자막 목록)에서 해당 언어 코드에 대응하는 실제 키를 찾는다.
+function resolveSubtitleKey(code: string, subtitles: Record<string, string>): string | undefined {
+  const candidates = SUBTITLE_CODE_ALIASES[code] ?? [code];
+  return candidates.find((c) => !!subtitles[c]);
+}
 
 // ─── Custom Subtitle Engine ──────────────────────────────────────────────────
 interface SubCue {
@@ -301,6 +313,7 @@ export default function Player() {
   const [dismissedNextLock, setDismissedNextLock] = useState(false);
   const [showEpisodePanel, setShowEpisodePanel] = useState(false);
   const [showSubtitlePanel, setShowSubtitlePanel] = useState(false);
+  const [subtitleNotice, setSubtitleNotice] = useState<string>("");
   const [subtitleLang, setSubtitleLang] = useState<string>(() =>
     localStorage.getItem(SUBTITLE_KEY) ?? "off"
   );
@@ -377,9 +390,17 @@ export default function Player() {
     subtitleCuesRef.current = [];
     setCurrentSubtitle("");
 
-    if (lang === "off") return;
-    const url = subtitles[lang];
-    if (!url) return;
+    if (lang === "off") {
+      setSubtitleNotice("");
+      return;
+    }
+
+    const resolvedKey = resolveSubtitleKey(lang, subtitles);
+    const url = resolvedKey ? subtitles[resolvedKey] : undefined;
+    if (!url) {
+      setSubtitleNotice("선택한 언어의 자막이 없습니다");
+      return;
+    }
 
     try {
       const res = await fetch(url, { mode: "cors" });
@@ -387,9 +408,11 @@ export default function Player() {
       const text = await res.text();
       const cues = parseVTT(text);
       subtitleCuesRef.current = cues;
+      setSubtitleNotice("");
       console.log(`[Subtitle] ${lang} 로드 완료 — ${cues.length} cues`);
     } catch (err) {
       console.error("[Subtitle] VTT 로드 실패:", url, err);
+      setSubtitleNotice("선택한 언어의 자막이 없습니다");
     }
   }, []);
 
@@ -399,6 +422,13 @@ export default function Player() {
     loadSubtitle(subtitleLang, subtitles);
     localStorage.setItem(SUBTITLE_KEY, subtitleLang);
   }, [subtitleLang, episode?.subtitles, loadSubtitle]);
+
+  // "선택한 언어의 자막이 없습니다" 안내 자동 숨김 (2.5초)
+  useEffect(() => {
+    if (!subtitleNotice) return;
+    const t = setTimeout(() => setSubtitleNotice(""), 2500);
+    return () => clearTimeout(t);
+  }, [subtitleNotice]);
 
   // 에피소드 변경 시 재로드
   useEffect(() => {
@@ -687,7 +717,15 @@ export default function Player() {
   const nextEpisodeLocked = !!nextEpisode && !nextEpisode.isFree && !isSubscribed;
 
   const availableSubtitles = episode.subtitles ?? {};
-  const availableCodes = new Set(Object.keys(availableSubtitles));
+  const availableCodes = new Set(
+    SUBTITLE_LANGUAGES.filter((l) => l.code !== "off" && resolveSubtitleKey(l.code, availableSubtitles)).map(
+      (l) => l.code
+    )
+  );
+  const currentSubtitleLabel =
+    subtitleLang === "off"
+      ? "자막 꺼짐"
+      : SUBTITLE_LANGUAGES.find((l) => l.code === subtitleLang)?.label ?? "자막 꺼짐";
 
   return (
     <div
@@ -767,6 +805,30 @@ export default function Player() {
           {currentSubtitle}
         </div>
       )}
+
+      {/* ═══ 자막 없음 안내 토스트 (기존 자막 오버레이와 별개 요소) ═══════════ */}
+      {subtitleNotice && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(72px + env(safe-area-inset-top, 0px))",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 9999,
+            background: "rgba(0,0,0,0.75)",
+            color: "white",
+            fontSize: "12px",
+            fontWeight: 600,
+            padding: "8px 14px",
+            borderRadius: "999px",
+            pointerEvents: "none",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {subtitleNotice}
+        </div>
+      )}
+
 
       {/* GRADIENT OVERLAY */}
       <div
@@ -1100,6 +1162,10 @@ export default function Player() {
           {/* ─── 자막 언어 ───────────────────────────────────────────── */}
           <div className="px-4 pt-3 pb-1">
             <span className="text-sm font-semibold text-white">자막 언어</span>
+          </div>
+          <div className="px-4 pb-2">
+            <span className="text-[11px] text-white/40">현재 사용 중</span>
+            <p className="text-xs text-gold font-semibold">{currentSubtitleLabel}</p>
           </div>
           {SUBTITLE_LANGUAGES.map((lang) => {
             const isOff = lang.code === "off";
