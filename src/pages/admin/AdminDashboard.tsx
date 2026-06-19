@@ -17,6 +17,14 @@ interface LiveStats {
   newSignups: number;
 }
 
+interface SubStats {
+  totalSubscribers: number;
+  premiumCount: number;
+  vipCount: number;
+  cancelledCount: number;
+  inactiveCount: number;
+}
+
 
 
 
@@ -73,9 +81,18 @@ export default function AdminDashboard() {
     newSignups: 0,
   });
 
+  const [subStats, setSubStats] = useState<SubStats>({
+    totalSubscribers: 0,
+    premiumCount: 0,
+    vipCount: 0,
+    cancelledCount: 0,
+    inactiveCount: 0,
+  });
+
   useEffect(() => {
     async function fetchStats() {
       try {
+        // 콘텐츠/조회수
         const [seriesRes] = await Promise.all([
           supabase.from("series").select("id, views", { count: "exact" }),
           supabase.from("episodes").select("id", { count: "exact" }),
@@ -89,6 +106,51 @@ export default function AdminDashboard() {
         }));
       } catch (e) {
         console.error("fetchStats error:", e);
+      }
+
+      // 총 회원수 (profiles)
+      try {
+        const { count: memberCount } = await supabase
+          .from("profiles")
+          .select("id", { count: "exact", head: true });
+        setLiveStats((prev) => ({ ...prev, totalMembers: memberCount ?? 0 }));
+      } catch (e) {
+        console.error("fetchMembers error:", e);
+      }
+
+      // 구독 통계 (subscriptions)
+      try {
+        const { data: subs } = await supabase
+          .from("subscriptions")
+          .select("plan, status");
+
+        const rows = subs ?? [];
+        const activeStatuses = ["active", "cancelled"];
+
+        const totalSubscribers = rows.filter((r: { plan: string; status: string }) =>
+          activeStatuses.includes(r.status)
+        ).length;
+
+        const premiumCount = rows.filter((r: { plan: string; status: string }) =>
+          r.plan === "premium" && activeStatuses.includes(r.status)
+        ).length;
+
+        const vipCount = rows.filter((r: { plan: string; status: string }) =>
+          r.plan === "vip" && activeStatuses.includes(r.status)
+        ).length;
+
+        const cancelledCount = rows.filter((r: { plan: string; status: string }) =>
+          r.status === "cancelled"
+        ).length;
+
+        const inactiveCount = rows.filter((r: { plan: string; status: string }) =>
+          r.status === "inactive"
+        ).length;
+
+        setSubStats({ totalSubscribers, premiumCount, vipCount, cancelledCount, inactiveCount });
+        setLiveStats((prev) => ({ ...prev, totalSubscribers }));
+      } catch (e) {
+        console.error("fetchSubStats error:", e);
       }
     }
     fetchStats();
@@ -174,6 +236,29 @@ export default function AdminDashboard() {
               <path d={`${sparkPath(s.spark)} L100,32 L0,32 Z`} fill={`url(#g-${s.label})`} />
               <path d={sparkPath(s.spark)} fill="none" stroke="#D4AF37" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
             </svg>
+          </div>
+        ))}
+      </div>
+
+      {/* Subscription Stats cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-6 md:mb-8">
+        {[
+          { label: "총 구독자수", value: subStats.totalSubscribers, icon: Crown, accent: "from-gold to-gold-dark", color: "text-gold" },
+          { label: "Premium 회원", value: subStats.premiumCount, icon: Star, accent: "from-amber-300 to-gold", color: "text-amber-300" },
+          { label: "VIP 회원", value: subStats.vipCount, icon: Sparkles, accent: "from-gold-light to-gold", color: "text-gold-light" },
+          { label: "해지 예약", value: subStats.cancelledCount, icon: TrendingDown, accent: "from-rose-400 to-rose-600", color: "text-rose-400" },
+          { label: "만료", value: subStats.inactiveCount, icon: Activity, accent: "from-text-muted to-border", color: "text-text-dim" },
+          { label: "총 회원수", value: liveStats.totalMembers, icon: Users, accent: "from-emerald-400 to-gold", color: "text-emerald-400" },
+        ].map((s) => (
+          <div key={s.label} className="group relative overflow-hidden bg-surface border border-border rounded-2xl p-3 md:p-4 hover:border-gold/40 transition-all admin-card">
+            <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full bg-gradient-to-br ${s.accent} opacity-[0.07] blur-2xl group-hover:opacity-20 transition-opacity`} />
+            <div className="flex items-center justify-between mb-2 relative">
+              <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center">
+                <s.icon size={14} className={s.color} />
+              </div>
+            </div>
+            <p className={`text-lg md:text-xl font-black tracking-tight ${s.color}`}>{s.value.toLocaleString()}</p>
+            <p className="text-[10px] md:text-xs text-text-muted mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
