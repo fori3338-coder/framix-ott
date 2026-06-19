@@ -15,11 +15,15 @@ export interface UseSubscriptionResult {
   subscription: Subscription | null;
   isActive: boolean;
   loading: boolean;
+  refetch: () => void;
 }
 
 export function useSubscription(): UseSubscriptionResult {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0);
+
+  const refetch = () => setTick((t) => t + 1);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,9 +70,9 @@ export function useSubscription(): UseSubscriptionResult {
       cancelled = true;
       listener.subscription.unsubscribe();
     };
-  }, []);
+  }, [tick]);
 
   const isActive = subscription?.status === "active";
 
-  return { subscription, isActive, loading };
+  return { subscription, isActive, loading, refetch };
 }
