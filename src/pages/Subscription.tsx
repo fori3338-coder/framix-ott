@@ -79,9 +79,9 @@ export default function Subscription() {
 
   // 구독 해지 기능은 /my/subscription 페이지에서만 제공 (기존 STEP2 로직 그대로 이전)
 
-  // end_date 포맷
-  const endDateLabel = subscription?.end_date
-    ? new Date(subscription.end_date).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })
+  // current_period_end 포맷
+  const endDateLabel = subscription?.current_period_end
+    ? new Date(subscription.current_period_end).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })
     : null;
 
   return (
@@ -111,7 +111,7 @@ export default function Subscription() {
         >
           <div>
             <p className="text-sm font-bold text-text mb-0.5">
-              현재 구독 중: <span className="text-gold uppercase">{subscription.plan}</span>
+              현재 구독 중: <span className="text-gold uppercase">{subscription.membership_level}</span>
             </p>
             {endDateLabel && (
               <p className="text-xs text-text-muted">
@@ -135,7 +135,7 @@ export default function Subscription() {
           style={{ background: "rgba(255,255,255,0.03)" }}
         >
           <p className="text-sm font-bold text-text mb-0.5">
-            구독 해지 완료 · <span className="text-gold uppercase">{subscription.plan}</span>
+            구독 해지 완료 · <span className="text-gold uppercase">{subscription.membership_level}</span>
           </p>
           <p className="text-xs text-text-muted">{endDateLabel}까지 계속 이용하실 수 있습니다.</p>
         </div>

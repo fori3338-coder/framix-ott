@@ -35,7 +35,7 @@ function formatDate(iso: string | null) {
   });
 }
 
-// 남은 기간 계산: end_date - 오늘, 일 단위
+// 남은 기간 계산: current_period_end - 오늘, 일 단위
 function daysRemaining(endDate: string | null): number | null {
   if (!endDate) return null;
   const end = new Date(endDate).getTime();
@@ -122,10 +122,10 @@ export default function MySubscription() {
     );
   }
 
-  const remaining = subscription ? daysRemaining(subscription.end_date) : null;
-  const startLabel = subscription ? formatDate(subscription.start_date) : null;
-  const endLabel = subscription ? formatDate(subscription.end_date) : null;
-  const PlanIcon = subscription ? (PLAN_ICON[subscription.plan] ?? Crown) : Crown;
+  const remaining = subscription ? daysRemaining(subscription.current_period_end) : null;
+  const startLabel = subscription ? formatDate(subscription.current_period_start) : null;
+  const endLabel = subscription ? formatDate(subscription.current_period_end) : null;
+  const PlanIcon = subscription ? (PLAN_ICON[subscription.membership_level] ?? Crown) : Crown;
 
   return (
     <div className="min-h-screen px-4 md:px-8 pt-20 md:pt-28 pb-16 animate-fade-in flex flex-col items-center">
@@ -201,7 +201,7 @@ export default function MySubscription() {
           <div className="relative flex items-center justify-between flex-wrap gap-3 mb-6">
             <div className="flex items-center gap-2">
               <PlanIcon size={20} className="text-gold" />
-              <span className="text-xl md:text-2xl font-black text-text">{planLabel(subscription.plan)}</span>
+              <span className="text-xl md:text-2xl font-black text-text">{planLabel(subscription.membership_level)}</span>
             </div>
             <StatusBadge status={subscription.status} />
           </div>

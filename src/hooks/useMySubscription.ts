@@ -10,10 +10,10 @@ import { supabase } from "../lib/supabase";
 export interface MySubscriptionRow {
   id: string;
   user_id: string;
-  plan: string;
+  membership_level: string;
   status: string;
-  start_date: string;
-  end_date: string | null;
+  current_period_start: string;
+  current_period_end: string | null;
   created_at: string;
 }
 
@@ -57,8 +57,8 @@ export function useMySubscription(): UseMySubscriptionResult {
           .update({ status: "inactive" })
           .eq("user_id", userId)
           .in("status", ["active", "cancelled"])
-          .not("end_date", "is", null)
-          .lt("end_date", now);
+          .not("current_period_end", "is", null)
+          .lt("current_period_end", now);
 
         // 상태 무관 최신 구독 1건 조회
         const { data, error: err } = await supabase

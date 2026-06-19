@@ -24,14 +24,14 @@ export default function PaymentSuccess() {
         const userId = userData?.user?.id;
         if (!userId) return;
 
-        // plan 판별: amount <= 4900 → premium, > 4900 → vip
-        const plan = Number(amount) <= 4900 ? "premium" : "vip";
+        // membership_level 판별: amount <= 4900 → premium, > 4900 → vip
+        const membership_level = Number(amount) <= 4900 ? "premium" : "vip";
 
         const now = new Date();
-        const startDate = now.toISOString();
-        const endDate = new Date(now);
-        endDate.setMonth(endDate.getMonth() + 1);
-        const endDateISO = endDate.toISOString();
+        const current_period_start = now.toISOString();
+        const periodEnd = new Date(now);
+        periodEnd.setMonth(periodEnd.getMonth() + 1);
+        const current_period_end = periodEnd.toISOString();
 
         // 기존 active 구독 조회
         const { data: existing } = await supabase
@@ -46,9 +46,9 @@ export default function PaymentSuccess() {
           const { error } = await supabase
             .from("subscriptions")
             .update({
-              plan,
-              start_date: startDate,
-              end_date: endDateISO,
+              membership_level,
+              current_period_start,
+              current_period_end,
             })
             .eq("id", existing.id);
           if (error) { setSaveError(error.message); return; }
@@ -58,11 +58,11 @@ export default function PaymentSuccess() {
             .from("subscriptions")
             .insert({
               user_id: userId,
-              plan,
+              membership_level,
               status: "active",
-              start_date: startDate,
-              end_date: endDateISO,
-              created_at: startDate,
+              current_period_start,
+              current_period_end,
+              created_at: current_period_start,
             });
           if (error) { setSaveError(error.message); return; }
         }

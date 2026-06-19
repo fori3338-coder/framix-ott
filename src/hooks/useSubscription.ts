@@ -4,10 +4,10 @@ import { supabase } from "../lib/supabase";
 export interface Subscription {
   id: string;
   user_id: string;
-  plan: string;
+  membership_level: string;
   status: string;
-  start_date: string;
-  end_date: string | null;
+  current_period_start: string;
+  current_period_end: string | null;
   created_at: string;
 }
 
@@ -41,14 +41,14 @@ export function useSubscription(): UseSubscriptionResult {
 
         const now = new Date().toISOString();
 
-        // 만료 판정: end_date 경과한 active/cancelled 구독 → inactive 처리 (STEP1 + 해지 만료)
+        // 만료 판정: current_period_end 경과한 active/cancelled 구독 → inactive 처리 (STEP1 + 해지 만료)
         await supabase
           .from("subscriptions")
           .update({ status: "inactive" })
           .eq("user_id", userId)
           .in("status", ["active", "cancelled"])
-          .not("end_date", "is", null)
-          .lt("end_date", now);
+          .not("current_period_end", "is", null)
+          .lt("current_period_end", now);
 
         // 조회: active(정상) + cancelled(해지했지만 기간 내) 모두 유효 구독으로 취급
         const { data, error } = await supabase
@@ -56,7 +56,7 @@ export function useSubscription(): UseSubscriptionResult {
           .select("*")
           .eq("user_id", userId)
           .in("status", ["active", "cancelled"])
-          .or(`end_date.is.null,end_date.gt.${now}`)
+          .or(`current_period_end.is.null,current_period_end.gt.${now}`)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();

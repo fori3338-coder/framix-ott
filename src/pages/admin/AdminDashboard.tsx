@@ -25,6 +25,16 @@ interface SubStats {
   inactiveCount: number;
 }
 
+interface RevenueStats {
+  todayRevenue: number;
+  monthRevenue: number;
+  totalRevenue: number;
+  premiumRevenue: number;
+  vipRevenue: number;
+  paymentCount: number;
+  arpu: number;
+}
+
 
 
 
@@ -89,6 +99,16 @@ export default function AdminDashboard() {
     inactiveCount: 0,
   });
 
+  const [revenueStats, setRevenueStats] = useState<RevenueStats>({
+    todayRevenue: 0,
+    monthRevenue: 0,
+    totalRevenue: 0,
+    premiumRevenue: 0,
+    vipRevenue: 0,
+    paymentCount: 0,
+    arpu: 0,
+  });
+
   useEffect(() => {
     async function fetchStats() {
       try {
@@ -118,37 +138,107 @@ export default function AdminDashboard() {
         console.error("fetchMembers error:", e);
       }
 
-      // 구독 통계 (subscriptions)
+      // 구독 통계 (subscriptions) — 실제 컬럼: membership_level, status
       try {
         const { data: subs } = await supabase
           .from("subscriptions")
-          .select("plan, status");
+          .select("membership_level, status, current_period_start");
 
         const rows = subs ?? [];
         const activeStatuses = ["active", "cancelled"];
 
-        const totalSubscribers = rows.filter((r: { plan: string; status: string }) =>
+        const totalSubscribers = rows.filter((r: { membership_level: string; status: string; current_period_start: string }) =>
           activeStatuses.includes(r.status)
         ).length;
 
-        const premiumCount = rows.filter((r: { plan: string; status: string }) =>
-          r.plan === "premium" && activeStatuses.includes(r.status)
+        const premiumCount = rows.filter((r: { membership_level: string; status: string; current_period_start: string }) =>
+          r.membership_level === "premium" && activeStatuses.includes(r.status)
         ).length;
 
-        const vipCount = rows.filter((r: { plan: string; status: string }) =>
-          r.plan === "vip" && activeStatuses.includes(r.status)
+        const vipCount = rows.filter((r: { membership_level: string; status: string; current_period_start: string }) =>
+          r.membership_level === "vip" && activeStatuses.includes(r.status)
         ).length;
 
-        const cancelledCount = rows.filter((r: { plan: string; status: string }) =>
+        const cancelledCount = rows.filter((r: { membership_level: string; status: string; current_period_start: string }) =>
           r.status === "cancelled"
         ).length;
 
-        const inactiveCount = rows.filter((r: { plan: string; status: string }) =>
+        const inactiveCount = rows.filter((r: { membership_level: string; status: string; current_period_start: string }) =>
           r.status === "inactive"
         ).length;
 
         setSubStats({ totalSubscribers, premiumCount, vipCount, cancelledCount, inactiveCount });
         setLiveStats((prev) => ({ ...prev, totalSubscribers }));
+
+        // ── 매출 통계 계산 ─────────────────────────────────────────────
+        const PREMIUM_PRICE = 4900;
+        const VIP_PRICE = 9900;
+
+        const now = new Date();
+        const todayStr = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
+        const monthStr = now.toISOString().slice(0, 7);  // "YYYY-MM"
+
+        // active + cancelled 만 매출 계산 대상 (inactive 제외)
+        const paidRows = rows.filter((r: { membership_level: string; status: string; current_period_start: string }) =>
+          activeStatuses.includes(r.status)
+        );
+
+        const getPrice = (level: string) =>
+          level === "vip" ? VIP_PRICE : level === "premium" ? PREMIUM_PRICE : 0;
+
+        // 누적 매출 (active + cancelled 전체)
+        const totalRevenue = paidRows.reduce(
+          (sum: number, r: { membership_level: string; status: string; current_period_start: string }) =>
+            sum + getPrice(r.membership_level),
+          0
+        );
+
+        // Premium / VIP 매출
+        const premiumRevenue = paidRows.filter(
+          (r: { membership_level: string; status: string; current_period_start: string }) => r.membership_level === "premium"
+        ).length * PREMIUM_PRICE;
+
+        const vipRevenue = paidRows.filter(
+          (r: { membership_level: string; status: string; current_period_start: string }) => r.membership_level === "vip"
+        ).length * VIP_PRICE;
+
+        // 오늘 결제 (current_period_start 날짜가 오늘인 것)
+        const todayRows = paidRows.filter(
+          (r: { membership_level: string; status: string; current_period_start: string }) =>
+            r.current_period_start && r.current_period_start.slice(0, 10) === todayStr
+        );
+        const todayRevenue = todayRows.reduce(
+          (sum: number, r: { membership_level: string; status: string; current_period_start: string }) =>
+            sum + getPrice(r.membership_level),
+          0
+        );
+
+        // 이번달 결제 (current_period_start 월이 이번달인 것)
+        const monthRows = paidRows.filter(
+          (r: { membership_level: string; status: string; current_period_start: string }) =>
+            r.current_period_start && r.current_period_start.slice(0, 7) === monthStr
+        );
+        const monthRevenue = monthRows.reduce(
+          (sum: number, r: { membership_level: string; status: string; current_period_start: string }) =>
+            sum + getPrice(r.membership_level),
+          0
+        );
+
+        // 결제 건수 = active + cancelled 총합
+        const paymentCount = paidRows.length;
+
+        // ARPU = 총 매출 ÷ 활성 구독자 수 (active + cancelled)
+        const arpu = totalSubscribers > 0 ? Math.round(totalRevenue / totalSubscribers) : 0;
+
+        setRevenueStats({
+          todayRevenue,
+          monthRevenue,
+          totalRevenue,
+          premiumRevenue,
+          vipRevenue,
+          paymentCount,
+          arpu,
+        });
       } catch (e) {
         console.error("fetchSubStats error:", e);
       }
@@ -261,6 +351,41 @@ export default function AdminDashboard() {
             <p className="text-[10px] md:text-xs text-text-muted mt-0.5">{s.label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Revenue Stats cards */}
+      <div className="mb-6 md:mb-8">
+        <div className="flex items-center gap-2 mb-3">
+          <TrendingUp size={15} className="text-gold" />
+          <h2 className="font-bold text-sm md:text-base text-text">매출 통계</h2>
+          <span className="text-[10px] text-text-muted ml-1">· Premium 4,900원 / VIP 9,900원 기준 · active + cancelled 포함</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 md:gap-4">
+          {[
+            { label: "오늘 매출", value: revenueStats.todayRevenue, icon: TrendingUp, color: "text-emerald-300", accent: "from-emerald-400 to-emerald-600", fmt: "won" },
+            { label: "이번달 매출", value: revenueStats.monthRevenue, icon: BarChart3, color: "text-gold", accent: "from-gold to-gold-dark", fmt: "won" },
+            { label: "누적 매출", value: revenueStats.totalRevenue, icon: Sparkles, color: "text-gold-light", accent: "from-gold-light to-gold", fmt: "won" },
+            { label: "Premium 매출", value: revenueStats.premiumRevenue, icon: Star, color: "text-amber-300", accent: "from-amber-300 to-gold", fmt: "won" },
+            { label: "VIP 매출", value: revenueStats.vipRevenue, icon: Crown, color: "text-gold", accent: "from-gold to-gold-dark", fmt: "won" },
+            { label: "결제 건수", value: revenueStats.paymentCount, icon: Activity, color: "text-sky-300", accent: "from-sky-400 to-sky-600", fmt: "count" },
+            { label: "ARPU", value: revenueStats.arpu, icon: Users, color: "text-rose-300", accent: "from-rose-400 to-rose-600", fmt: "won" },
+          ].map((s) => (
+            <div key={s.label} className="group relative overflow-hidden bg-surface border border-border rounded-2xl p-3 md:p-4 hover:border-gold/40 transition-all admin-card">
+              <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full bg-gradient-to-br ${s.accent} opacity-[0.07] blur-2xl group-hover:opacity-20 transition-opacity`} />
+              <div className="flex items-center justify-between mb-2 relative">
+                <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center">
+                  <s.icon size={14} className={s.color} />
+                </div>
+              </div>
+              <p className={`text-base md:text-lg font-black tracking-tight ${s.color} tabular-nums`}>
+                {s.fmt === "won"
+                  ? `${s.value.toLocaleString()}원`
+                  : `${s.value.toLocaleString()}건`}
+              </p>
+              <p className="text-[10px] md:text-xs text-text-muted mt-0.5">{s.label}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Main grid */}
