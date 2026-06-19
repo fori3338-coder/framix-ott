@@ -3,10 +3,38 @@ import type { DragEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft, UploadCloud, Plus, Trash2, ImagePlus, CheckCircle2, X, GripVertical,
-  Save, Eye, Film, Sparkles, Crown, AlertCircle,
+  Save, Eye, Film, Sparkles, Crown, AlertCircle, Subtitles, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { uploadImage, uploadVideo, BUCKET } from "../../lib/storage";
+
+// ─── 지원 자막 언어 목록 ─────────────────────────────────────────────────────
+const SUBTITLE_LANGUAGES = [
+  { code: "ko",    label: "한국어 (CC)" },
+  { code: "en",    label: "English" },
+  { code: "en_cc", label: "English (CC)" },
+  { code: "ja",    label: "日本語" },
+  { code: "zh_cn", label: "中文 (简体)" },
+  { code: "zh_tw", label: "中文 (繁體)" },
+  { code: "es",    label: "Español" },
+  { code: "fr",    label: "Français" },
+  { code: "de",    label: "Deutsch" },
+  { code: "it",    label: "Italiano" },
+  { code: "pt",    label: "Português (Brasil)" },
+  { code: "ru",    label: "Русский" },
+  { code: "ar",    label: "العربية" },
+  { code: "th",    label: "ภาษาไทย" },
+  { code: "vi",    label: "Tiếng Việt" },
+  { code: "id",    label: "Bahasa Indonesia" },
+  { code: "ms",    label: "Bahasa Melayu" },
+  { code: "tr",    label: "Türkçe" },
+  { code: "nl",    label: "Nederlands" },
+  { code: "no",    label: "Norsk" },
+  { code: "hi",    label: "हिन्दी" },
+  { code: "bn",    label: "বাংলা" },
+  { code: "ta",    label: "தமிழ்" },
+  { code: "te",    label: "తెలుగు" },
+];
 
 interface EpisodeDraft {
   id: number;
@@ -17,6 +45,8 @@ interface EpisodeDraft {
   videoProgress: number;
   thumbnailFile?: File;
   thumbnailPreview?: string;
+  subtitles: Record<string, string>; // { ko: "url", en: "url", ... }
+  showSubtitlePanel: boolean;
 }
 
 const genreOptions = [
@@ -45,11 +75,10 @@ export default function ContentUpload() {
   const backdropRef = useRef<HTMLInputElement>(null);
 
   const [episodes, setEpisodes] = useState<EpisodeDraft[]>([
-    { id: 1, title: "1화", duration: "12:00", isFree: true, videoProgress: 0 },
+    { id: 1, title: "1화", duration: "12:00", isFree: true, videoProgress: 0, subtitles: {}, showSubtitlePanel: false },
   ]);
 
   const [dragOverMap, setDragOverMap] = useState<Record<number, boolean>>({});
-
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -83,12 +112,32 @@ export default function ContentUpload() {
   const addEpisode = () =>
     setEpisodes((p) => [
       ...p,
-      { id: p.length ? p[p.length - 1].id + 1 : 1, title: `${p.length + 1}화`, duration: "12:00", isFree: false, videoProgress: 0 },
+      {
+        id: p.length ? p[p.length - 1].id + 1 : 1,
+        title: `${p.length + 1}화`,
+        duration: "12:00",
+        isFree: false,
+        videoProgress: 0,
+        subtitles: {},
+        showSubtitlePanel: false,
+      },
     ]);
 
   const removeEpisode = (id: number) => setEpisodes((p) => p.filter((e) => e.id !== id));
   const updateEpisode = (id: number, patch: Partial<EpisodeDraft>) =>
     setEpisodes((p) => p.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+
+  const updateSubtitleUrl = (episodeId: number, lang: string, url: string) => {
+    setEpisodes((p) =>
+      p.map((ep) => {
+        if (ep.id !== episodeId) return ep;
+        const next = { ...ep.subtitles };
+        if (url.trim()) next[lang] = url.trim();
+        else delete next[lang];
+        return { ...ep, subtitles: next };
+      })
+    );
+  };
 
   const moveEpisode = (id: number, dir: -1 | 1) => {
     setEpisodes((p) => {
@@ -113,47 +162,32 @@ export default function ContentUpload() {
     reader.readAsDataURL(file);
   };
 
- const handleEpisodeVideo = (episodeId: number, file: File | undefined) => {
-   console.log(
-  "[LOG_A2]",
-  episodeId,
-  file?.name,
-  file
-);
-   console.log("[LOG_A] handleEpisodeVideo 진입", episodeId, file?.name);
-   console.log("[ContentUpload] VIDEO_CHANGE", episodeId, file?.name);
-   if (!file) return;
+  const handleEpisodeVideo = (episodeId: number, file: File | undefined) => {
+    if (!file) return;
     updateEpisode(episodeId, { videoFile: file, videoProgress: 0 });
   };
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>, episodeId: number) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     setDragOverMap((prev) => ({ ...prev, [episodeId]: true }));
   };
 
   const handleDragLeave = (e: DragEvent<HTMLDivElement>, episodeId: number) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     setDragOverMap((prev) => ({ ...prev, [episodeId]: false }));
   };
 
   const handleDrop = (e: DragEvent<HTMLDivElement>, episodeId: number) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     setDragOverMap((prev) => ({ ...prev, [episodeId]: false }));
     const file = e.dataTransfer.files?.[0];
     if (file) handleEpisodeVideo(episodeId, file);
   };
 
-const handleSubmit = async (e?: FormEvent<HTMLFormElement>) => {
-console.log("[LOG_B] handleSubmit 진입");
-console.log("[ContentUpload] HANDLE_SUBMIT");const {
-  data: { session }
-} = await supabase.auth.getSession();
-
-console.log("SESSION =", session);
-e?.preventDefault();
+  const handleSubmit = async (e?: FormEvent<HTMLFormElement>) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log("SESSION =", session);
+    e?.preventDefault();
     if (!title || !synopsis) { setSubmitError("제목과 시놉시스는 필수입니다."); return; }
 
     setSubmitting(true);
@@ -167,14 +201,7 @@ e?.preventDefault();
         total_episodes: episodes.length,
         status: "active",
       };
-      
-   console.log("===============");
-   console.log("TITLE =", title);
-   console.log("SYNOPSIS =", synopsis);
-   console.log("EPISODES =", episodes.length);
-   console.log("SERIES_PAYLOAD =", seriesPayload);
-   console.log("===============");
-      
+
       const { data: dramaRow, error: dramaErr } = await supabase
         .from("series")
         .insert(seriesPayload)
@@ -185,25 +212,16 @@ e?.preventDefault();
         console.error("[ContentUpload] series INSERT error:", dramaErr);
         throw new Error(dramaErr?.message ?? "드라마 등록 실패");
       }
-const dramaId: string = (dramaRow as { id: string }).id;
-
-console.log("INSERT RESULT =", dramaRow);
-
-console.log("[ContentUpload] series 등록 완료 id:", dramaId);
+      const dramaId: string = (dramaRow as { id: string }).id;
+      console.log("[ContentUpload] series 등록 완료 id:", dramaId);
 
       if (posterFile) {
         setUploadStatus("포스터 업로드 중...");
         try {
-          const ext = posterFile.name.split('.').pop() ?? 'jpg';
+          const ext = posterFile.name.split(".").pop() ?? "jpg";
           const posterUrl = await uploadImage(BUCKET.POSTERS, `${dramaId}.${ext}`, posterFile);
-          console.log("POSTER_URL =", posterUrl);
           if (posterUrl) {
-const updateResult = await supabase
-  .from("series")
-  .update({ thumbnail_url: posterUrl })
-  .eq("id", dramaId);
-
-console.log("UPDATE_RESULT =", updateResult);
+            await supabase.from("series").update({ thumbnail_url: posterUrl }).eq("id", dramaId);
           }
         } catch (imgErr) {
           console.warn("[ContentUpload] 포스터 업로드 실패 (비치명):", imgErr);
@@ -213,7 +231,7 @@ console.log("UPDATE_RESULT =", updateResult);
       if (backdropFile) {
         setUploadStatus("배경 이미지 업로드 중...");
         try {
-          const ext = backdropFile.name.split('.').pop() ?? 'jpg';
+          const ext = backdropFile.name.split(".").pop() ?? "jpg";
           const backdropUrl = await uploadImage(BUCKET.BANNERS, `${dramaId}.${ext}`, backdropFile);
           if (backdropUrl) {
             await supabase.from("series").update({ backdrop_url: backdropUrl }).eq("id", dramaId);
@@ -230,17 +248,13 @@ console.log("UPDATE_RESULT =", updateResult);
         setUploadStatus(`${i + 1}화 처리 중... (${i + 1}/${episodes.length})`);
 
         let videoUrl: string | null = null;
-if (ep.videoFile) {
-setUploadStatus(`${i + 1}화 영상 업로드 중...`);
-
-console.log("[LOG_D] uploadVideo 호출 직전", ep.videoFile?.name);
-
-try {
-videoUrl = await uploadVideo(dramaId, `ep${i + 1}`, ep.videoFile, (pct) => {
+        if (ep.videoFile) {
+          setUploadStatus(`${i + 1}화 영상 업로드 중...`);
+          try {
+            videoUrl = await uploadVideo(dramaId, `ep${i + 1}`, ep.videoFile, (pct) => {
               updateEpisode(ep.id, { videoProgress: pct });
               setUploadStatus(`${i + 1}화 영상 업로드 중... ${pct}%`);
             });
-            console.log("[ContentUpload] 영상 업로드 성공:", videoUrl);
           } catch (videoErr) {
             console.error(`[ContentUpload] ${i + 1}화 영상 업로드 실패:`, videoErr);
             throw new Error(`${i + 1}화 영상 업로드 실패: ${(videoErr as Error).message}`);
@@ -250,7 +264,7 @@ videoUrl = await uploadVideo(dramaId, `ep${i + 1}`, ep.videoFile, (pct) => {
         let episodeThumbnailUrl: string | null = null;
         if (ep.thumbnailFile) {
           try {
-            const ext = ep.thumbnailFile.name.split('.').pop() ?? 'jpg';
+            const ext = ep.thumbnailFile.name.split(".").pop() ?? "jpg";
             episodeThumbnailUrl = await uploadImage(
               BUCKET.THUMBNAILS,
               `${dramaId}/ep${i + 1}.${ext}`,
@@ -261,14 +275,19 @@ videoUrl = await uploadVideo(dramaId, `ep${i + 1}`, ep.videoFile, (pct) => {
           }
         }
 
-  const { error: epErr } = await supabase.from("episodes").insert({
-  series_id: dramaId,
-  episode_number: i + 1,
-  title: ep.title,
-  description: ep.title,
-  video_url: videoUrl,
-  thumbnail_url: episodeThumbnailUrl,
-});
+        // 자막 JSON (입력된 언어만 포함)
+        const subtitlesJson =
+          Object.keys(ep.subtitles).length > 0 ? ep.subtitles : null;
+
+        const { error: epErr } = await supabase.from("episodes").insert({
+          series_id: dramaId,
+          episode_number: i + 1,
+          title: ep.title,
+          description: ep.title,
+          video_url: videoUrl,
+          thumbnail_url: episodeThumbnailUrl,
+          subtitles: subtitlesJson,
+        });
 
         if (epErr) {
           console.error(`[ContentUpload] ${i + 1}화 INSERT 오류:`, epErr.message, epErr.details);
@@ -284,11 +303,9 @@ videoUrl = await uploadVideo(dramaId, `ep${i + 1}`, ep.videoFile, (pct) => {
         .update({ total_episodes: insertedEpisodes })
         .eq("id", dramaId);
 
-setUploadStatus("등록 완료!");
-setSubmitted(true);
-console.log("[LOG_C] navigate 실행 직전", dramaId);
-setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
-
+      setUploadStatus("등록 완료!");
+      setSubmitted(true);
+      setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
     } catch (err) {
       const msg = (err as Error).message;
       console.error("[ContentUpload] 등록 오류:", err);
@@ -382,14 +399,11 @@ setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
             <div>
               <label className="block text-sm font-semibold mb-2">작품 제목 *</label>
               <input
-  required
-  value={title}
-  onChange={(e) => {
-    console.log("TITLE_CHANGE =", e.target.value);
-    setTitle(e.target.value);
-  }}
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="예: 재벌집 그녀의 계약"
-                className="w-full bg-surface-2 border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-gold transition-colors"/>
+                className="w-full bg-surface-2 border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-gold transition-colors" />
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2">영문 제목</label>
@@ -402,13 +416,9 @@ setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
                 <label className="block text-sm font-semibold">시놉시스 *</label>
                 <span className="text-[11px] text-text-muted tabular-nums">{synopsis.length}/500</span>
               </div>
-              <textarea required maxLength={500} value={synopsis} onChange={(e) => {
-  console.log("TEXTAREA_CHANGE =", e.target.value);
-  setSynopsis(e.target.value);
-}}
+              <textarea required maxLength={500} value={synopsis} onChange={(e) => setSynopsis(e.target.value)}
                 rows={5} placeholder="작품 줄거리를 입력하세요"
-                className="w-full bg-surface-2 border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gold transition-colors resize-none" 
-                />
+                className="w-full bg-surface-2 border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gold transition-colors resize-none" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -466,10 +476,7 @@ setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
                 <input ref={backdropRef} type="file" accept="image/*" className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) {
-                      setBackdropFile(file);
-                      setBackdropPreview(URL.createObjectURL(file));
-                    }
+                    if (file) { setBackdropFile(file); setBackdropPreview(URL.createObjectURL(file)); }
                   }} />
                 <button type="button" onClick={() => backdropRef.current?.click()}
                   className="w-full aspect-video rounded-xl border-2 border-dashed border-border bg-surface-2 hover:border-gold/50 transition-colors relative overflow-hidden">
@@ -528,29 +535,79 @@ setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
             </div>
             <div className="space-y-2">
               {episodes.map((ep, i) => (
-                <div key={ep.id}
-                  className="grid grid-cols-[auto_36px_minmax(0,1fr)_72px_auto_auto] sm:grid-cols-[auto_36px_minmax(0,1fr)_90px_auto_auto] gap-2 items-center bg-surface-2 border border-border rounded-xl p-2.5 hover:border-gold/30 transition-colors">
-                  <div className="flex flex-col -gap-1 text-text-muted">
-                    <button type="button" onClick={() => moveEpisode(ep.id, -1)} className="hover:text-gold leading-none text-[10px]" aria-label="위로">▲</button>
-                    <button type="button" onClick={() => moveEpisode(ep.id, 1)} className="hover:text-gold leading-none text-[10px]" aria-label="아래">▼</button>
+                <div key={ep.id} className="bg-surface-2 border border-border rounded-xl p-2.5 hover:border-gold/30 transition-colors">
+                  {/* 에피소드 기본 행 */}
+                  <div className="grid grid-cols-[auto_36px_minmax(0,1fr)_72px_auto_auto_auto] sm:grid-cols-[auto_36px_minmax(0,1fr)_90px_auto_auto_auto] gap-2 items-center">
+                    <div className="flex flex-col -gap-1 text-text-muted">
+                      <button type="button" onClick={() => moveEpisode(ep.id, -1)} className="hover:text-gold leading-none text-[10px]" aria-label="위로">▲</button>
+                      <button type="button" onClick={() => moveEpisode(ep.id, 1)} className="hover:text-gold leading-none text-[10px]" aria-label="아래">▼</button>
+                    </div>
+                    <span className="text-xs font-bold text-gold w-9 h-9 rounded-md bg-gold/10 border border-gold/20 grid place-items-center shrink-0">{i + 1}</span>
+                    <input value={ep.title} onChange={(e) => updateEpisode(ep.id, { title: e.target.value })}
+                      placeholder="에피소드 제목"
+                      className="bg-surface border border-border rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:border-gold transition-colors min-w-0" />
+                    <input value={ep.duration} onChange={(e) => updateEpisode(ep.id, { duration: e.target.value })}
+                      placeholder="12:00"
+                      className="bg-surface border border-border rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-gold transition-colors text-center" />
+                    <button type="button" onClick={() => updateEpisode(ep.id, { isFree: !ep.isFree })}
+                      className={`text-[10px] font-bold px-2 py-1.5 rounded-md border transition-colors shrink-0 ${
+                        ep.isFree ? "bg-gold text-black border-gold" : "border-border text-text-dim"
+                      }`}>
+                      {ep.isFree ? "무료" : "유료"}
+                    </button>
+                    {/* 자막 토글 버튼 */}
+                    <button
+                      type="button"
+                      onClick={() => updateEpisode(ep.id, { showSubtitlePanel: !ep.showSubtitlePanel })}
+                      className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1.5 rounded-md border transition-colors shrink-0 ${
+                        ep.showSubtitlePanel
+                          ? "bg-gold/20 text-gold border-gold/50"
+                          : Object.keys(ep.subtitles).length > 0
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                          : "border-border text-text-dim hover:border-gold/40"
+                      }`}
+                      aria-label="자막 URL"
+                    >
+                      <Subtitles size={12} />
+                      {Object.keys(ep.subtitles).length > 0 && (
+                        <span className="tabular-nums">{Object.keys(ep.subtitles).length}</span>
+                      )}
+                      {ep.showSubtitlePanel ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                    </button>
+                    <button type="button" onClick={() => removeEpisode(ep.id)} aria-label="에피소드 삭제"
+                      className="w-8 h-8 rounded-md grid place-items-center text-text-muted hover:text-danger hover:bg-danger/10 transition-colors shrink-0">
+                      <Trash2 size={14} />
+                    </button>
                   </div>
-                  <span className="text-xs font-bold text-gold w-9 h-9 rounded-md bg-gold/10 border border-gold/20 grid place-items-center shrink-0">{i + 1}</span>
-                  <input value={ep.title} onChange={(e) => updateEpisode(ep.id, { title: e.target.value })}
-                    placeholder="에피소드 제목"
-                    className="bg-surface border border-border rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:border-gold transition-colors min-w-0" />
-                  <input value={ep.duration} onChange={(e) => updateEpisode(ep.id, { duration: e.target.value })}
-                    placeholder="12:00"
-                    className="bg-surface border border-border rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-gold transition-colors text-center" />
-                  <button type="button" onClick={() => updateEpisode(ep.id, { isFree: !ep.isFree })}
-                    className={`text-[10px] font-bold px-2 py-1.5 rounded-md border transition-colors shrink-0 ${
-                      ep.isFree ? "bg-gold text-black border-gold" : "border-border text-text-dim"
-                    }`}>
-                    {ep.isFree ? "무료" : "유료"}
-                  </button>
-                  <button type="button" onClick={() => removeEpisode(ep.id)} aria-label="에피소드 삭제"
-                    className="w-8 h-8 rounded-md grid place-items-center text-text-muted hover:text-danger hover:bg-danger/10 transition-colors shrink-0">
-                    <Trash2 size={14} />
-                  </button>
+
+                  {/* ─── 자막 URL 입력 패널 ──────────────────────────────────── */}
+                  {ep.showSubtitlePanel && (
+                    <div className="mt-3 pt-3 border-t border-border/50 animate-fade-in">
+                      <p className="text-[11px] text-gold font-semibold mb-2 flex items-center gap-1.5">
+                        <Subtitles size={12} /> 자막 URL (VTT) — 해당 언어 URL 입력 시 자동 활성화
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        {SUBTITLE_LANGUAGES.map((lang) => (
+                          <div key={lang.code} className="flex items-center gap-2">
+                            <span className="text-[10px] text-text-muted font-mono w-14 shrink-0 text-right">
+                              {lang.code}
+                            </span>
+                            <input
+                              type="url"
+                              value={ep.subtitles[lang.code] ?? ""}
+                              onChange={(e) => updateSubtitleUrl(ep.id, lang.code, e.target.value)}
+                              placeholder={`${lang.label} VTT URL`}
+                              className={`flex-1 bg-surface border rounded px-2 py-1 text-[11px] focus:outline-none transition-colors min-w-0 ${
+                                ep.subtitles[lang.code]
+                                  ? "border-emerald-500/50 text-emerald-300 focus:border-emerald-400"
+                                  : "border-border text-text-dim focus:border-gold/50"
+                              }`}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -568,27 +625,23 @@ setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
               <div key={ep.id} className="bg-surface-2 border border-border rounded-xl p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-gold">{i + 1}화 — {ep.title}</span>
-                  {ep.videoFile && (
-                    <span className="text-[10px] text-green-400 font-semibold">✓ 파일 선택됨: {ep.videoFile.name}</span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {Object.keys(ep.subtitles).length > 0 && (
+                      <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                        <Subtitles size={10} /> 자막 {Object.keys(ep.subtitles).length}개
+                      </span>
+                    )}
+                    {ep.videoFile && (
+                      <span className="text-[10px] text-green-400 font-semibold">✓ {ep.videoFile.name}</span>
+                    )}
+                  </div>
                 </div>
 
                 <div
                   onDragOver={(e) => handleDragOver(e, ep.id)}
                   onDragLeave={(e) => handleDragLeave(e, ep.id)}
                   onDrop={(e) => handleDrop(e, ep.id)}
-onClick={() => {
-  console.log("[LOG_X] 드롭존 클릭");
-
-  const input =
-    document.getElementById(`video-input-${ep.id}`);
-
-  console.log("[LOG_Y] input 찾음", input);
-
-  input?.click();
-
-  console.log("[LOG_Z] input.click 실행");
-}}
+                  onClick={() => document.getElementById(`video-input-${ep.id}`)?.click()}
                   className={`block rounded-xl border-2 border-dashed transition-all cursor-pointer py-6 px-4 text-center ${
                     dragOverMap[ep.id] ? "border-gold bg-gold/5" : ep.videoFile ? "border-green-500/40 bg-green-500/5" : "border-border bg-surface hover:border-gold/50"
                   }`}
@@ -616,7 +669,6 @@ onClick={() => {
                     </div>
                   </div>
                 )}
-
                 {ep.videoProgress === 100 && ep.videoFile && (
                   <div className="flex items-center gap-1.5 text-[11px] text-green-400 font-semibold">
                     <CheckCircle2 size={12} /> 업로드 완료
@@ -641,33 +693,23 @@ onClick={() => {
               다음 →
             </button>
           ) : (
-<button
-type="button"
-disabled={submitting}
-onClick={(e) => {
-console.log("[LOG_FORCE] 등록버튼 클릭");
-handleSubmit(e as any);
-}}
-className="px-5 py-2.5 rounded-md bg-gradient-gold text-black text-sm font-bold hover:brightness-110 transition-all shadow-lg shadow-gold/20 flex items-center gap-1.5 disabled:opacity-70 disabled:cursor-not-allowed"
-
->
-
-{submitting ? (
-<> <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-등록 중...
-</>
-) : submitted ? (
-<> <CheckCircle2 size={16} />
-등록 완료!
-</>
-) : (
-"콘텐츠 등록"
-)} 
-</button>
-
-)}
-</div>
-</form>
-</div>
-);
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={(e) => handleSubmit(e as unknown as FormEvent<HTMLFormElement>)}
+              className="px-5 py-2.5 rounded-md bg-gradient-gold text-black text-sm font-bold hover:brightness-110 transition-all shadow-lg shadow-gold/20 flex items-center gap-1.5 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {submitting ? (
+                <><div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />등록 중...</>
+              ) : submitted ? (
+                <><CheckCircle2 size={16} />등록 완료!</>
+              ) : (
+                "콘텐츠 등록"
+              )}
+            </button>
+          )}
+        </div>
+      </form>
+    </div>
+  );
 }

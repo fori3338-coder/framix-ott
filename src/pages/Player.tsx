@@ -18,35 +18,78 @@ const SUBTITLE_KEY = "framix_subtitle_lang";
 
 // ─── 지원 자막 언어 목록 ─────────────────────────────────────────────────────
 const SUBTITLE_LANGUAGES = [
-  { code: "off",  label: "자막 끄기" },
-  { code: "ko",   label: "한국어 (CC)" },
-  { code: "en",   label: "English" },
-  { code: "en-cc",label: "English (CC)" },
-  { code: "ja",   label: "日本語" },
-  { code: "zh-cn",label: "中文 (简体)" },
-  { code: "zh-tw",label: "中文 (繁體)" },
-  { code: "es",   label: "Español" },
-  { code: "fr",   label: "Français" },
-  { code: "de",   label: "Deutsch" },
-  { code: "it",   label: "Italiano" },
-  { code: "pt-br",label: "Português (Brasil)" },
-  { code: "ru",   label: "Русский" },
-  { code: "ar",   label: "العربية" },
-  { code: "th",   label: "ภาษาไทย" },
-  { code: "vi",   label: "Tiếng Việt" },
-  { code: "id",   label: "Bahasa Indonesia" },
-  { code: "ms",   label: "Bahasa Melayu" },
-  { code: "tr",   label: "Türkçe" },
-  { code: "nl",   label: "Nederlands" },
-  { code: "no",   label: "Norsk" },
-  { code: "da",   label: "Dansk" },
-  { code: "sv",   label: "Svenska" },
-  { code: "el",   label: "Ελληνικά" },
-  { code: "cs",   label: "Čeština" },
-  { code: "ro",   label: "Română" },
-  { code: "hr",   label: "Hrvatski" },
+  { code: "off",   label: "자막 끄기" },
+  { code: "ko",    label: "한국어 (CC)" },
+  { code: "en",    label: "English" },
+  { code: "en_cc", label: "English (CC)" },
+  { code: "ja",    label: "日本語" },
+  { code: "zh_cn", label: "中文 (简体)" },
+  { code: "zh_tw", label: "中文 (繁體)" },
+  { code: "es",    label: "Español" },
+  { code: "fr",    label: "Français" },
+  { code: "de",    label: "Deutsch" },
+  { code: "it",    label: "Italiano" },
+  { code: "pt",    label: "Português (Brasil)" },
+  { code: "ru",    label: "Русский" },
+  { code: "ar",    label: "العربية" },
+  { code: "th",    label: "ภาษาไทย" },
+  { code: "vi",    label: "Tiếng Việt" },
+  { code: "id",    label: "Bahasa Indonesia" },
+  { code: "ms",    label: "Bahasa Melayu" },
+  { code: "tr",    label: "Türkçe" },
+  { code: "nl",    label: "Nederlands" },
+  { code: "no",    label: "Norsk" },
+  { code: "hi",    label: "हिन्दी" },
+  { code: "bn",    label: "বাংলা" },
+  { code: "ta",    label: "தமிழ்" },
+  { code: "te",    label: "తెలుగు" },
 ];
 
+// ─── Custom Subtitle Engine ──────────────────────────────────────────────────
+interface SubCue {
+  start: number;
+  end: number;
+  text: string;
+}
+
+/** "HH:MM:SS.mmm" or "MM:SS.mmm" → seconds */
+function vttTimeToSeconds(t: string): number {
+  const parts = t.trim().split(":");
+  if (parts.length === 3) {
+    return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+  }
+  return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+}
+
+/** VTT 텍스트 → SubCue[] */
+function parseVTT(text: string): SubCue[] {
+  const cues: SubCue[] = [];
+  // \r\n 정규화
+  const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const blocks = normalized.split(/\n\n+/);
+  for (const block of blocks) {
+    const lines = block.trim().split("\n");
+    // 타임스탬프 라인 찾기 (-->)
+    const tsIdx = lines.findIndex((l) => l.includes("-->"));
+    if (tsIdx < 0) continue;
+    const tsParts = lines[tsIdx].split("-->");
+    if (tsParts.length < 2) continue;
+    const start = vttTimeToSeconds(tsParts[0]);
+    // end는 position 태그 앞까지만
+    const endStr = tsParts[1].split(" ")[0].split("\t")[0];
+    const end = vttTimeToSeconds(endStr);
+    // 나머지 라인이 자막 텍스트
+    const textLines = lines.slice(tsIdx + 1);
+    if (textLines.length === 0) continue;
+    // VTT 태그 제거 (<b>, <i>, <c.xxx>, <00:00:00.000>)
+    const raw = textLines.join("\n").replace(/<[^>]*>/g, "").trim();
+    if (!raw) continue;
+    cues.push({ start, end, text: raw });
+  }
+  return cues;
+}
+
+// ─── Fullscreen 타입 확장 ────────────────────────────────────────────────────
 type FullscreenDocument = Document & {
   webkitFullscreenElement?: Element | null;
   webkitExitFullscreen?: () => void;
@@ -63,7 +106,7 @@ function getFullscreenElement(): Element | null {
   return document.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
 }
 
-// ─── watch_history 저장 (progress_seconds 기반) ──────────────────────────────
+// ─── watch_history 저장 ──────────────────────────────────────────────────────
 async function saveWatchHistory(episodeId: string, currentTime: number, duration: number) {
   try {
     const { data: userData } = await supabase.auth.getUser();
@@ -120,7 +163,11 @@ export default function Player() {
   const volumeHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoNextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveHistoryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const seekAppliedRef = useRef(false); // 이어보기 seek 중복 방지
+  const seekAppliedRef = useRef(false);
+
+  // ─── Custom Subtitle Engine 상태 ────────────────────────────────────────
+  const subtitleCuesRef = useRef<SubCue[]>([]);
+  const [currentSubtitle, setCurrentSubtitle] = useState<string>("");
 
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(false);
@@ -130,12 +177,9 @@ export default function Player() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
-  // 자동 다음화
   const [showAutoNext, setShowAutoNext] = useState(false);
   const [autoNextCountdown, setAutoNextCountdown] = useState(5);
-  // 에피소드 패널
   const [showEpisodePanel, setShowEpisodePanel] = useState(false);
-  // 자막 패널
   const [showSubtitlePanel, setShowSubtitlePanel] = useState(false);
   const [subtitleLang, setSubtitleLang] = useState<string>(() =>
     localStorage.getItem(SUBTITLE_KEY) ?? "off"
@@ -148,38 +192,26 @@ export default function Player() {
       ? drama.episodes[currentIndex + 1]
       : null;
 
-  // ─── 자동 이어보기: DB watch_history → localStorage fallback ─────────────
+  // ─── 자동 이어보기 ───────────────────────────────────────────────────────
   useEffect(() => {
     if (!episodeId) return;
     seekAppliedRef.current = false;
 
     async function applyResume() {
-      // 1) DB 우선
       const hist = await loadWatchHistory(episodeId!);
       if (hist) {
-        if (hist.completed) {
-          // 95% 이상 시청 완료 → 처음부터
-          seekAppliedRef.current = true;
-          return;
-        }
+        if (hist.completed) { seekAppliedRef.current = true; return; }
         if (hist.progressSeconds > 5) {
-          // video가 아직 로드 안 됐을 수 있으므로 canplay 이후에 seek
           const applySeek = () => {
             if (seekAppliedRef.current) return;
             seekAppliedRef.current = true;
-            if (videoRef.current) {
-              videoRef.current.currentTime = hist.progressSeconds;
-            }
+            if (videoRef.current) videoRef.current.currentTime = hist.progressSeconds;
           };
-          if (videoRef.current && videoRef.current.readyState >= 1) {
-            applySeek();
-          } else {
-            videoRef.current?.addEventListener("loadedmetadata", applySeek, { once: true });
-          }
+          if (videoRef.current && videoRef.current.readyState >= 1) applySeek();
+          else videoRef.current?.addEventListener("loadedmetadata", applySeek, { once: true });
           return;
         }
       }
-      // 2) localStorage fallback
       const saved = localStorage.getItem(RESUME_KEY(episodeId!));
       if (saved) {
         const t = parseFloat(saved);
@@ -189,155 +221,60 @@ export default function Player() {
             seekAppliedRef.current = true;
             if (videoRef.current) videoRef.current.currentTime = t;
           };
-          if (videoRef.current && videoRef.current.readyState >= 1) {
-            applySeek();
-          } else {
-            videoRef.current?.addEventListener("loadedmetadata", applySeek, { once: true });
-          }
+          if (videoRef.current && videoRef.current.readyState >= 1) applySeek();
+          else videoRef.current?.addEventListener("loadedmetadata", applySeek, { once: true });
         }
       }
     }
-
     applyResume();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [episodeId]);
 
-  // ─── 자막 DOM 주입 (track 요소를 JS로 직접 생성) ─────────────────────────
-  // JSX <track> 대신 JS DOM으로 삽입해야 브라우저가 즉시 mode 제어를 수용함
-  // HOTFIX STEP7-2A: 영상(framix-ott.pages.dev)과 자막(*.supabase.co) 도메인이
-  // 달라 HTML5 track이 Cross-Origin으로 차단되는 문제 수정
-  const applySubtitle = useCallback(async (lang: string, subtitles: Record<string, string>) => {
-    const video = videoRef.current;
-    if (!video) return;
+  // ─── Custom Subtitle Engine: VTT 로드 & 파싱 ────────────────────────────
+  const loadSubtitle = useCallback(async (lang: string, subtitles: Record<string, string>) => {
+    subtitleCuesRef.current = [];
+    setCurrentSubtitle("");
 
-    // 1) 기존에 삽입한 자막 track 전부 제거 (data-framix-sub 표시된 것만)
-    const oldTracks = video.querySelectorAll("track[data-framix-sub]");
-    oldTracks.forEach((t) => t.remove());
-
-    // 2) lang === "off" 이면 삽입 없이 종료
     if (lang === "off") return;
-
-    // 3) 선택 언어의 VTT URL 확인
     const url = subtitles[lang];
     if (!url) return;
 
-    // [수정 3] FETCH 사전 검증 — track 생성 전 실제 URL 접근 가능 여부 확인
     try {
-      const response = await fetch(url, { mode: "cors" });
-      if (!response.ok) {
-        throw new Error(`subtitle fetch failed with status ${response.status}`);
-      }
-    } catch (error) {
-      console.error("subtitle fetch failed", url, error);
-      return;
+      const res = await fetch(url, { mode: "cors" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      const cues = parseVTT(text);
+      subtitleCuesRef.current = cues;
+      console.log(`[Subtitle] ${lang} 로드 완료 — ${cues.length} cues`);
+    } catch (err) {
+      console.error("[Subtitle] VTT 로드 실패:", url, err);
     }
+  }, []);
 
-    // 같은 lang 재선택 도중 다른 언어로 바뀌었으면 중단 (race condition 방지)
-    if (videoRef.current !== video) return;
-
-    // 4) <track> 엘리먼트 생성 → video에 삽입
-    const trackEl = document.createElement("track");
-    trackEl.kind = "subtitles";
-    trackEl.src = url;
-    trackEl.srclang = lang;
-    trackEl.label = SUBTITLE_LANGUAGES.find((l) => l.code === lang)?.label ?? lang;
-    trackEl.setAttribute("data-framix-sub", "1");
-    // [수정 2] TRACK CORS — 자막 VTT가 영상과 다른 도메인(Supabase)에서 오므로 명시
-    // HTMLTrackElement 타입에 crossOrigin 프로퍼티가 없어 setAttribute로 설정
-    trackEl.setAttribute("crossorigin", "anonymous");
-
-    // [수정 4] TRACK LOAD DEBUG — 실제 원인 확인용 로그
-    trackEl.addEventListener("load", () => {
-      console.log("subtitle loaded", url);
-    });
-    trackEl.addEventListener("error", () => {
-      console.error("subtitle load failed", url);
-    });
-
-    video.appendChild(trackEl);
-
-    // 5) track 로드 완료 후 mode = "showing"
-    //    loadeddata 이전에도 설정하고, 로드 후에도 재확인 (브라우저 호환성)
-    const setShowing = () => {
-      if (trackEl.track) trackEl.track.mode = "showing";
-    };
-    setShowing();
-    trackEl.addEventListener("load", setShowing, { once: true });
-
-    // [HOTFIX2/3] DEBUG — track load 완료 후 실제 상태 전수 로그 + 강제 표시 테스트
-    trackEl.addEventListener("load", () => {
-      console.log("subtitleLang", subtitleLang);
-      console.log("textTracks.length", video.textTracks.length);
-      for (let i = 0; i < video.textTracks.length; i++) {
-        console.log("track", i, {
-          language: video.textTracks[i].language,
-          label: video.textTracks[i].label,
-          mode: video.textTracks[i].mode,
-          kind: video.textTracks[i].kind,
-        });
-      }
-      // 강제 표시 테스트 — 모든 조건 무시하고 첫 번째 track을 강제로 showing
-      if (video.textTracks.length > 0) {
-        video.textTracks[0].mode = "showing";
-        console.log("force showing applied");
-      }
-      console.log(video.querySelectorAll("track"));
-
-      // [HOTFIX3] cues / activeCues 확인 — 실제로 큐 데이터가 파싱되었는지 검증
-      setTimeout(() => {
-        const t = video.textTracks[0];
-        console.log("cues", t?.cues);
-        console.log("activeCues", t?.activeCues);
-      }, 1000);
-    }, { once: true });
-
-    // [HOTFIX3] video native subtitle test — track.default = true 적용 시
-    // 브라우저 기본 자막 엔진이 활성화되는지 확인 (기존 로직은 변경하지 않음)
-    trackEl.default = true;
-
-    // [수정 5] TRACK MODE 강제 적용 — video.textTracks 기준으로 재확인
-    setTimeout(() => {
-      const tracks = video.textTracks;
-      for (let i = 0; i < tracks.length; i++) {
-        tracks[i].mode = tracks[i].language === lang ? "showing" : "hidden";
-      }
-    }, 500);
-  }, [subtitleLang]);
-
-  // subtitleLang 변경 → 즉시 적용 + localStorage 저장
+  // subtitleLang 변경 시 로드
   useEffect(() => {
     const subtitles = episode?.subtitles ?? {};
-    applySubtitle(subtitleLang, subtitles);
+    loadSubtitle(subtitleLang, subtitles);
     localStorage.setItem(SUBTITLE_KEY, subtitleLang);
-  }, [subtitleLang, episode?.subtitles, applySubtitle]);
+  }, [subtitleLang, episode?.subtitles, loadSubtitle]);
 
-  // 에피소드 변경 시 → 저장된 언어로 자막 재적용
+  // 에피소드 변경 시 재로드
   useEffect(() => {
     if (!episode?.id) return;
     const subtitles = episode.subtitles ?? {};
-    // video src 변경 후 loadedmetadata 이후에 track 삽입해야 안정적
-    const video = videoRef.current;
-    if (!video) return;
-    const doApply = () => applySubtitle(subtitleLang, subtitles);
-    if (video.readyState >= 1) {
-      doApply();
-    } else {
-      video.addEventListener("loadedmetadata", doApply, { once: true });
-    }
+    loadSubtitle(subtitleLang, subtitles);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [episode?.id]);
 
-  // ─── 영상 진행 저장 ───────────────────────────────────────────────────────
+  // ─── 영상 진행 저장 + 자막 실시간 탐색 ──────────────────────────────────
   const handleTimeUpdate = useCallback(() => {
     const v = videoRef.current;
     if (!v?.duration) return;
     const pct = (v.currentTime / v.duration) * 100;
     setProgress(pct);
 
-    // localStorage 저장 (초 단위)
     if (episodeId) localStorage.setItem(RESUME_KEY(episodeId), String(v.currentTime));
 
-    // DB 저장 (throttle 5초)
     if (!saveHistoryTimerRef.current && episodeId) {
       saveHistoryTimerRef.current = setTimeout(() => {
         saveHistoryTimerRef.current = null;
@@ -347,12 +284,30 @@ export default function Player() {
       }, 5000);
     }
 
-    // 자동 다음화: 종료 10초 전
+    // 자동 다음화
     const remaining = v.duration - v.currentTime;
     if (remaining <= 10 && remaining > 0 && nextEpisode && !showAutoNext) {
       setShowAutoNext(true);
       setAutoNextCountdown(5);
     }
+
+    // ─── 자막 오버레이: currentTime 기준 cue 탐색 ───────────────────────
+    const ct = v.currentTime;
+    const cues = subtitleCuesRef.current;
+    if (cues.length === 0) {
+      setCurrentSubtitle("");
+      return;
+    }
+    // 이진탐색으로 현재 시간에 해당하는 cue 찾기
+    let lo = 0, hi = cues.length - 1, found = "";
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const cue = cues[mid];
+      if (ct >= cue.start && ct < cue.end) { found = cue.text; break; }
+      else if (ct < cue.start) hi = mid - 1;
+      else lo = mid + 1;
+    }
+    setCurrentSubtitle(found);
   }, [episodeId, nextEpisode, showAutoNext]);
 
   // ─── 자동 다음화 카운트다운 ──────────────────────────────────────────────
@@ -371,7 +326,7 @@ export default function Player() {
     if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
   };
 
-  // ─── 영상 종료 (95% 이상 완료 처리) ─────────────────────────────────────
+  // ─── 영상 종료 ───────────────────────────────────────────────────────────
   const handleVideoEnded = useCallback(async () => {
     if (!id || !episodeId) return;
     try {
@@ -380,7 +335,6 @@ export default function Player() {
         saveHistoryTimerRef.current = null;
       }
       localStorage.removeItem(RESUME_KEY(episodeId));
-      // completed=true 저장
       const v = videoRef.current;
       await saveWatchHistory(episodeId, v?.duration ?? 0, v?.duration ?? 1);
       const { error } = await supabase.rpc("increment_series_views", { series_id: id });
@@ -478,9 +432,7 @@ export default function Player() {
     return () => { if (hideControlsTimerRef.current) clearTimeout(hideControlsTimerRef.current); };
   }, [playing, scheduleHideControls]);
 
-  // 모바일 탭 → 컨트롤 표시, 3초 후 자동 숨김
   const handleVideoClick = () => {
-    // 패널 열려있으면 패널만 닫기
     if (showEpisodePanel || showSubtitlePanel) {
       setShowEpisodePanel(false);
       setShowSubtitlePanel(false);
@@ -517,22 +469,18 @@ export default function Player() {
     revealControls();
   };
 
-  // ─── 다음화 즉시 이동 ────────────────────────────────────────────────────
   const goToNextEpisode = () => {
     if (nextEpisode && id) navigate(`/watch/${id}/${nextEpisode.id}`);
   };
 
   // ─── 자막 선택 ───────────────────────────────────────────────────────────
-  // setSubtitleLang → useEffect → applySubtitleToTracks 순서로 반영됨
-  // 추가로 직접 DOM 즉시 적용(React state 반영 전 1프레임 gap 제거)
   const selectSubtitle = (code: string) => {
     setSubtitleLang(code);
-    applySubtitle(code, episode?.subtitles ?? {}); // 즉시 DOM 반영
     localStorage.setItem(SUBTITLE_KEY, code);
     setShowSubtitlePanel(false);
   };
 
-  // ─── 패널 토글 (하나만 열리게) ───────────────────────────────────────────
+  // ─── 패널 토글 ───────────────────────────────────────────────────────────
   const toggleEpisodePanel = () => {
     setShowEpisodePanel((v) => !v);
     setShowSubtitlePanel(false);
@@ -558,7 +506,6 @@ export default function Player() {
   const controlsVisible = showControls || isLocked;
   const fadeClass = `transition-opacity duration-300 ${controlsVisible ? "opacity-100" : "opacity-0"}`;
 
-  // 현재 에피소드에서 사용 가능한 자막 목록
   const availableSubtitles = episode.subtitles ?? {};
   const availableCodes = new Set(Object.keys(availableSubtitles));
 
@@ -569,12 +516,11 @@ export default function Player() {
       onMouseMove={revealControls}
       onTouchStart={revealControls}
     >
-      {/* VIDEO */}
+      {/* VIDEO — native track 없음 */}
       {hasVideo ? (
         <video
           ref={videoRef}
           src={episode.videoUrl}
-          crossOrigin="anonymous"
           className="w-full h-full object-cover cursor-pointer"
           autoPlay
           muted={muted}
@@ -593,6 +539,32 @@ export default function Player() {
         </div>
       ) : (
         <div className="absolute inset-0 bg-black" />
+      )}
+
+      {/* ═══ CUSTOM SUBTITLE OVERLAY ════════════════════════════════════════ */}
+      {currentSubtitle && (
+        <div
+          className="framix-subtitle"
+          style={{
+            position: "absolute",
+            bottom: "120px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 9999,
+            maxWidth: "80%",
+            textAlign: "center",
+            whiteSpace: "pre-wrap",
+            fontSize: "24px",
+            fontWeight: 700,
+            lineHeight: 1.5,
+            color: "white",
+            textShadow:
+              "0 0 6px rgba(0,0,0,.9), 0 0 12px rgba(0,0,0,.9)",
+            pointerEvents: "none",
+          }}
+        >
+          {currentSubtitle}
+        </div>
       )}
 
       {/* GRADIENT OVERLAY */}
@@ -668,7 +640,6 @@ export default function Player() {
           <div className="flex items-center justify-between pointer-events-auto">
             {/* 좌측 */}
             <div className="flex items-center gap-3">
-              {/* 재생/일시정지 */}
               <button
                 onClick={() => { revealControls(); setPlaying((p) => !p); }}
                 className="p-1.5 hover:scale-110 transition-transform"
@@ -676,8 +647,6 @@ export default function Player() {
               >
                 {playing ? <Pause size={28} /> : <Play size={28} />}
               </button>
-
-              {/* 10초 뒤로 */}
               <button
                 onClick={() => seek(-10)}
                 className="flex flex-col items-center gap-0.5 p-1 hover:scale-110 transition-transform"
@@ -686,8 +655,6 @@ export default function Player() {
                 <SkipBack size={22} />
                 <span className="text-[9px] font-bold leading-none">10</span>
               </button>
-
-              {/* 10초 앞으로 */}
               <button
                 onClick={() => seek(10)}
                 className="flex flex-col items-center gap-0.5 p-1 hover:scale-110 transition-transform"
@@ -696,8 +663,6 @@ export default function Player() {
                 <SkipForward size={22} />
                 <span className="text-[9px] font-bold leading-none">10</span>
               </button>
-
-              {/* 볼륨 */}
               <div className="flex items-center gap-1">
                 <button
                   onClick={handleVolumeClick}
@@ -724,7 +689,6 @@ export default function Player() {
 
             {/* 우측 */}
             <div className="flex items-center gap-3">
-              {/* 자막 */}
               <button
                 onClick={toggleSubtitlePanel}
                 className={`p-1 hover:scale-110 transition-transform ${showSubtitlePanel ? "text-yellow-400" : ""}`}
@@ -732,8 +696,6 @@ export default function Player() {
               >
                 <Subtitles size={22} />
               </button>
-
-              {/* 에피소드 목록 */}
               <button
                 onClick={toggleEpisodePanel}
                 className={`p-1 hover:scale-110 transition-transform ${showEpisodePanel ? "text-yellow-400" : ""}`}
@@ -741,8 +703,6 @@ export default function Player() {
               >
                 <List size={22} />
               </button>
-
-              {/* 다음화 */}
               {nextEpisode && (
                 <button
                   onClick={goToNextEpisode}
@@ -753,8 +713,6 @@ export default function Player() {
                   <div className="w-0.5 h-5 bg-white rounded" />
                 </button>
               )}
-
-              {/* 전체화면 */}
               <button
                 onClick={handleFullscreen}
                 className="p-1 hover:scale-110 transition-transform"
@@ -790,7 +748,6 @@ export default function Player() {
                     isCurrentEp ? "bg-white/10" : ""
                   }`}
                 >
-                  {/* 썸네일 */}
                   <div className="relative flex-shrink-0 w-24 h-14 rounded overflow-hidden bg-zinc-800">
                     <img
                       src={ep.thumbnail}
@@ -806,7 +763,6 @@ export default function Player() {
                       </div>
                     )}
                   </div>
-                  {/* 정보 */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <span className={`text-xs font-bold ${isCurrentEp ? "text-red-400" : "text-white/50"}`}>
