@@ -873,32 +873,42 @@ export default function Player() {
         </div>
       )}
 
-      {/* ═══ 자동 다음화 오버레이 ═══════════════════════════════════════════ */}
+      {/* ═══ 다음화 미리보기 카드 ═══════════════════════════════════════════ */}
       {showAutoNext && nextEpisode && (
         <div className="absolute bottom-20 right-4 z-30">
-          <div className="bg-zinc-900/95 border border-white/10 rounded-xl p-4 min-w-[220px] space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs text-white/60 font-semibold uppercase tracking-wider">
-                다음화 자동재생
-              </p>
-              <span className="tabular-nums text-2xl font-extrabold text-yellow-400 leading-none">
+          <div className="bg-zinc-900/95 border border-white/10 rounded-xl overflow-hidden w-[240px] shadow-2xl">
+            {/* 썸네일 (16:9, 없으면 드라마 세로 포스터로 대체) */}
+            <div className="relative w-full aspect-video bg-zinc-800">
+              <img
+                src={nextEpisode.thumbnail || drama?.poster}
+                alt={nextEpisode.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+              <span className="absolute top-2 right-2 tabular-nums text-xl font-extrabold text-yellow-400 leading-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
                 {autoNextCountdown}
               </span>
+              <p className="absolute bottom-2 left-2.5 right-2.5 text-xs text-white/70 font-semibold uppercase tracking-wider">
+                다음화 자동재생
+              </p>
             </div>
-            <p className="text-sm font-bold truncate">{nextEpisode.title}</p>
-            <div className="flex items-center justify-between gap-3">
-              <button
-                onClick={cancelAutoNext}
-                className="text-xs text-white/60 hover:text-white transition-colors"
-              >
-                자동재생 취소
-              </button>
-              <button
-                onClick={() => id && navigate(`/watch/${id}/${nextEpisode.id}`)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-400 text-black text-xs font-bold hover:brightness-110 transition-all"
-              >
-                지금 보기 ▶
-              </button>
+
+            <div className="p-3 space-y-2.5">
+              <p className="text-sm font-bold truncate">{nextEpisode.title}</p>
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  onClick={cancelAutoNext}
+                  className="text-xs text-white/60 hover:text-white transition-colors"
+                >
+                  자동재생 취소
+                </button>
+                <button
+                  onClick={() => id && navigate(`/watch/${id}/${nextEpisode.id}`)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-400 text-black text-xs font-bold hover:brightness-110 transition-all"
+                >
+                  지금 보기 ▶
+                </button>
+              </div>
             </div>
           </div>
         </div>
