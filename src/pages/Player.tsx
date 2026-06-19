@@ -99,13 +99,16 @@ export default function Player() {
     }
   }, [episodeId]);
 
-  // ─── 이어보기 카드 3초 후 자동 닫힘 ──────────────────────────────────────
+  // ─── 이어보기 카드 5초 후 자동 닫힘 ──────────────────────────────────────
   useEffect(() => {
     if (!showResumeDialog) return;
+    // 이전 타이머 반드시 클리어 후 새로 시작
+    if (resumeAutoCloseTimerRef.current) clearTimeout(resumeAutoCloseTimerRef.current);
     resumeAutoCloseTimerRef.current = setTimeout(() => {
       setShowResumeDialog(false);
+      resumeDismissedRef.current = true;
       setPlaying(true);
-    }, 3000);
+    }, 5000);
     return () => {
       if (resumeAutoCloseTimerRef.current) clearTimeout(resumeAutoCloseTimerRef.current);
     };
