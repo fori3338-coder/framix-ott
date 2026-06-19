@@ -69,24 +69,42 @@ export default function AdminDashboard() {
     totalMembers: 0,
     totalContents: 0,
     totalViews: 0,
-    totalSubscribers: 284920,
+    totalSubscribers: 0,
     newSignups: 0,
   });
 
   useEffect(() => {
     async function fetchStats() {
       try {
-        const [seriesRes] = await Promise.all([
-          supabase.from("series").select("id, views", { count: "exact" }),
-          supabase.from("episodes").select("id", { count: "exact" }),
-        ]);
+        // 총 콘텐츠 수 + 총 조회수 (series 테이블)
+        const seriesRes = await supabase.from("series").select("id, views", { count: "exact" });
+        const totalContents = seriesRes.count ?? 0;
         const totalViews = (seriesRes.data ?? []).reduce((sum: number, s: { views?: number }) => sum + (s.views ?? 0), 0);
-        setLiveStats((prev) => ({
-          ...prev,
-          totalContents: seriesRes.count ?? dramas.length,
-          totalViews,
-          newSignups: 320,
-        }));
+
+        // 총 회원수 (profiles 테이블, 없으면 0)
+        let totalMembers = 0;
+        try {
+          const profilesRes = await supabase.from("profiles").select("id", { count: "exact", head: true });
+          totalMembers = profilesRes.count ?? 0;
+        } catch { totalMembers = 0; }
+
+        // 총 구독자 수 (subscriptions 테이블, 없으면 0)
+        let totalSubscribers = 0;
+        try {
+          const subsRes = await supabase.from("subscriptions").select("id", { count: "exact", head: true }).eq("status", "active");
+          totalSubscribers = subsRes.count ?? 0;
+        } catch { totalSubscribers = 0; }
+
+        // 회원가입 수 (오늘 기준 watch_history 신규 유저 근사치 — profiles 없으면 0)
+        let newSignups = 0;
+        try {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const signupRes = await supabase.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", today.toISOString());
+          newSignups = signupRes.count ?? 0;
+        } catch { newSignups = 0; }
+
+        setLiveStats({ totalMembers, totalContents, totalViews, totalSubscribers, newSignups });
       } catch (e) {
         console.error("fetchStats error:", e);
       }
