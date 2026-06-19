@@ -203,15 +203,41 @@ export default function Player() {
   }, [episodeId]);
 
   // ─── 자막 track sync ─────────────────────────────────────────────────────
-  useEffect(() => {
+  // 선택한 언어 track만 showing, 나머지 hidden
+  const applySubtitleToTracks = useCallback((lang: string) => {
     const video = videoRef.current;
     if (!video) return;
     const tracks = video.textTracks;
     for (let i = 0; i < tracks.length; i++) {
-      tracks[i].mode = tracks[i].language === subtitleLang ? "showing" : "hidden";
+      tracks[i].mode = tracks[i].language === lang ? "showing" : "hidden";
     }
+  }, []);
+
+  // subtitleLang 변경 → 즉시 적용 + localStorage 저장
+  useEffect(() => {
+    applySubtitleToTracks(subtitleLang);
     localStorage.setItem(SUBTITLE_KEY, subtitleLang);
-  }, [subtitleLang, episode]);
+  }, [subtitleLang, applySubtitleToTracks]);
+
+  // 에피소드 변경 시 새 video의 tracks에 재적용
+  // addtrack 이벤트 이후 mode 설정해야 확실히 동작
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // 브라우저 자체 자막 UI 비활성화 후 선택 언어만 showing
+    const handleAddTrack = () => {
+      applySubtitleToTracks(subtitleLang);
+    };
+
+    // 이미 로드된 track 처리
+    applySubtitleToTracks(subtitleLang);
+    video.textTracks.addEventListener("addtrack", handleAddTrack);
+    return () => {
+      video.textTracks.removeEventListener("addtrack", handleAddTrack);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [episode?.id, applySubtitleToTracks]);
 
   // ─── 영상 진행 저장 ───────────────────────────────────────────────────────
   const handleTimeUpdate = useCallback(() => {
@@ -409,8 +435,12 @@ export default function Player() {
   };
 
   // ─── 자막 선택 ───────────────────────────────────────────────────────────
+  // setSubtitleLang → useEffect → applySubtitleToTracks 순서로 반영됨
+  // 추가로 직접 DOM 즉시 적용(React state 반영 전 1프레임 gap 제거)
   const selectSubtitle = (code: string) => {
     setSubtitleLang(code);
+    applySubtitleToTracks(code);   // 즉시 DOM 반영
+    localStorage.setItem(SUBTITLE_KEY, code);
     setShowSubtitlePanel(false);
   };
 
@@ -466,6 +496,7 @@ export default function Player() {
           playsInline
         >
           {/* 자막 트랙 동적 삽입 */}
+          {/* default prop 미사용: 브라우저 자동 활성화 방지, mode는 useEffect에서 제어 */}
           {Object.entries(availableSubtitles).map(([code, url]) => (
             <track
               key={code}
@@ -473,7 +504,6 @@ export default function Player() {
               src={url}
               srcLang={code}
               label={SUBTITLE_LANGUAGES.find((l) => l.code === code)?.label ?? code}
-              default={code === subtitleLang}
             />
           ))}
         </video>
