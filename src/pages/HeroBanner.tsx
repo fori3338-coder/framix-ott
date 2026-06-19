@@ -116,7 +116,14 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             style={{ animationDelay: "280ms", animationFillMode: "backwards" }}
           >
             <button
-              onClick={() => navigate(`/watch/${drama.id}/${drama.episodes[0]?.id}`)}
+              onClick={() => {
+                const firstEp = drama.episodes[0];
+                if (firstEp) {
+                  navigate(`/watch/${drama.id}/${firstEp.id}`);
+                } else {
+                  navigate(`/drama/${drama.id}`);
+                }
+              }}
               className="flex items-center gap-2 bg-white text-black font-bold px-5 md:px-8 py-3 md:py-3.5 rounded-md text-sm md:text-base hover:bg-gold transition-all duration-200 active:scale-95 shadow-lg"
             >
               <Play size={18} className="fill-black" />
