@@ -125,6 +125,8 @@ export default function Player() {
   const lastSavedTimeRef = useRef<number>(0);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
   const [resumeTime, setResumeTime] = useState(0);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── 조회수 기록 (재생 시작 시점) ───────────────────────────────────────
   // video의 'play' 이벤트는 일시정지 후 재생 등으로 여러 번 발생할 수 있으므로,
@@ -279,6 +281,43 @@ export default function Player() {
       setShowVolumeSlider(false);
     }, 3000);
   }, []);
+
+  // ─── 토스트 메시지 ────────────────────────────────────────────────────────
+  const showToast = useCallback((msg: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMsg(msg);
+    toastTimerRef.current = setTimeout(() => setToastMsg(null), 2500);
+  }, []);
+
+  // ─── 공유 ─────────────────────────────────────────────────────────────────
+  const handleShare = useCallback(async () => {
+    const url = window.location.href;
+    const shareTitle = drama?.title ?? "FRAMIX";
+    const shareText = episode?.title ?? "";
+
+    const tryCopyUrl = async () => {
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast("링크가 복사되었습니다");
+      } catch {
+        showToast("공유에 실패했습니다");
+      }
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: shareTitle, text: shareText, url });
+        showToast("공유창이 열렸습니다");
+      } catch (err) {
+        // 사용자가 직접 취소한 경우(AbortError)는 조용히 무시
+        if ((err as Error).name !== "AbortError") {
+          await tryCopyUrl();
+        }
+      }
+    } else {
+      await tryCopyUrl();
+    }
+  }, [drama, episode, showToast]);
 
   // ─── 이어보기 데이터 확인 (에피소드 진입 시) ─────────────────────────────
   useEffect(() => {
@@ -507,7 +546,7 @@ export default function Player() {
         <button className="flex flex-col items-center gap-1 pointer-events-auto">
           <MessageCircle size={26} />
         </button>
-        <button className="flex flex-col items-center gap-1 pointer-events-auto">
+        <button onClick={(e) => { e.stopPropagation(); void handleShare(); }} aria-label="공유" className="flex flex-col items-center gap-1 pointer-events-auto">
           <Share2 size={26} />
         </button>
 
@@ -666,6 +705,16 @@ export default function Player() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 토스트 메시지 */}
+      {toastMsg && (
+        <div
+          className="absolute top-16 z-50 px-5 py-2 rounded-full bg-black/80 backdrop-blur-sm text-white text-sm font-medium animate-fade-in whitespace-nowrap"
+          style={{ left: "50%", transform: "translateX(-50%)" }}
+        >
+          {toastMsg}
         </div>
       )}
 
