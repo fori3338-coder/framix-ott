@@ -19,9 +19,11 @@ const SUBTITLE_KEY = "framix_subtitle_lang";
 const SUBTITLE_ENABLED_KEY = "framix_subtitle_enabled";
 const SUBTITLE_SIZE_KEY = "framix_subtitle_size";
 const SUBTITLE_POSITION_KEY = "framix_subtitle_position";
+const SUBTITLE_STYLE_KEY = "framix_subtitle_style";
 
 type SubtitleSize = "small" | "medium" | "large";
 type SubtitlePosition = "bottom" | "center";
+type SubtitleStyleMode = "default" | "large_text" | "high_contrast";
 
 // ─── 자막 크기 옵션 (모바일 / 태블릿 / 데스크톱 font-size) ───────────────────
 const SUBTITLE_SIZE_OPTIONS: { value: SubtitleSize; label: string; className: string }[] = [
@@ -35,6 +37,20 @@ const SUBTITLE_POSITION_OPTIONS: { value: SubtitlePosition; label: string }[] = 
   { value: "bottom", label: "하단" },
   { value: "center", label: "중앙" },
 ];
+
+// ─── 접근성 자막 스타일 프리셋 (Netflix / Disney+ / Prime Video 수준) ────────
+const SUBTITLE_STYLE_OPTIONS: { value: SubtitleStyleMode; label: string; sublabel: string }[] = [
+  { value: "default", label: "기본", sublabel: "Default" },
+  { value: "large_text", label: "큰 글씨", sublabel: "Large Text" },
+  { value: "high_contrast", label: "고대비", sublabel: "High Contrast" },
+];
+
+// large_text 스타일 적용 시 사용하는 font-size (기존 SUBTITLE_SIZE_OPTIONS 대비 20% 증가)
+const SUBTITLE_SIZE_CLASSNAME_LARGE_TEXT: Record<SubtitleSize, string> = {
+  small: "text-[17px] sm:text-[19px] lg:text-[22px]",
+  medium: "text-[22px] sm:text-[24px] lg:text-[29px]",
+  large: "text-[26px] sm:text-[31px] lg:text-[36px]",
+};
 
 // ─── 지원 자막 언어 목록 ─────────────────────────────────────────────────────
 const SUBTITLE_LANGUAGES = [
@@ -216,6 +232,10 @@ export default function Player() {
   const [subtitlePosition, setSubtitlePosition] = useState<SubtitlePosition>(() => {
     const saved = localStorage.getItem(SUBTITLE_POSITION_KEY) as SubtitlePosition | null;
     return saved === "bottom" || saved === "center" ? saved : "bottom";
+  });
+  const [subtitleStyleMode, setSubtitleStyleMode] = useState<SubtitleStyleMode>(() => {
+    const saved = localStorage.getItem(SUBTITLE_STYLE_KEY) as SubtitleStyleMode | null;
+    return saved === "default" || saved === "large_text" || saved === "high_contrast" ? saved : "default";
   });
 
   const currentIndex = drama?.episodes.findIndex((e) => e.id === episodeId) ?? -1;
@@ -550,6 +570,12 @@ export default function Player() {
     localStorage.setItem(SUBTITLE_POSITION_KEY, position);
   };
 
+  // ─── 자막 스타일 (접근성 프리셋: 기본 / 큰 글씨 / 고대비) ──────────────────
+  const changeSubtitleStyleMode = (mode: SubtitleStyleMode) => {
+    setSubtitleStyleMode(mode);
+    localStorage.setItem(SUBTITLE_STYLE_KEY, mode);
+  };
+
   // ─── 패널 토글 ───────────────────────────────────────────────────────────
   const toggleEpisodePanel = () => {
     setShowEpisodePanel((v) => !v);
@@ -617,7 +643,9 @@ export default function Player() {
       {subtitleEnabled && currentSubtitle && (
         <div
           className={`framix-subtitle ${
-            SUBTITLE_SIZE_OPTIONS.find((s) => s.value === subtitleSize)?.className ?? ""
+            subtitleStyleMode === "large_text"
+              ? SUBTITLE_SIZE_CLASSNAME_LARGE_TEXT[subtitleSize]
+              : SUBTITLE_SIZE_OPTIONS.find((s) => s.value === subtitleSize)?.className ?? ""
           }`}
           style={{
             position: "absolute",
@@ -635,12 +663,14 @@ export default function Player() {
             wordBreak: "keep-all",
             overflowWrap: "break-word",
             fontWeight: 700,
-            lineHeight: 1.5,
-            color: "white",
+            lineHeight: subtitleStyleMode === "large_text" ? 1.7 : 1.5,
+            color: subtitleStyleMode === "high_contrast" ? "#FFFFFF" : "white",
             textShadow:
-              "0 0 6px rgba(0,0,0,.9), 0 0 12px rgba(0,0,0,.9)",
+              subtitleStyleMode === "high_contrast"
+                ? "0 0 8px rgba(0,0,0,1), 0 0 16px rgba(0,0,0,1), 0 2px 6px rgba(0,0,0,1)"
+                : "0 0 6px rgba(0,0,0,.9), 0 0 12px rgba(0,0,0,.9)",
             pointerEvents: "none",
-            background: "rgba(0,0,0,0.55)",
+            background: subtitleStyleMode === "high_contrast" ? "rgba(0,0,0,0.85)" : "rgba(0,0,0,0.55)",
             padding: "10px 16px",
             borderRadius: "12px",
             backdropFilter: "blur(4px)",
@@ -951,6 +981,34 @@ export default function Player() {
                   }`}
                 >
                   {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ─── 자막 스타일 (접근성 프리셋) ─────────────────────────────── */}
+          <div className="px-4 py-3 border-b border-white/10 space-y-2">
+            <span className="text-sm font-semibold text-white">자막 스타일</span>
+            <div className="flex gap-2">
+              {SUBTITLE_STYLE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => changeSubtitleStyleMode(opt.value)}
+                  aria-pressed={subtitleStyleMode === opt.value}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    subtitleStyleMode === opt.value
+                      ? "bg-gold text-black"
+                      : "bg-white/10 text-white hover:bg-white/20"
+                  }`}
+                >
+                  <span className="block">{opt.label}</span>
+                  <span
+                    className={`block text-[9px] font-normal ${
+                      subtitleStyleMode === opt.value ? "text-black/60" : "text-white/40"
+                    }`}
+                  >
+                    {opt.sublabel}
+                  </span>
                 </button>
               ))}
             </div>
