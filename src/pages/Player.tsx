@@ -180,6 +180,7 @@ export default function Player() {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [showAutoNext, setShowAutoNext] = useState(false);
   const [autoNextCountdown, setAutoNextCountdown] = useState(5);
+  const [dismissedNextLock, setDismissedNextLock] = useState(false);
   const [showEpisodePanel, setShowEpisodePanel] = useState(false);
   const [showSubtitlePanel, setShowSubtitlePanel] = useState(false);
   const [subtitleLang, setSubtitleLang] = useState<string>(() =>
@@ -192,6 +193,12 @@ export default function Player() {
     currentIndex >= 0 && drama?.episodes[currentIndex + 1]
       ? drama.episodes[currentIndex + 1]
       : null;
+
+  // ─── 다음화 잠금 안내 닫기 상태 초기화 (에피소드 변경 시) ──────────────────
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDismissedNextLock(false);
+  }, [episodeId]);
 
   // ─── 자동 이어보기 ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -314,13 +321,15 @@ export default function Player() {
   // ─── 자동 다음화 카운트다운 ──────────────────────────────────────────────
   useEffect(() => {
     if (!showAutoNext) return;
+    const nextLocked = !!nextEpisode && !nextEpisode.isFree && !isSubscribed;
+    if (nextLocked) return; // 다음화 잠금 시 카운트다운/자동이동 중단
     if (autoNextCountdown <= 0) {
       if (nextEpisode && id) navigate(`/watch/${id}/${nextEpisode.id}`);
       return;
     }
     const t = setTimeout(() => setAutoNextCountdown((c) => c - 1), 1000);
     return () => clearTimeout(t);
-  }, [showAutoNext, autoNextCountdown, nextEpisode, id, navigate]);
+  }, [showAutoNext, autoNextCountdown, nextEpisode, isSubscribed, id, navigate]);
 
   const cancelAutoNext = () => {
     setShowAutoNext(false);
@@ -514,6 +523,7 @@ export default function Player() {
   const hasVideo = !!episode.videoUrl && !isLocked;
   const controlsVisible = showControls || isLocked;
   const fadeClass = `transition-opacity duration-300 ${controlsVisible ? "opacity-100" : "opacity-0"}`;
+  const nextEpisodeLocked = !!nextEpisode && !nextEpisode.isFree && !isSubscribed;
 
   const availableSubtitles = episode.subtitles ?? {};
   const availableCodes = new Set(Object.keys(availableSubtitles));
@@ -873,8 +883,8 @@ export default function Player() {
         </div>
       )}
 
-      {/* ═══ 다음화 미리보기 카드 ═══════════════════════════════════════════ */}
-      {showAutoNext && nextEpisode && (
+      {/* ═══ 다음화 미리보기 카드 (다음화 잠금 해제 상태일 때만) ═════════════ */}
+      {showAutoNext && nextEpisode && !nextEpisodeLocked && (
         <div className="absolute bottom-20 right-4 z-30">
           <div className="bg-zinc-900/95 border border-white/10 rounded-xl overflow-hidden w-[240px] shadow-2xl">
             {/* 썸네일 (16:9, 없으면 드라마 세로 포스터로 대체) */}
@@ -907,6 +917,65 @@ export default function Player() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-400 text-black text-xs font-bold hover:brightness-110 transition-all"
                 >
                   지금 보기 ▶
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ 다음화 잠금 해제 오버레이 ═══════════════════════════════════════ */}
+      {showAutoNext && nextEpisode && nextEpisodeLocked && !dismissedNextLock && (
+        <div
+          className="absolute inset-0 z-40 flex items-center justify-center bg-black/70"
+          style={{ backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+        >
+          <div className="relative w-[280px] bg-zinc-900/95 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+            <button
+              onClick={() => setDismissedNextLock(true)}
+              aria-label="닫기"
+              className="absolute top-2 right-2 z-10 p-1.5 text-white/70 hover:text-white transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            {/* 에피소드 썸네일 */}
+            <div className="relative w-full aspect-video bg-zinc-800">
+              <img
+                src={nextEpisode.thumbnail || drama?.poster}
+                alt={nextEpisode.title}
+                className="w-full h-full object-cover opacity-60"
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                <Lock size={34} className="text-yellow-400" />
+              </div>
+            </div>
+
+            <div className="p-4 text-center space-y-3">
+              <p className="text-sm font-bold truncate">{nextEpisode.title}</p>
+              <p className="text-sm text-white/80 leading-relaxed">
+                다음 화를 시청하려면
+                <br />
+                멤버십 또는 코인이 필요합니다
+              </p>
+              <div className="space-y-2 pt-1">
+                <button
+                  onClick={() => navigate("/subscription")}
+                  className="w-full px-4 py-2 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-bold text-sm"
+                >
+                  코인으로 보기
+                </button>
+                <button
+                  onClick={() => navigate("/subscription")}
+                  className="w-full px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-sm transition-colors"
+                >
+                  멤버십 가입
+                </button>
+                <button
+                  onClick={() => setDismissedNextLock(true)}
+                  className="w-full px-4 py-2 text-xs text-white/60 hover:text-white transition-colors"
+                >
+                  닫기
                 </button>
               </div>
             </div>
