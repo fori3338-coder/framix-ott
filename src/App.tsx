@@ -7,6 +7,7 @@ import Search from "./pages/Search";
 import MyList from "./pages/MyList";
 import WatchHistory from "./pages/WatchHistory";
 import Subscription from "./pages/Subscription";
+import MySubscription from "./pages/MySubscription";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ContentUpload from "./pages/admin/ContentUpload";
 import PaymentSuccess from "./pages/PaymentSuccess";
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/my-list" element={<MyList />} />
           <Route path="/history" element={<WatchHistory />} />
           <Route path="/subscription" element={<Subscription />} />
+          <Route path="/my/subscription" element={<MySubscription />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/upload" element={<ContentUpload />} />
           <Route path="/payment/success" element={<PaymentSuccess />} />

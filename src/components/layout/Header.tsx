@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Bell, ChevronDown, LogOut } from "lucide-react";
+import { Search, Bell, ChevronDown, LogOut, Crown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuthContext } from "../../contexts/AuthContext";
 import AuthModal from "../AuthModal";
@@ -78,6 +78,12 @@ export default function Header() {
                     className="w-full text-left px-4 py-2.5 text-sm text-text hover:bg-white/5 transition-colors"
                   >
                     프로필
+                  </button>
+                  <button
+                    onClick={() => { setProfileMenuOpen(false); navigate("/my/subscription"); }}
+                    className="w-full flex items-center gap-2 text-left px-4 py-2.5 text-sm text-text hover:bg-white/5 transition-colors"
+                  >
+                    <Crown size={14} /> 내 구독
                   </button>
                   <button
                     onClick={async () => { setProfileMenuOpen(false); await signOut(); }}
