@@ -31,6 +31,9 @@ export interface Drama {
   isExclusive?: boolean;
   views: number;
   episodes: Episode[];
+  isBanner?: boolean;
+  bannerOrder?: number;
+  top10Rank?: number | null;
 }
 
 export interface ContinueWatchingItem {

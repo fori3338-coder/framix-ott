@@ -33,6 +33,9 @@ export interface DbDrama {
   is_new: boolean | null;
   views: number | null;
   status: string | null;
+  banner_enabled: boolean | null;
+  banner_order: number | null;
+  top10_rank: number | null;
 }
 
 // episodes 테이블 (001_init.sql 기준)

@@ -64,9 +64,18 @@ if (error || !data) {
     fetchData();
   }, []);
 
-  const trending = [...dramas]
-    .sort((a, b) => (b.views || 0) - (a.views || 0))
-    .slice(0, 10);
+  // TOP10: top10_rank가 수동 지정된 작품을 먼저 순위대로 배치하고,
+  // 나머지는 views 내림차순으로 채워 총 10개를 구성한다.
+  const trending = (() => {
+    const manual = dramas
+      .filter((d) => d.top10Rank != null)
+      .sort((a, b) => (a.top10Rank ?? 0) - (b.top10Rank ?? 0));
+    const manualIds = new Set(manual.map((d) => d.id));
+    const autoRest = dramas
+      .filter((d) => !manualIds.has(d.id))
+      .sort((a, b) => (b.views || 0) - (a.views || 0));
+    return [...manual, ...autoRest].slice(0, 10);
+  })();
 
   // 신작: isNew=true인 항목 우선, 없으면 전체 dramas에서 최신 등록순(배열 역순)으로 최대 10개
   // → Supabase에서 is_new 미설정 작품도 반드시 노출

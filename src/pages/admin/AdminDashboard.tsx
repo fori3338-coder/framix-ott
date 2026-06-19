@@ -47,6 +47,10 @@ interface DbSeries {
   thumbnail_url: string | null;
   created_at: string | null;
   total_episodes: number | null;
+  banner_enabled: boolean | null;
+  banner_order: number | null;
+  top10_rank: number | null;
+  is_new: boolean | null;
 }
 
 interface ActivityLog {
@@ -188,7 +192,7 @@ export default function AdminDashboard() {
     try {
       const { data: seriesData, count } = await supabase
         .from("series")
-        .select("id, title, genres, genre, category, views, rating, status, thumbnail_url, created_at, total_episodes", { count: "exact" })
+        .select("id, title, genres, genre, category, views, rating, status, thumbnail_url, created_at, total_episodes, banner_enabled, banner_order, top10_rank, is_new", { count: "exact" })
         .order("views", { ascending: false });
 
       const rows = (seriesData ?? []) as DbSeries[];
@@ -328,6 +332,51 @@ export default function AdminDashboard() {
     const { error } = await supabase.from("series").update({ status: next }).eq("id", id);
     if (error) setContentMsg(`상태 변경 실패: ${error.message}`);
     else { setContentMsg(`공개 상태가 "${next === "active" ? "공개" : "비공개"}"로 변경되었습니다.`); await fetchAll(); }
+    setContentLoading(false);
+  };
+
+  // ── 배너 ON/OFF (대표 작품 지정) ────────────────────────────────────────
+  const handleToggleBanner = async (id: string, current: boolean | null) => {
+    const next = !current;
+    setContentLoading(true);
+    // 배너 ON으로 새로 켤 때는 정렬순서 맨 뒤(현재 배너 개수)로 배치
+    const nextOrder = next
+      ? allContents.filter((c) => c.banner_enabled).length
+      : 0;
+    const { error } = await supabase
+      .from("series")
+      .update({ banner_enabled: next, banner_order: nextOrder })
+      .eq("id", id);
+    if (error) setContentMsg(`배너 변경 실패: ${error.message}`);
+    else { setContentMsg(next ? "배너에 등록되었습니다." : "배너에서 제외되었습니다."); await fetchAll(); }
+    setContentLoading(false);
+  };
+
+  // ── 배너 정렬순서 변경 ───────────────────────────────────────────────────
+  const handleBannerOrderChange = async (id: string, order: number) => {
+    setContentLoading(true);
+    const { error } = await supabase.from("series").update({ banner_order: order }).eq("id", id);
+    if (error) setContentMsg(`배너 순서 변경 실패: ${error.message}`);
+    else await fetchAll();
+    setContentLoading(false);
+  };
+
+  // ── TOP10 수동 지정 / 자동(해제) ─────────────────────────────────────────
+  const handleTop10RankChange = async (id: string, rank: number | null) => {
+    setContentLoading(true);
+    const { error } = await supabase.from("series").update({ top10_rank: rank }).eq("id", id);
+    if (error) setContentMsg(`TOP10 순위 변경 실패: ${error.message}`);
+    else { setContentMsg(rank == null ? "TOP10 자동 집계로 전환되었습니다." : `TOP10 ${rank}위로 수동 지정되었습니다.`); await fetchAll(); }
+    setContentLoading(false);
+  };
+
+  // ── 신작(NEW 배지) ON/OFF ───────────────────────────────────────────────
+  const handleToggleNew = async (id: string, current: boolean | null) => {
+    const next = !current;
+    setContentLoading(true);
+    const { error } = await supabase.from("series").update({ is_new: next }).eq("id", id);
+    if (error) setContentMsg(`신작 상태 변경 실패: ${error.message}`);
+    else { setContentMsg(next ? "신작으로 등록되었습니다." : "신작에서 해제되었습니다."); await fetchAll(); }
     setContentLoading(false);
   };
 
@@ -756,6 +805,75 @@ export default function AdminDashboard() {
                       <span className={`text-[10px] font-semibold ${d.status === "active" ? "text-emerald-400" : "text-rose-400"}`}>
                         {d.status === "active" ? "● 공개" : "● 비공개"}
                       </span>
+                      {d.banner_enabled && (
+                        <span className="text-[10px] font-semibold text-gold">★ 배너 #{d.banner_order ?? 0}</span>
+                      )}
+                      {d.top10_rank != null && (
+                        <span className="text-[10px] font-semibold text-sky-400">TOP10 #{d.top10_rank}</span>
+                      )}
+                      {d.is_new && (
+                        <span className="text-[10px] font-semibold text-emerald-300">NEW</span>
+                      )}
+                    </div>
+                    {/* 배너 / TOP10 / 신작 관리 컨트롤 */}
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <button
+                        onClick={() => handleToggleBanner(d.id, d.banner_enabled)}
+                        className={`text-[10px] px-2 py-1 rounded-md border flex items-center gap-1 transition-colors ${
+                          d.banner_enabled
+                            ? "bg-gold/10 border-gold/40 text-gold"
+                            : "bg-surface-2 border-border text-text-dim hover:text-gold hover:border-gold/40"
+                        }`}
+                        title="배너 ON/OFF"
+                      >
+                        <Star size={10} className={d.banner_enabled ? "fill-gold" : ""} />
+                        배너 {d.banner_enabled ? "ON" : "OFF"}
+                      </button>
+                      {d.banner_enabled && (
+                        <input
+                          type="number"
+                          className="w-14 bg-surface-2 border border-border rounded px-1.5 py-1 text-[10px] text-text focus:outline-none focus:border-gold"
+                          value={d.banner_order ?? 0}
+                          onChange={(e) => handleBannerOrderChange(d.id, Number(e.target.value))}
+                          title="배너 정렬순서"
+                        />
+                      )}
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min={1}
+                          max={10}
+                          placeholder="자동"
+                          className="w-14 bg-surface-2 border border-border rounded px-1.5 py-1 text-[10px] text-text placeholder:text-text-muted focus:outline-none focus:border-gold"
+                          value={d.top10_rank ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            handleTop10RankChange(d.id, v === "" ? null : Number(v));
+                          }}
+                          title="TOP10 수동 순위 (비우면 자동 집계)"
+                        />
+                        {d.top10_rank != null && (
+                          <button
+                            onClick={() => handleTop10RankChange(d.id, null)}
+                            className="text-[10px] px-1.5 py-1 rounded-md bg-surface-2 border border-border text-text-dim hover:text-sky-400 hover:border-sky-400/40"
+                            title="자동 집계로 전환"
+                          >
+                            자동
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleToggleNew(d.id, d.is_new)}
+                        className={`text-[10px] px-2 py-1 rounded-md border flex items-center gap-1 transition-colors ${
+                          d.is_new
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                            : "bg-surface-2 border-border text-text-dim hover:text-emerald-300 hover:border-emerald-400/40"
+                        }`}
+                        title="신작(NEW 배지) ON/OFF"
+                      >
+                        <Sparkles size={10} />
+                        NEW {d.is_new ? "ON" : "OFF"}
+                      </button>
                     </div>
                   </div>
                   {/* 액션 버튼 */}

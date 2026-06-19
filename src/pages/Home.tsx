@@ -22,7 +22,7 @@ function merge(dbDramas: Drama[], showcase: Drama[]): Drama[] {
 }
 
 export default function Home() {
-  const { dramas, loading } = useDramas();
+  const { dramas, loading, trending } = useDramas();
   const { items: continueWatchingItems, isLoggedIn } = useContinueWatching();
 
   // ── 로딩 스켈레톤 ───────────────────────────────────────────────────────────
@@ -50,8 +50,18 @@ export default function Home() {
   }
 
   // ── 각 섹션 데이터: DB 작품 항상 앞에 병합 ─────────────────────────────────
-  const heroList = merge(dramas, showcaseTop10).slice(0, 5);
-  const top10List = merge(dramas, showcaseTop10);
+  // ── 배너 관리: banner_enabled로 지정된 작품을 banner_order 순으로 노출.
+  //    관리자가 지정한 작품이 없으면 기존 동작(TOP10 상위 5개)으로 폴백.
+  const bannerPicks = [...dramas]
+    .filter((d) => d.isBanner)
+    .sort((a, b) => (a.bannerOrder ?? 0) - (b.bannerOrder ?? 0));
+  const heroList =
+    bannerPicks.length > 0
+      ? bannerPicks
+      : merge(dramas, showcaseTop10).slice(0, 5);
+
+  // ── TOP10 관리: 수동 지정(top10_rank) 우선 + views 자동 집계로 채움.
+  const top10List = merge(trending, showcaseTop10);
   const newList = merge(dramas, showcaseNewEpisodes);
   const recommendedList = merge(dramas, showcaseRecommended);
   const romanceList = merge(dramas, showcaseRomance);
