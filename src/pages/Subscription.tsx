@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { Check, Crown, Sparkles, Gem } from "lucide-react";
+import { loadTossPayments, ANONYMOUS } from "@tosspayments/tosspayments-sdk";
+
+// 토스페이먼츠 테스트 클라이언트 키
+const TOSS_CLIENT_KEY = "test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq";
 
 type PlanId = "premium" | "vip";
 
@@ -39,25 +43,38 @@ const PLANS: {
 ];
 
 export default function Subscription() {
-  const [toast, setToast] = useState(false);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
-  function handleSubscribe() {
-    setToast(true);
-    setTimeout(() => setToast(false), 3000);
+  async function handleSubscribe(planId: string, price: number) {
+    if (loadingPlan) return;
+    setLoadingPlan(planId);
+    try {
+      const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
+      const payment = tossPayments.payment({ customerKey: ANONYMOUS });
+      const orderId = `framix-${planId}-${Date.now()}`;
+      const orderName = planId === "premium" ? "FRAMIX PREMIUM 월정액" : "FRAMIX VIP 월정액";
+      await payment.requestPayment({
+        method: "CARD",
+        amount: { currency: "KRW", value: price },
+        orderId,
+        orderName,
+        successUrl: `${window.location.origin}/payment/success`,
+        failUrl: `${window.location.origin}/payment/fail`,
+        card: { useEscrow: false, flowMode: "DEFAULT", useCardPoint: false, useAppCardOnly: false },
+      });
+    } catch (err: unknown) {
+      // 사용자 취소는 조용히 무시
+      const code = (err as { code?: string })?.code;
+      if (code !== "USER_CANCEL") {
+        console.error("[TossPayments] 결제 오류:", err);
+      }
+    } finally {
+      setLoadingPlan(null);
+    }
   }
 
   return (
     <div className="min-h-screen px-4 md:px-8 pt-20 md:pt-28 pb-16 animate-fade-in flex flex-col items-center">
-
-      {/* 토스트 */}
-      {toast && (
-        <div
-          className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl bg-surface border border-gold/40 text-sm font-semibold text-text shadow-2xl animate-fade-in"
-          style={{ backdropFilter: "blur(12px)" }}
-        >
-          결제 준비중입니다
-        </div>
-      )}
 
       {/* 헤더 */}
       <div className="text-center mb-10 max-w-xl w-full">
@@ -131,14 +148,15 @@ export default function Subscription() {
 
               {/* CTA 버튼 */}
               <button
-                onClick={handleSubscribe}
-                className="w-full py-4 rounded-xl font-black text-base text-black tracking-wide transition-all duration-200 hover:brightness-110 active:scale-[0.97] shadow-lg"
+                onClick={() => handleSubscribe(plan.id, plan.price)}
+                disabled={loadingPlan === plan.id}
+                className="w-full py-4 rounded-xl font-black text-base text-black tracking-wide transition-all duration-200 hover:brightness-110 active:scale-[0.97] shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{
                   background: "linear-gradient(135deg, #f0d77b 0%, #D4AF37 50%, #9c7e23 100%)",
                   boxShadow: "0 4px 24px rgba(212,175,55,0.35)",
                 }}
               >
-                {plan.name} 구독하기
+                {loadingPlan === plan.id ? "결제창 열리는 중..." : `${plan.name} 구독하기`}
               </button>
 
               <p className="text-center text-text-muted text-xs mt-4">

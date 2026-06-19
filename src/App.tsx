@@ -9,6 +9,8 @@ import WatchHistory from "./pages/WatchHistory";
 import Subscription from "./pages/Subscription";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ContentUpload from "./pages/admin/ContentUpload";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentFail from "./pages/PaymentFail";
 
 export default function App() {
   return (
@@ -23,6 +25,8 @@ export default function App() {
           <Route path="/subscription" element={<Subscription />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/upload" element={<ContentUpload />} />
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/payment/fail" element={<PaymentFail />} />
         </Route>
         <Route path="/watch/:id/:episodeId" element={<Player />} />
       </Routes>
