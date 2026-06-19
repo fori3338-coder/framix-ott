@@ -209,7 +209,7 @@ export default function Player() {
   if (!drama || !episode) return <div className="text-white p-10">Not Found</div>;
 
   const isLocked = !episode.isFree;
-  const hasVideo = !!episode.videoUrl;
+  const hasVideo = !!episode.videoUrl && !isLocked;
   const controlsVisible = showControls || isLocked;
   const fadeClass = `transition-opacity duration-300 ${controlsVisible ? "opacity-100" : "opacity-0"}`;
 
@@ -238,13 +238,15 @@ export default function Player() {
           }}
           onEnded={handleVideoEnded}
         />
-      ) : (
+      ) : !isLocked ? (
         <div className="absolute inset-0 flex items-center justify-center bg-black">
           <div className="text-center space-y-2">
             <p className="text-white font-bold text-lg">영상이 아직 등록되지 않았습니다</p>
             <p className="text-white/50 text-sm">관리자에서 영상 파일을 업로드해 주세요</p>
           </div>
         </div>
+      ) : (
+        <div className="absolute inset-0 bg-black" />
       )}
 
       {/* OVERLAY - 컨트롤이 보일 때만 화면을 살짝 어둡게 */}

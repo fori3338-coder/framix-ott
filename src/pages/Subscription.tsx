@@ -82,21 +82,23 @@ export default function Subscription() {
           return (
             <div
               key={plan.id}
-              className="rounded-2xl border border-gold/30 p-7 md:p-9 relative overflow-hidden flex flex-col"
+              className="rounded-2xl border border-gold/30 p-7 md:p-9 relative flex flex-col"
               style={{
                 background: "linear-gradient(145deg, rgba(212,175,55,0.08) 0%, #111113 60%)",
                 boxShadow: "0 0 60px rgba(212,175,55,0.08), 0 20px 60px rgba(0,0,0,0.6)",
               }}
             >
-              {/* 배경 글로우 */}
-              <div
-                className="pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-10"
-                style={{ background: "radial-gradient(circle, #D4AF37, transparent 70%)" }}
-              />
+              {/* 배경 글로우 (카드 모서리 안쪽으로만 클리핑, 배지는 클리핑 대상 아님) */}
+              <div className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden">
+                <div
+                  className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-10"
+                  style={{ background: "radial-gradient(circle, #D4AF37, transparent 70%)" }}
+                />
+              </div>
 
               {/* 인기 배지 */}
               {plan.badge && (
-                <span className="absolute -top-3 left-6 bg-gold text-black text-[11px] font-black px-3 py-1 rounded-full tracking-wide shadow">
+                <span className="absolute -top-3 left-6 z-10 bg-gold text-black text-[11px] font-black px-3 py-1 rounded-full tracking-wide shadow whitespace-nowrap">
                   {plan.badge}
                 </span>
               )}

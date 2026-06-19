@@ -151,7 +151,7 @@ export default function DramaDetail() {
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-2 transition-colors group"
               >
                 <div className="relative w-28 md:w-36 aspect-video rounded-md overflow-hidden shrink-0 bg-surface-2">
-                  <img src={ep.thumbnail} alt={ep.title} className="w-full h-full object-cover" />
+                  <img src={drama.poster} alt={ep.title} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-colors">
                     <Play size={20} className="text-white opacity-0 group-hover:opacity-100" />
                   </div>
