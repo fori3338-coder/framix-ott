@@ -1,5 +1,8 @@
 import { NavLink } from "react-router-dom";
 import { Home, Search, Bookmark, Clock, User } from "lucide-react";
+import { useState } from "react";
+import { useAuthContext } from "../../contexts/AuthContext";
+import AuthModal from "../AuthModal";
 
 const tabs = [
   { to: "/", label: "홈", icon: Home, end: true },
@@ -10,6 +13,16 @@ const tabs = [
 ];
 
 export default function BottomNav() {
+  const { user } = useAuthContext();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  const handleAdminClick = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault();
+      setAuthModalOpen(true);
+    }
+  };
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-base/95 backdrop-blur-md border-t border-border safe-bottom safe-x">
 
@@ -19,6 +32,7 @@ export default function BottomNav() {
             key={to}
             to={to}
             end={end}
+            onClick={to === "/admin" ? handleAdminClick : undefined}
             className={({ isActive }) =>
               `flex flex-col items-center justify-center gap-1 py-2.5 min-h-[56px] text-[11px] transition-colors active:scale-95 ${
                 isActive ? "text-gold" : "text-text-muted"
@@ -34,6 +48,10 @@ export default function BottomNav() {
           </NavLink>
         ))}
       </div>
+
+      {authModalOpen && (
+        <AuthModal onClose={() => setAuthModalOpen(false)} defaultMode="login" />
+      )}
     </nav>
   );
 }
