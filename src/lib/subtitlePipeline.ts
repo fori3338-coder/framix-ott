@@ -67,6 +67,25 @@ export async function enqueueSubtitleJob(
 ): Promise<{ jobId: string }> {
   const { seriesId, episodeId, episodeNumber, videoUrl, forceRegenerate = false } = opts;
 
+  // ── INSERT 전 세션 상태 전체 검증 ────────────────────────────────────
+  const { data: { session } } = await supabase.auth.getSession();
+  console.log(`[subtitlePipeline] ep${episodeNumber} INSERT 전 세션 검증:`);
+  console.log(`  1. session 존재:        ${!!session}`);
+  console.log(`  2. access_token 존재:   ${!!session?.access_token}`);
+  console.log(`  3. user.id 존재:        ${!!session?.user?.id}`);
+  console.log(`  4. user.id 값:          ${session?.user?.id ?? '(없음)'}`);
+  console.log(`  5. Supabase auth 상태:  ${session ? 'authenticated' : 'anon/unauthenticated'}`);
+  console.log(`  6. episode_id:          ${episodeId}`);
+  console.log(`  7. series_id:           ${seriesId}`);
+  console.log(`  8. video_url 길이:      ${videoUrl?.length ?? 0}`);
+
+  if (!session) {
+    throw new Error('subtitle_jobs INSERT 실패: 로그인 세션 없음 — authenticated 권한 필요');
+  }
+  if (!session.access_token) {
+    throw new Error('subtitle_jobs INSERT 실패: access_token 없음 — 세션 재인증 필요');
+  }
+
   const { data, error } = await supabase
     .from('subtitle_jobs')
     .insert({
@@ -81,9 +100,24 @@ export async function enqueueSubtitleJob(
     .single();
 
   if (error || !data) {
-    throw new Error(`자막 작업 등록 실패: ${error?.message ?? 'unknown error'}`);
+    // INSERT 실패 원인 상세 출력
+    console.error('[subtitlePipeline] subtitle_jobs INSERT 실패 상세:', {
+      code: error?.code,
+      message: error?.message,
+      details: error?.details,
+      hint: error?.hint,
+      session_uid: session.user.id,
+      episode_id: episodeId,
+      series_id: seriesId,
+    });
+    throw new Error(
+      `자막 작업 등록 실패 [ep${episodeNumber}]: ${error?.message ?? 'unknown error'}` +
+      (error?.hint ? ` (힌트: ${error.hint})` : '') +
+      (error?.code ? ` [code: ${error.code}]` : ''),
+    );
   }
 
+  console.log(`[subtitlePipeline] ep${episodeNumber} subtitle_jobs INSERT 성공, jobId:`, (data as { id: string }).id);
   return { jobId: (data as { id: string }).id };
 }
 

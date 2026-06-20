@@ -58,7 +58,7 @@ export async function uploadImage(
     return data.publicUrl;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    throw new Error(`이미지 업로드 실패: ${msg}`);
+    throw new Error(`이미지 업로드 실패: ${msg}`, { cause: err });
   }
 }
 
@@ -108,6 +108,19 @@ export async function uploadVideo(
   }
 
   // 2차 시도: XHR raw binary
+  // ── XHR 전 세션 검증 ────────────────────────────────────────────────
+  // Supabase Storage REST API는 Authorization + apikey 헤더가 필수.
+  // SDK 실패 후 XHR로 진입할 때 이 두 헤더가 없으면
+  // "headers must have required property 'authorization'" 오류 발생.
+  const { data: { session: xhrSession } } = await supabase.auth.getSession();
+  console.log('[UPLOAD] XHR_SESSION_EXISTS', !!xhrSession);
+  console.log('[UPLOAD] XHR_ACCESS_TOKEN_EXISTS', !!xhrSession?.access_token);
+  if (!xhrSession) {
+    throw new Error('로그인 세션이 없습니다. 다시 로그인 후 시도해주세요.');
+  }
+
+  const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string);
+
   return new Promise<string>((resolve, reject) => {
     const uploadUrl = `${supabaseUrl}/storage/v1/object/${BUCKET.VIDEOS}/${path}`;
 
@@ -116,6 +129,9 @@ export async function uploadVideo(
     const xhr = new XMLHttpRequest();
     xhr.open('POST', uploadUrl, true);
 
+    // Supabase Storage REST API 필수 헤더
+    xhr.setRequestHeader('authorization', `Bearer ${xhrSession.access_token}`);
+    xhr.setRequestHeader('apikey', anonKey);
     xhr.setRequestHeader('x-upsert', 'true');
     xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
 

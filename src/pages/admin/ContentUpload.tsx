@@ -265,7 +265,20 @@ export default function ContentUpload() {
   const handleSubmit = async (e?: FormEvent<HTMLFormElement>) => {
     const { data: { session } } = await supabase.auth.getSession();
     console.log("SESSION =", session);
+    console.log("SESSION.access_token 존재:", !!session?.access_token);
+    console.log("SESSION.user.id 존재:", !!session?.user?.id);
+    console.log("SESSION.user.id 값:", session?.user?.id ?? "(없음)");
     e?.preventDefault();
+
+    if (!session) {
+      setSubmitError("로그인이 만료되었습니다. 다시 로그인 후 시도해주세요.");
+      return;
+    }
+    if (!session.access_token) {
+      setSubmitError("인증 토큰이 없습니다. 페이지를 새로고침 후 다시 시도해주세요.");
+      return;
+    }
+
     if (!title || !synopsis) { setSubmitError("제목과 시놉시스는 필수입니다."); return; }
 
     setSubmitting(true);
