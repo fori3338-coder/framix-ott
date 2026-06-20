@@ -369,8 +369,8 @@ export default function ContentUpload() {
         }
 
         // 수동 입력 자막 (AI 자막은 파이프라인이 나중에 DB 업데이트)
-        const subtitlesJson =
-          Object.keys(ep.subtitles).length > 0 ? ep.subtitles : null;
+        // subtitles 컬럼은 NOT NULL DEFAULT '{}' — null 대신 빈 객체 사용
+        const subtitlesJson = ep.subtitles ?? {};
 
         const { data: epRow, error: epErr } = await supabase.from("episodes").insert({
           series_id: dramaId,
