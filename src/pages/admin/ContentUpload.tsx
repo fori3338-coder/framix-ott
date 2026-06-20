@@ -399,7 +399,6 @@ export default function ContentUpload() {
           series_id: dramaId,
           episode_number: i + 1,
           title: ep.title,
-          description: ep.title,
           video_url: videoUrl,
           thumbnail_url: episodeThumbnailUrl,
           subtitles: subtitlesJson,
