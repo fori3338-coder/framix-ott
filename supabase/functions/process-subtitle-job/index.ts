@@ -310,12 +310,14 @@ Deno.serve(async (req: Request) => {
     }
     job = data as SubtitleJob;
   } else {
-    // job_id 미지정 시: 가장 오래된 pending job 1건 처리 (cron 폴링용)
+    // job_id 미지정 시: 가장 최근에 INSERT된 pending job 1건 처리
+    // (클라이언트 직접 invoke 경로 — 업로드 직후 호출되는 job이 항상 최신이므로
+    //  created_at desc 로 가져와야 방금 등록된 job을 즉시 처리한다)
     const { data } = await db
       .from('subtitle_jobs')
       .select('*')
       .eq('status', 'pending')
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
     job = data as SubtitleJob | null;

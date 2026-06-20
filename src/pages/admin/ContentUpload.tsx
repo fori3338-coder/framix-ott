@@ -240,6 +240,29 @@ export default function ContentUpload() {
         videoUrl,
       });
 
+      // ── DB 트리거(pg_net) 의존 제거: 업로드 완료 직후 Edge Function 직접 호출 ──
+      // app.edge_function_base_url 등 DB 세션 설정 여부와 무관하게
+      // 자막 생성이 즉시 시작되도록 클라이언트가 직접 invoke 한다.
+      // 실패해도 throw하지 않음 — pending 상태로 남아 추후 재시도 가능.
+      supabase.functions
+        .invoke('process-subtitle-job', { body: { job_id: jobId } })
+        .then(({ error: invokeError }) => {
+          if (invokeError) {
+            console.error(
+              `[ContentUpload] process-subtitle-job 직접 invoke 실패 ep${episodeNumber}:`,
+              invokeError,
+            );
+          } else {
+            console.log(`[ContentUpload] process-subtitle-job 직접 invoke 성공 ep${episodeNumber}, jobId:`, jobId);
+          }
+        })
+        .catch((invokeErr) => {
+          console.error(
+            `[ContentUpload] process-subtitle-job 직접 invoke 예외 ep${episodeNumber}:`,
+            invokeErr,
+          );
+        });
+
       // Realtime 구독으로 진행 상태를 받아온다. 구독 해제 함수는
       // unmount 시 정리되도록 ref 맵에 저장 (아래 useEffect cleanup 참고).
       const unsubscribe = subscribeSubtitleJob(jobId, (progress) => {
@@ -370,7 +393,7 @@ export default function ContentUpload() {
 
         // 수동 입력 자막 (AI 자막은 파이프라인이 나중에 DB 업데이트)
         const subtitlesJson =
-          Object.keys(ep.subtitles).length > 0 ? ep.subtitles : null;
+          Object.keys(ep.subtitles).length > 0 ? ep.subtitles : {};
 
         const { data: epRow, error: epErr } = await supabase.from("episodes").insert({
           series_id: dramaId,
