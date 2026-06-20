@@ -4,9 +4,16 @@ import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft, UploadCloud, Plus, Trash2, ImagePlus, CheckCircle2, X, GripVertical,
   Save, Eye, Film, Sparkles, Crown, AlertCircle, Subtitles, ChevronDown, ChevronUp,
+  Bot,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { uploadImage, uploadVideo, BUCKET } from "../../lib/storage";
+import {
+  enqueueSubtitleJob,
+  subscribeSubtitleJob,
+  type PipelineProgress,
+} from "../../lib/subtitlePipeline";
+import SubtitlePipelineStatus from "../../components/admin/SubtitlePipelineStatus";
 
 // ─── 지원 자막 언어 목록 ─────────────────────────────────────────────────────
 const SUBTITLE_LANGUAGES = [
@@ -36,6 +43,9 @@ const SUBTITLE_LANGUAGES = [
   { code: "te",    label: "తెలుగు" },
 ];
 
+// ─── 에피소드 파이프라인 상태 맵 ─────────────────────────────────────────────
+type EpPipelineMap = Record<number, PipelineProgress | null>; // episodeId(draft) → progress
+
 interface EpisodeDraft {
   id: number;
   title: string;
@@ -47,6 +57,8 @@ interface EpisodeDraft {
   thumbnailPreview?: string;
   subtitles: Record<string, string>; // { ko: "url", en: "url", ... }
   showSubtitlePanel: boolean;
+  // 파이프라인 결과로 채워진 자막 URL (자동 생성된 것)
+  pipelineSubtitles?: Record<string, string>;
 }
 
 const genreOptions = [
@@ -83,6 +95,21 @@ export default function ContentUpload() {
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string>("");
+
+  // ─── AI 자막 백그라운드 Job 상태 ────────────────────────────────────────
+  // API 키는 브라우저에 존재하지 않음 — 모든 키는 Edge Function 환경변수에서만 관리됨.
+  const [aiSubtitleEnabled, setAiSubtitleEnabled] = useState(true);
+  // episodeDraft.id → PipelineProgress (subtitle_jobs Realtime 구독 결과)
+  const [pipelineMap, setPipelineMap] = useState<EpPipelineMap>({});
+  // episodeDraft.id → Realtime 구독 해제 함수 (unmount 시 정리)
+  const pipelineUnsubscribeRef = useRef<Record<number, () => void>>({});
+
+  useEffect(() => {
+    const unsubscribeMap = pipelineUnsubscribeRef.current;
+    return () => {
+      Object.values(unsubscribeMap).forEach((unsub) => unsub());
+    };
+  }, []);
 
   useEffect(() => {
     const prevent = (e: Event) => e.preventDefault();
@@ -184,6 +211,57 @@ export default function ContentUpload() {
     if (file) handleEpisodeVideo(episodeId, file);
   };
 
+  // ─── AI 자막 Job 등록 (브라우저는 INSERT만 수행, 처리는 서버에서) ──────────
+  const triggerSubtitlePipeline = async (
+    draftId: number,
+    dbEpisodeId: string,
+    episodeNumber: number,
+    videoUrl: string,
+    seriesId: string,
+  ) => {
+    if (!aiSubtitleEnabled) return;
+
+    setPipelineMap((prev) => ({
+      ...prev,
+      [draftId]: {
+        stage: "pending",
+        stageLabel: "대기 중 — 작업 등록됨",
+        completedLangs: [],
+        totalLangs: 31, // ko + 30 target langs
+        retryCount: 0,
+      },
+    }));
+
+    try {
+      const { jobId } = await enqueueSubtitleJob({
+        seriesId,
+        episodeId: dbEpisodeId,
+        episodeNumber,
+        videoUrl,
+      });
+
+      // Realtime 구독으로 진행 상태를 받아온다. 구독 해제 함수는
+      // unmount 시 정리되도록 ref 맵에 저장 (아래 useEffect cleanup 참고).
+      const unsubscribe = subscribeSubtitleJob(jobId, (progress) => {
+        setPipelineMap((prev) => ({ ...prev, [draftId]: progress }));
+      });
+      pipelineUnsubscribeRef.current[draftId] = unsubscribe;
+    } catch (err) {
+      console.error(`[ContentUpload] 자막 작업 등록 실패 ep${episodeNumber}:`, err);
+      setPipelineMap((prev) => ({
+        ...prev,
+        [draftId]: {
+          stage: "error",
+          stageLabel: "작업 등록 실패",
+          completedLangs: [],
+          totalLangs: 31,
+          retryCount: 0,
+          errorMessage: (err as Error).message,
+        },
+      }));
+    }
+  };
+
   const handleSubmit = async (e?: FormEvent<HTMLFormElement>) => {
     const { data: { session } } = await supabase.auth.getSession();
     console.log("SESSION =", session);
@@ -242,6 +320,8 @@ export default function ContentUpload() {
       }
 
       let insertedEpisodes = 0;
+      // Job 등록 Promise 목록 (비동기 병렬)
+      const pipelinePromises: Promise<void>[] = [];
 
       for (let i = 0; i < episodes.length; i++) {
         const ep = episodes[i];
@@ -275,11 +355,11 @@ export default function ContentUpload() {
           }
         }
 
-        // 자막 JSON (입력된 언어만 포함)
+        // 수동 입력 자막 (AI 자막은 파이프라인이 나중에 DB 업데이트)
         const subtitlesJson =
           Object.keys(ep.subtitles).length > 0 ? ep.subtitles : null;
 
-        const { error: epErr } = await supabase.from("episodes").insert({
+        const { data: epRow, error: epErr } = await supabase.from("episodes").insert({
           series_id: dramaId,
           episode_number: i + 1,
           title: ep.title,
@@ -287,15 +367,35 @@ export default function ContentUpload() {
           video_url: videoUrl,
           thumbnail_url: episodeThumbnailUrl,
           subtitles: subtitlesJson,
-        });
+        }).select().single();
 
-        if (epErr) {
-          console.error(`[ContentUpload] ${i + 1}화 INSERT 오류:`, epErr.message, epErr.details);
-          throw new Error(`${i + 1}화 등록 실패: ${epErr.message}`);
+        if (epErr || !epRow) {
+          console.error(`[ContentUpload] ${i + 1}화 INSERT 오류:`, epErr?.message, epErr?.details);
+          throw new Error(`${i + 1}화 등록 실패: ${epErr?.message}`);
         }
 
+        const dbEpisodeId = (epRow as { id: string }).id;
+
         insertedEpisodes++;
-        console.log(`[ContentUpload] ${i + 1}화 등록 완료, video_url:`, videoUrl);
+        console.log(`[ContentUpload] ${i + 1}화 등록 완료, video_url:`, videoUrl, "ep_id:", dbEpisodeId);
+
+        // ── 영상 업로드 완료 즉시 AI 자막 Job 등록 ───────────────────────
+        if (videoUrl && aiSubtitleEnabled) {
+          const capturedVideoUrl: string = videoUrl;
+          const capturedDraftId = ep.id;
+          const capturedNum = i + 1;
+          const capturedDbId = dbEpisodeId;
+          const capturedDramaId = dramaId;
+          pipelinePromises.push(
+            triggerSubtitlePipeline(
+              capturedDraftId,
+              capturedDbId,
+              capturedNum,
+              capturedVideoUrl,
+              capturedDramaId,
+            )
+          );
+        }
       }
 
       await supabase
@@ -303,9 +403,23 @@ export default function ContentUpload() {
         .update({ total_episodes: insertedEpisodes })
         .eq("id", dramaId);
 
-      setUploadStatus("등록 완료!");
+      setUploadStatus("등록 완료! AI 자막 생성 중...");
       setSubmitted(true);
-      setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
+
+      // 파이프라인들은 백그라운드에서 계속 실행 (await 안 함 → 페이지 이동 전 상태 표시)
+      // 단, 짧은 대기로 UX 확인 가능하게
+      if (pipelinePromises.length > 0) {
+        setUploadStatus(`${pipelinePromises.length}개 에피소드 AI 자막 생성 중...`);
+        // 파이프라인 완료를 기다리지 않고 진행 (백그라운드)
+        Promise.allSettled(pipelinePromises).then((results) => {
+          const failed = results.filter((r) => r.status === "rejected").length;
+          console.log(`[ContentUpload] 파이프라인 완료. 실패: ${failed}/${pipelinePromises.length}`);
+        });
+        // 3초 후 이동 (상태 확인 시간 제공)
+        setTimeout(() => navigate(`/drama/${dramaId}`), 3000);
+      } else {
+        setTimeout(() => navigate(`/drama/${dramaId}`), 1500);
+      }
     } catch (err) {
       const msg = (err as Error).message;
       console.error("[ContentUpload] 등록 오류:", err);
@@ -315,6 +429,11 @@ export default function ContentUpload() {
       setSubmitting(false);
     }
   };
+
+  // 파이프라인 실행 중인 에피소드 수
+  const activePipelineCount = Object.values(pipelineMap).filter(
+    (p) => p && p.stage !== "idle" && p.stage !== "done" && p.stage !== "error"
+  ).length;
 
   return (
     <div className="px-4 md:px-8 pt-20 md:pt-24 pb-10 animate-fade-in max-w-5xl mx-auto admin-grid-bg min-h-screen">
@@ -350,6 +469,46 @@ export default function ContentUpload() {
         <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
           <div className="h-full bg-gradient-gold transition-all duration-500" style={{ width: `${completion}%` }} />
         </div>
+      </div>
+
+      {/* ── AI 자막 자동 생성 설정 배너 ──────────────────────────────────── */}
+      <div className={`mb-5 rounded-xl border p-3.5 transition-colors ${
+        aiSubtitleEnabled
+          ? "border-gold/30 bg-gold/5"
+          : "border-border bg-surface"
+      }`}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Bot size={15} className={aiSubtitleEnabled ? "text-gold" : "text-text-muted"} />
+            <div className="min-w-0">
+              <p className="text-xs font-bold">AI 자막 자동 생성</p>
+              <p className="text-[11px] text-text-muted">
+                {aiSubtitleEnabled
+                  ? "영상 업로드 완료 시 30개 언어 자막이 백그라운드에서 자동 생성됩니다"
+                  : "비활성화됨 — 수동으로 자막 URL을 입력하세요"}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setAiSubtitleEnabled((v) => !v)}
+              className={`relative w-9 h-5 rounded-full border transition-all ${
+                aiSubtitleEnabled ? "bg-gold border-gold" : "bg-surface-2 border-border"
+              }`}
+              aria-label="AI 자막 토글"
+            >
+              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                aiSubtitleEnabled ? "translate-x-4" : "translate-x-0.5"
+              }`} />
+            </button>
+          </div>
+        </div>
+        {aiSubtitleEnabled && (
+          <p className="text-[10px] text-text-muted mt-2 pt-2 border-t border-border/50">
+            Groq Whisper STT + Gemini 번역(OpenRouter 폴백) 사용 · 작업은 서버에서 처리되며 브라우저를 닫아도 계속 진행됩니다
+          </p>
+        )}
       </div>
 
       <div className="mb-6 overflow-x-auto scrollbar-hide -mx-4 px-4">
@@ -390,6 +549,33 @@ export default function ContentUpload() {
         <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-lg bg-gold/10 border border-gold/30 text-gold text-sm animate-fade-in">
           <div className="w-4 h-4 border-2 border-gold border-t-transparent rounded-full animate-spin shrink-0" />
           {uploadStatus}
+        </div>
+      )}
+
+      {/* ── 파이프라인 진행 상태 패널 ─────────────────────────────────────── */}
+      {Object.keys(pipelineMap).length > 0 && (
+        <div className="mb-5 space-y-2 animate-fade-in">
+          <p className="text-xs font-bold text-gold flex items-center gap-1.5 mb-2">
+            <Bot size={13} />
+            AI 자막 파이프라인
+            {activePipelineCount > 0 && (
+              <span className="ml-1 text-[10px] bg-gold/20 text-gold px-2 py-0.5 rounded-full">
+                {activePipelineCount}개 처리 중
+              </span>
+            )}
+          </p>
+          {episodes.map((ep, i) => {
+            const prog = pipelineMap[ep.id];
+            if (!prog) return null;
+            return (
+              <SubtitlePipelineStatus
+                key={ep.id}
+                episodeNumber={i + 1}
+                episodeTitle={ep.title}
+                progress={prog}
+              />
+            );
+          })}
         </div>
       )}
 
@@ -586,6 +772,12 @@ export default function ContentUpload() {
                       <p className="text-[11px] text-gold font-semibold mb-2 flex items-center gap-1.5">
                         <Subtitles size={12} /> 자막 URL (VTT) — 해당 언어 URL 입력 시 자동 활성화
                       </p>
+                      {aiSubtitleEnabled && (
+                        <p className="text-[10px] text-text-muted mb-2 flex items-center gap-1">
+                          <Bot size={10} />
+                          AI 자막 자동 생성 ON — 영상 업로드 후 자동으로 채워집니다
+                        </p>
+                      )}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                         {SUBTITLE_LANGUAGES.map((lang) => (
                           <div key={lang.code} className="flex items-center gap-2">
@@ -619,7 +811,15 @@ export default function ContentUpload() {
 
         {step === 3 && (
           <div className="bg-surface border border-border rounded-2xl p-4 md:p-6 admin-card animate-fade-in space-y-4">
-            <p className="text-sm text-text-dim">각 에피소드의 영상 파일을 업로드하세요. 업로드는 콘텐츠 등록 버튼 클릭 시 일괄 처리됩니다.</p>
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm text-text-dim">각 에피소드의 영상 파일을 업로드하세요. 업로드는 콘텐츠 등록 버튼 클릭 시 일괄 처리됩니다.</p>
+              {aiSubtitleEnabled && (
+                <div className="shrink-0 flex items-center gap-1 text-[10px] text-gold font-semibold bg-gold/10 border border-gold/30 px-2.5 py-1.5 rounded-md">
+                  <Bot size={11} />
+                  AI 자막 자동
+                </div>
+              )}
+            </div>
 
             {episodes.map((ep, i) => (
               <div key={ep.id} className="bg-surface-2 border border-border rounded-xl p-3 space-y-2">
@@ -656,6 +856,11 @@ export default function ContentUpload() {
                   <UploadCloud size={22} className={`mx-auto mb-2 ${ep.videoFile ? "text-green-400" : "text-gold"}`} />
                   <p className="text-xs font-semibold">{ep.videoFile ? ep.videoFile.name : "클릭 또는 드래그하여 영상 업로드"}</p>
                   <p className="text-[10px] text-text-muted mt-0.5">MP4, MOV · 최대 5GB</p>
+                  {aiSubtitleEnabled && (
+                    <p className="text-[10px] text-gold/70 mt-1 flex items-center justify-center gap-1">
+                      <Bot size={9} /> 업로드 완료 시 AI 자막 자동 생성
+                    </p>
+                  )}
                 </div>
 
                 {ep.videoProgress > 0 && ep.videoProgress < 100 && (
@@ -673,6 +878,15 @@ export default function ContentUpload() {
                   <div className="flex items-center gap-1.5 text-[11px] text-green-400 font-semibold">
                     <CheckCircle2 size={12} /> 업로드 완료
                   </div>
+                )}
+
+                {/* 파이프라인 진행 상태 (이 에피소드) */}
+                {pipelineMap[ep.id] && (
+                  <SubtitlePipelineStatus
+                    episodeNumber={i + 1}
+                    episodeTitle={ep.title}
+                    progress={pipelineMap[ep.id]!}
+                  />
                 )}
               </div>
             ))}
