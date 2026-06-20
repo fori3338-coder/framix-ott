@@ -11,6 +11,8 @@ import { uploadImage, uploadVideo, BUCKET } from "../../lib/storage";
 import {
   enqueueSubtitleJob,
   subscribeSubtitleJob,
+  appendJobDebugLog,
+  recordClientFunctionCall,
   type PipelineProgress,
 } from "../../lib/subtitlePipeline";
 import SubtitlePipelineStatus from "../../components/admin/SubtitlePipelineStatus";
@@ -233,35 +235,63 @@ export default function ContentUpload() {
     }));
 
     try {
+      // STEP03: enqueueSubtitleJob (subtitlePipeline.ts 내부에서 last_step/debug_log 초기 기록됨)
       const { jobId } = await enqueueSubtitleJob({
         seriesId,
         episodeId: dbEpisodeId,
         episodeNumber,
         videoUrl,
       });
+      console.log(`[ContentUpload] STEP03_ENQUEUE_SUBTITLE_JOB OK ep${episodeNumber} jobId=${jobId}`);
 
       // ── DB 트리거(pg_net) 의존 제거: 업로드 완료 직후 Edge Function 직접 호출 ──
-      // app.edge_function_base_url 등 DB 세션 설정 여부와 무관하게
-      // 자막 생성이 즉시 시작되도록 클라이언트가 직접 invoke 한다.
-      // 실패해도 throw하지 않음 — pending 상태로 남아 추후 재시도 가능.
-      supabase.functions
-        .invoke('process-subtitle-job', { body: { job_id: jobId } })
-        .then(({ error: invokeError }) => {
-          if (invokeError) {
-            console.error(
-              `[ContentUpload] process-subtitle-job 직접 invoke 실패 ep${episodeNumber}:`,
-              invokeError,
-            );
-          } else {
-            console.log(`[ContentUpload] process-subtitle-job 직접 invoke 성공 ep${episodeNumber}, jobId:`, jobId);
-          }
-        })
-        .catch((invokeErr) => {
+      // STEP04: functions.invoke('process-subtitle-job') — 결과를 await하여
+      // 성공/실패를 subtitle_jobs.debug_log 에 명시적으로 기록한다.
+      // (이전 버전은 fire-and-forget 이라 STEP04 자체의 성공/실패가
+      //  DB에 남지 않았음 — 이번 수정으로 무조건 기록되도록 변경)
+      try {
+        const { data: invokeData, error: invokeError } = await supabase.functions.invoke(
+          'process-subtitle-job',
+          { body: { job_id: jobId } },
+        );
+
+        if (invokeError) {
           console.error(
-            `[ContentUpload] process-subtitle-job 직접 invoke 예외 ep${episodeNumber}:`,
-            invokeErr,
+            `[ContentUpload] STEP04_FUNCTIONS_INVOKE FAIL ep${episodeNumber}:`,
+            invokeError,
           );
-        });
+          await appendJobDebugLog(
+            jobId,
+            'STEP04_FUNCTIONS_INVOKE',
+            'FAIL',
+            `invoke 실패: ${invokeError.message ?? JSON.stringify(invokeError)}`,
+          );
+        } else {
+          console.log(
+            `[ContentUpload] STEP04_FUNCTIONS_INVOKE OK ep${episodeNumber} jobId=${jobId} response=`,
+            invokeData,
+          );
+          await appendJobDebugLog(
+            jobId,
+            'STEP04_FUNCTIONS_INVOKE',
+            'OK',
+            `invoke 응답: ${JSON.stringify(invokeData)}`,
+          );
+        }
+      } catch (invokeErr) {
+        // functions.invoke 자체가 네트워크 레벨에서 throw 한 경우
+        // (Edge Function 진입조차 안 됐을 가능성 — subtitle_function_calls 와 대조)
+        console.error(
+          `[ContentUpload] STEP04_FUNCTIONS_INVOKE EXCEPTION ep${episodeNumber}:`,
+          invokeErr,
+        );
+        await appendJobDebugLog(
+          jobId,
+          'STEP04_FUNCTIONS_INVOKE',
+          'FAIL',
+          `invoke 예외(네트워크/런타임): ${(invokeErr as Error).message}`,
+        );
+      }
 
       // Realtime 구독으로 진행 상태를 받아온다. 구독 해제 함수는
       // unmount 시 정리되도록 ref 맵에 저장 (아래 useEffect cleanup 참고).
@@ -270,7 +300,7 @@ export default function ContentUpload() {
       });
       pipelineUnsubscribeRef.current[draftId] = unsubscribe;
     } catch (err) {
-      console.error(`[ContentUpload] 자막 작업 등록 실패 ep${episodeNumber}:`, err);
+      console.error(`[ContentUpload] STEP03_ENQUEUE_SUBTITLE_JOB FAIL ep${episodeNumber}:`, err);
       setPipelineMap((prev) => ({
         ...prev,
         [draftId]: {
@@ -323,11 +353,18 @@ export default function ContentUpload() {
         .single();
 
       if (dramaErr || !dramaRow) {
-        console.error("[ContentUpload] series INSERT error:", dramaErr);
+        console.error("[ContentUpload] STEP01_SERIES_INSERT FAIL:", dramaErr);
+        await recordClientFunctionCall(
+          'STEP01_SERIES_INSERT',
+          'FAIL',
+          { title, seriesPayload },
+          dramaErr?.message ?? '드라마 등록 실패',
+        );
         throw new Error(dramaErr?.message ?? "드라마 등록 실패");
       }
       const dramaId: string = (dramaRow as { id: string }).id;
-      console.log("[ContentUpload] series 등록 완료 id:", dramaId);
+      console.log("[ContentUpload] STEP01_SERIES_INSERT OK id:", dramaId);
+      await recordClientFunctionCall('STEP01_SERIES_INSERT', 'OK', { series_id: dramaId, title });
 
       if (posterFile) {
         setUploadStatus("포스터 업로드 중...");
@@ -405,14 +442,25 @@ export default function ContentUpload() {
         }).select().single();
 
         if (epErr || !epRow) {
-          console.error(`[ContentUpload] ${i + 1}화 INSERT 오류:`, epErr?.message, epErr?.details);
+          console.error(`[ContentUpload] STEP02_EPISODE_INSERT FAIL ep${i + 1}:`, epErr?.message, epErr?.details);
+          await recordClientFunctionCall(
+            'STEP02_EPISODE_INSERT',
+            'FAIL',
+            { series_id: dramaId, episode_number: i + 1, video_url: videoUrl },
+            epErr?.message ?? `${i + 1}화 등록 실패`,
+          );
           throw new Error(`${i + 1}화 등록 실패: ${epErr?.message}`);
         }
 
         const dbEpisodeId = (epRow as { id: string }).id;
+        await recordClientFunctionCall(
+          'STEP02_EPISODE_INSERT',
+          'OK',
+          { series_id: dramaId, episode_id: dbEpisodeId, episode_number: i + 1, video_url: videoUrl },
+        );
 
         insertedEpisodes++;
-        console.log(`[ContentUpload] ${i + 1}화 등록 완료, video_url:`, videoUrl, "ep_id:", dbEpisodeId);
+        console.log(`[ContentUpload] STEP02_EPISODE_INSERT OK ep${i + 1} video_url:`, videoUrl, "ep_id:", dbEpisodeId);
 
         // ── 영상 업로드 완료 즉시 AI 자막 Job 등록 ───────────────────────
         if (videoUrl && aiSubtitleEnabled) {

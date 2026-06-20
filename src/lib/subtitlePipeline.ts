@@ -58,6 +58,13 @@ export interface EnqueueSubtitleJobOptions {
 }
 
 /**
+ * STEP 로그 한 줄을 "[ISO시각] STEP코드 상태 메시지" 형식으로 만든다.
+ */
+function logLine(step: string, status: 'OK' | 'FAIL', message: string): string {
+  return `[${new Date().toISOString()}] ${step} ${status} ${message}`;
+}
+
+/**
  * subtitle_jobs 테이블에 작업을 등록한다.
  * INSERT가 성공하는 즉시 DB 트리거가 Edge Function을 호출해 백그라운드 처리를 시작하므로,
  * 이 함수가 반환된 이후 브라우저를 닫아도 작업은 계속 진행된다.
@@ -86,6 +93,8 @@ export async function enqueueSubtitleJob(
     throw new Error('subtitle_jobs INSERT 실패: access_token 없음 — 세션 재인증 필요');
   }
 
+  const insertStartLog = logLine('STEP03_ENQUEUE_SUBTITLE_JOB', 'OK', `INSERT 시도 ep${episodeNumber}`);
+
   const { data, error } = await supabase
     .from('subtitle_jobs')
     .insert({
@@ -95,6 +104,8 @@ export async function enqueueSubtitleJob(
       video_url: videoUrl,
       target_langs: [...PIPELINE_TARGET_LANGS],
       force_regenerate: forceRegenerate,
+      last_step: 'STEP03_ENQUEUE_SUBTITLE_JOB',
+      debug_log: insertStartLog,
     })
     .select('id')
     .single();
@@ -119,6 +130,76 @@ export async function enqueueSubtitleJob(
 
   console.log(`[subtitlePipeline] ep${episodeNumber} subtitle_jobs INSERT 성공, jobId:`, (data as { id: string }).id);
   return { jobId: (data as { id: string }).id };
+}
+
+// ─── STEP 디버그 로그 append (클라이언트에서 호출, RLS: authenticated UPDATE 가능 시) ──
+
+/**
+ * subtitle_jobs.debug_log 에 한 줄을 append하고 last_step을 갱신한다.
+ * UPDATE 권한이 없는 환경(RLS 미허용)에서는 실패해도 throw하지 않고
+ * console에만 남긴다 — 추적 시스템 자체가 본 파이프라인을 막아서는 안 됨.
+ */
+export async function appendJobDebugLog(
+  jobId: string,
+  step: string,
+  status: 'OK' | 'FAIL',
+  message: string,
+): Promise<void> {
+  const line = logLine(step, status, message);
+  try {
+    const { data: current, error: selErr } = await supabase
+      .from('subtitle_jobs')
+      .select('debug_log')
+      .eq('id', jobId)
+      .single();
+
+    if (selErr) {
+      console.warn(`[subtitlePipeline] debug_log 조회 실패 (job ${jobId}):`, selErr.message);
+      return;
+    }
+
+    const prevLog = (current?.debug_log as string | null) ?? '';
+    const nextLog = prevLog ? `${prevLog}\n${line}` : line;
+
+    const { error: updErr } = await supabase
+      .from('subtitle_jobs')
+      .update({ debug_log: nextLog, last_step: step })
+      .eq('id', jobId);
+
+    if (updErr) {
+      console.warn(`[subtitlePipeline] debug_log 기록 실패 (job ${jobId}):`, updErr.message);
+    }
+  } catch (err) {
+    console.warn(`[subtitlePipeline] debug_log 기록 예외 (job ${jobId}):`, (err as Error).message);
+  }
+}
+
+/**
+ * subtitle_jobs 행이 아직 존재하지 않는 단계(STEP01 series insert,
+ * STEP02 episode insert)의 실패를 subtitle_function_calls 에 기록한다.
+ * subtitle_jobs.debug_log 는 job row가 있어야만 쓸 수 있으므로,
+ * job 생성 이전 단계의 실패는 이 테이블이 유일한 DB 기록 지점이다.
+ * UPDATE 권한이 없거나 실패해도 throw하지 않음 — 추적 시스템이
+ * 본 파이프라인을 막아서는 안 됨.
+ */
+export async function recordClientFunctionCall(
+  step: string,
+  result: 'OK' | 'FAIL',
+  payload: Record<string, unknown>,
+  errorMessage?: string,
+): Promise<void> {
+  try {
+    const { error } = await supabase.from('subtitle_function_calls').insert({
+      payload: { step, ...payload },
+      result,
+      error: errorMessage ?? null,
+    });
+    if (error) {
+      console.warn(`[subtitlePipeline] subtitle_function_calls 기록 실패 (${step}):`, error.message);
+    }
+  } catch (err) {
+    console.warn(`[subtitlePipeline] subtitle_function_calls 기록 예외 (${step}):`, (err as Error).message);
+  }
 }
 
 // ─── Job 상태 조회 (최초 1회 스냅샷, 이후엔 Realtime 구독 사용 권장) ──────
