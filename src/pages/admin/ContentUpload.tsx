@@ -337,7 +337,7 @@ export default function ContentUpload() {
             });
           } catch (videoErr) {
             console.error(`[ContentUpload] ${i + 1}화 영상 업로드 실패:`, videoErr);
-            throw new Error(`${i + 1}화 영상 업로드 실패: ${(videoErr as Error).message}`);
+            throw new Error(`${i + 1}화 영상 업로드 실패: ${(videoErr as Error).message}`, { cause: videoErr });
           }
         }
 
