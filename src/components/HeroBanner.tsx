@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Play, Info, Volume2, VolumeX, Plus } from "lucide-react";
+import { Play, Info, Plus } from "lucide-react";
 import type { Drama } from "../types";
 
 interface HeroBannerProps {
@@ -8,11 +8,14 @@ interface HeroBannerProps {
 }
 
 const SLIDE_MS = 6000;
+// 홈 진입(또는 슬라이드 전환) 후 이미지 → 영상 프리뷰로 전환되기까지 대기 시간.
+const VIDEO_PREVIEW_DELAY_MS = 3000;
 
 export default function HeroBanner({ dramas }: HeroBannerProps) {
   const [index, setIndex] = useState(0);
-  const [muted, setMuted] = useState(true);
   const [paused, setPaused] = useState(false);
+  // 현재 슬라이드의 banner_video_url 프리뷰가 재생 중인지 (3초 지연 후 true)
+  const [videoPreviewActive, setVideoPreviewActive] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,6 +25,15 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
     }, SLIDE_MS);
     return () => clearInterval(timer);
   }, [dramas.length, paused, index]);
+
+  // 슬라이드(또는 일시정지 상태)가 바뀔 때마다 영상 프리뷰 상태를 초기화하고,
+  // 3초 후 다시 영상 프리뷰를 활성화한다. (이미지 → 3초 → 음소거 영상 자동재생)
+  useEffect(() => {
+    setVideoPreviewActive(false);
+    if (paused) return;
+    const t = setTimeout(() => setVideoPreviewActive(true), VIDEO_PREVIEW_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [index, paused]);
 
   const drama = dramas[index];
   if (!drama) return null;
@@ -46,6 +58,12 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
     navigate(playRoute);
   };
 
+  // 배너 CMS override: banner_title/description/image_url이 지정되어 있으면 우선 사용,
+  // 없으면 기존 작품 정보(title/synopsis/backdrop)로 폴백한다.
+  const displayTitle = drama.bannerTitle?.trim() || drama.title;
+  const displayDescription = drama.bannerDescription?.trim() || drama.synopsis;
+  const displayImage = (d: Drama) => d.bannerImageUrl?.trim() || d.backdrop;
+
   return (
     <div
       className="relative w-full h-[68vh] md:h-[88vh] min-h-[460px] overflow-hidden bg-base"
@@ -61,11 +79,27 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
           }`}
         >
           <img
-            src={d.backdrop}
+            src={displayImage(d)}
             alt={d.title}
             className={`w-full h-full object-cover ${i === index ? "animate-ken-burns" : ""}`}
             style={{ willChange: "transform" }}
           />
+          {/* Video Preview CMS: banner_video_url이 등록된 경우, 3초 후 음소거 자동재생.
+              이미지는 그대로 아래 깔려있고 영상이 위에 페이드인 — 영상 로드 실패 시에도
+              이미지가 항상 보이므로 빈 화면이 되지 않는다. */}
+          {i === index && videoPreviewActive && d.bannerVideoUrl && (
+            <video
+              key={d.bannerVideoUrl}
+              src={d.bannerVideoUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              className="absolute inset-0 w-full h-full object-cover animate-fade-in-up"
+              style={{ animationDuration: "600ms" }}
+            />
+          )}
         </div>
       ))}
 
@@ -92,7 +126,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             className="text-3xl md:text-6xl font-black text-white leading-[1.05] mb-3 drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)] animate-fade-in-up"
             style={{ animationDelay: "60ms", animationFillMode: "backwards" }}
           >
-            {drama.title}
+            {displayTitle}
           </h1>
 
           <div
@@ -114,7 +148,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             className="hidden md:block text-[15px] text-text-dim/90 leading-relaxed line-clamp-2 mb-5 max-w-xl animate-fade-in-up"
             style={{ animationDelay: "180ms", animationFillMode: "backwards" }}
           >
-            {drama.synopsis}
+            {displayDescription}
           </p>
 
           <div
@@ -163,13 +197,6 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
               className="hidden sm:flex w-11 h-11 rounded-full border border-white/25 items-center justify-center text-white hover:border-gold hover:text-gold transition-colors active:scale-95"
             >
               <Plus size={18} />
-            </button>
-            <button
-              onClick={() => setMuted((m) => !m)}
-              aria-label="음소거 토글"
-              className="ml-auto w-10 h-10 md:w-11 md:h-11 rounded-full border border-white/25 flex items-center justify-center text-white hover:border-gold hover:text-gold transition-colors active:scale-95"
-            >
-              {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </button>
           </div>
         </div>

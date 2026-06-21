@@ -36,6 +36,10 @@ export interface Drama {
   isBanner?: boolean;
   bannerOrder?: number;
   top10Rank?: number | null;
+  bannerTitle?: string | null;
+  bannerDescription?: string | null;
+  bannerImageUrl?: string | null;
+  bannerVideoUrl?: string | null;
 }
 
 export interface ContinueWatchingItem {

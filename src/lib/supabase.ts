@@ -36,6 +36,11 @@ export interface DbDrama {
   banner_enabled: boolean | null;
   banner_order: number | null;
   top10_rank: number | null;
+  // 022_hero_banner_cms.sql — Hero Banner CMS override 컬럼 (전부 선택, NULL이면 폴백)
+  banner_title: string | null;
+  banner_description: string | null;
+  banner_image_url: string | null;
+  banner_video_url: string | null;
 }
 
 // episodes 테이블 (001_init.sql 기준)

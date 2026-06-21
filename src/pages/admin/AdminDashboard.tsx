@@ -63,6 +63,11 @@ interface DbSeries {
   banner_order: number | null;
   top10_rank: number | null;
   is_new: boolean | null;
+  // 022_hero_banner_cms.sql — Hero Banner CMS override 컬럼
+  banner_title: string | null;
+  banner_description: string | null;
+  banner_image_url: string | null;
+  banner_video_url: string | null;
 }
 
 interface ActivityLog {
@@ -164,6 +169,14 @@ export default function AdminDashboard() {
   const [contentMsg, setContentMsg] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  // ── Hero Banner CMS: 배너 상세(제목/설명/이미지/영상) 인라인 편집 ──────────
+  const [bannerEditId, setBannerEditId] = useState<string | null>(null);
+  const [bannerEditForm, setBannerEditForm] = useState({
+    banner_title: "",
+    banner_description: "",
+    banner_image_url: "",
+    banner_video_url: "",
+  });
   const [showContentManager, setShowContentManager] = useState(false);
 
   // ── 자막 관리 패널 상태 ───────────────────────────────────────────────────
@@ -428,7 +441,7 @@ export default function AdminDashboard() {
       try {
         const { data: extData } = await supabase
           .from("series")
-          .select("id, genres, banner_enabled, banner_order, top10_rank, is_new");
+          .select("id, genres, banner_enabled, banner_order, top10_rank, is_new, banner_title, banner_description, banner_image_url, banner_video_url");
         if (extData) {
           (extData as Record<string, unknown>[]).forEach((r) => {
             extMap.set(r.id as string, r as Partial<DbSeries>);
@@ -721,6 +734,35 @@ export default function AdminDashboard() {
     const { error } = await supabase.from("series").update({ banner_order: order }).eq("id", id);
     if (error) setContentMsg(`배너 순서 변경 실패: ${error.message}`);
     else await fetchAll();
+    setContentLoading(false);
+  };
+
+  // ── Hero Banner CMS: 상세 편집 패널 열기 (기존 값으로 폼 채움) ───────────
+  const handleOpenBannerEdit = (d: DbSeries) => {
+    setBannerEditId(d.id);
+    setBannerEditForm({
+      banner_title: d.banner_title ?? "",
+      banner_description: d.banner_description ?? "",
+      banner_image_url: d.banner_image_url ?? "",
+      banner_video_url: d.banner_video_url ?? "",
+    });
+  };
+
+  // ── Hero Banner CMS: 상세 편집 저장 (빈 문자열은 NULL로 저장해 폴백 동작 유지) ──
+  const handleSaveBannerDetail = async (id: string) => {
+    setContentLoading(true);
+    const { error } = await supabase
+      .from("series")
+      .update({
+        banner_title: bannerEditForm.banner_title.trim() || null,
+        banner_description: bannerEditForm.banner_description.trim() || null,
+        banner_image_url: bannerEditForm.banner_image_url.trim() || null,
+        banner_video_url: bannerEditForm.banner_video_url.trim() || null,
+      })
+      .eq("id", id);
+    if (error) setContentMsg(`배너 상세 저장 실패: ${error.message}`);
+    else { setContentMsg("배너 상세 정보가 저장되었습니다. (실시간 반영)"); await fetchAll(); }
+    setBannerEditId(null);
     setContentLoading(false);
   };
 
@@ -1455,7 +1497,8 @@ export default function AdminDashboard() {
           ) : (
             <div className="divide-y divide-border max-h-[480px] overflow-y-auto">
               {allContents.map((d) => (
-                <div key={d.id} className="flex items-center gap-3 px-4 md:px-5 py-3 hover:bg-surface-2/40 transition-colors">
+                <div key={d.id}>
+                <div className="flex items-center gap-3 px-4 md:px-5 py-3 hover:bg-surface-2/40 transition-colors">
                   {d.thumbnail_url ? (
                     <img src={d.thumbnail_url} alt={d.title} className="w-10 h-14 object-cover rounded-md shrink-0" />
                   ) : (
@@ -1563,6 +1606,20 @@ export default function AdminDashboard() {
                         <Sparkles size={10} />
                         NEW {d.is_new ? "ON" : "OFF"}
                       </button>
+                      {d.banner_enabled && (
+                        <button
+                          onClick={() => (bannerEditId === d.id ? setBannerEditId(null) : handleOpenBannerEdit(d))}
+                          className={`text-[10px] px-2 py-1 rounded-md border flex items-center gap-1 transition-colors ${
+                            bannerEditId === d.id
+                              ? "bg-gold/20 border-gold/50 text-gold"
+                              : "bg-surface-2 border-border text-white hover:text-gold hover:border-gold/40"
+                          }`}
+                          title="배너 제목/설명/이미지/영상 편집"
+                        >
+                          <Clapperboard size={10} />
+                          배너 상세
+                        </button>
+                      )}
                     </div>
                   </div>
                   {/* 액션 버튼 */}
@@ -1608,6 +1665,67 @@ export default function AdminDashboard() {
                       <Trash2 size={13} />
                     </button>
                   </div>
+                </div>
+
+                {/* ── Hero Banner CMS 상세 편집 패널 ──────────────────────────── */}
+                {bannerEditId === d.id && (
+                  <div className="px-4 md:px-5 pb-4 pt-1 bg-surface-2/30 border-t border-gold/20">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mt-2">
+                      <div>
+                        <label className="text-[10px] font-semibold text-white mb-1 block">배너 제목 (비우면 작품 제목 사용)</label>
+                        <input
+                          className="w-full bg-surface-2 border border-border rounded px-2 py-1.5 text-xs text-text focus:outline-none focus:border-gold"
+                          value={bannerEditForm.banner_title}
+                          onChange={(e) => setBannerEditForm((f) => ({ ...f, banner_title: e.target.value }))}
+                          placeholder={d.title}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold text-white mb-1 block">배너 이미지 URL (비우면 기본 backdrop 사용)</label>
+                        <input
+                          className="w-full bg-surface-2 border border-border rounded px-2 py-1.5 text-xs text-text focus:outline-none focus:border-gold"
+                          value={bannerEditForm.banner_image_url}
+                          onChange={(e) => setBannerEditForm((f) => ({ ...f, banner_image_url: e.target.value }))}
+                          placeholder="https://..."
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="text-[10px] font-semibold text-white mb-1 block">배너 설명 (비우면 작품 시놉시스 사용)</label>
+                        <textarea
+                          rows={2}
+                          className="w-full bg-surface-2 border border-border rounded px-2 py-1.5 text-xs text-text focus:outline-none focus:border-gold resize-none"
+                          value={bannerEditForm.banner_description}
+                          onChange={(e) => setBannerEditForm((f) => ({ ...f, banner_description: e.target.value }))}
+                          placeholder="AI 타임루프 복수 로맨스"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="text-[10px] font-semibold text-white mb-1 block">배너 영상 URL (등록 시 홈 진입 3초 후 음소거 자동재생)</label>
+                        <input
+                          className="w-full bg-surface-2 border border-border rounded px-2 py-1.5 text-xs text-text focus:outline-none focus:border-gold"
+                          value={bannerEditForm.banner_video_url}
+                          onChange={(e) => setBannerEditForm((f) => ({ ...f, banner_video_url: e.target.value }))}
+                          placeholder="https://... (선택, 비워두면 이미지만 노출)"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-3">
+                      <button
+                        onClick={() => handleSaveBannerDetail(d.id)}
+                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-gold text-black rounded-md font-semibold hover:bg-gold/90 transition-colors"
+                      >
+                        <Save size={12} />
+                        저장
+                      </button>
+                      <button
+                        onClick={() => setBannerEditId(null)}
+                        className="text-xs px-3 py-1.5 bg-surface border border-border rounded-md text-white hover:text-white"
+                      >
+                        취소
+                      </button>
+                    </div>
+                  </div>
+                )}
                 </div>
               ))}
             </div>

@@ -74,6 +74,10 @@ export function toFrontendDrama(d: DbDrama, episodes: DbEpisode[] = []): Drama {
     isBanner: d.banner_enabled ?? false,
     bannerOrder: d.banner_order ?? 0,
     top10Rank: d.top10_rank ?? null,
+    bannerTitle: d.banner_title ?? null,
+    bannerDescription: d.banner_description ?? null,
+    bannerImageUrl: d.banner_image_url ?? null,
+    bannerVideoUrl: d.banner_video_url ?? null,
   };
 }
 
