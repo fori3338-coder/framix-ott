@@ -16,6 +16,10 @@
   --color-text-muted: #ffffff;
   --color-danger: #e63946;
 
+  /* Desktop header — Apple TV+ style luxury silver/white (desktop nav only, mobile untouched) */
+  --color-header-silver: #F5F5F7;
+  --color-header-silver-dim: #D1D5DB;
+
   --font-sans: "Inter", "Pretendard", "Noto Sans KR", system-ui, -apple-system, sans-serif;
 
   --animate-fade-in: fade-in 0.4s ease-out;
@@ -280,5 +284,99 @@
       0 1px 0 rgba(255,255,255,0.04) inset,
       0 14px 40px -16px rgba(0,0,0,0.7),
       0 0 0 1px rgba(212,175,55,0.08);
+  }
+}
+
+@layer utilities {
+  /* ===== Desktop Header — Premium Glass Navigation (md and up only) ===== */
+
+  @media (min-width: 768px) {
+    /* Header mount-in: fade + rise, GPU-accelerated, desktop only */
+    @keyframes header-fade-in-desktop {
+      from { opacity: 0; transform: translate3d(0, -8px, 0); }
+      to { opacity: 1; transform: translate3d(0, 0, 0); }
+    }
+
+    /* FRAMIX wordmark: luxury silver/white gradient + ultra-subtle glow */
+    .header-logo-desktop {
+      background: linear-gradient(135deg, #FFFFFF 0%, #F5F5F7 45%, #D1D5DB 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.12);
+      transition: filter 300ms ease;
+      will-change: filter;
+    }
+    .header-logo-desktop:hover {
+      filter: brightness(1.12);
+    }
+
+    /* Nav link base / hover / active states */
+    .header-nav-link-desktop {
+      position: relative;
+      display: inline-block;
+      color: rgba(255, 255, 255, 0.72);
+      font-weight: 500;
+      padding-bottom: 6px;
+      transform: translate3d(0, 0, 0);
+      transition: color 300ms ease, opacity 300ms ease, text-shadow 300ms ease, transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+      will-change: transform, opacity;
+    }
+    .header-nav-link-desktop::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 100%;
+      bottom: 0;
+      height: 2px;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.95), rgba(255,255,255,0.7));
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.45);
+      opacity: 0;
+      transition: right 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 320ms ease;
+      will-change: right, opacity;
+    }
+    .header-nav-link-desktop:hover {
+      color: #FFFFFF;
+      opacity: 1;
+      text-shadow: 0 0 18px rgba(255, 255, 255, 0.35);
+      transform: translate3d(0, -1px, 0);
+    }
+    .header-nav-link-desktop:hover::after {
+      right: 0;
+      opacity: 0.6;
+    }
+    .header-nav-link-desktop.is-active {
+      color: #FFFFFF;
+      font-weight: 700;
+    }
+    .header-nav-link-desktop.is-active::after {
+      right: 0;
+      opacity: 1;
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+      animation: nav-indicator-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    @keyframes nav-indicator-in {
+      from { right: 100%; opacity: 0; }
+      to { right: 0; opacity: 1; }
+    }
+
+    /* Header background: premium liquid glass, GPU-accelerated, no layout shift */
+    .header-glass-desktop {
+      background: linear-gradient(to bottom, rgba(5, 5, 5, 0.35) 0%, rgba(5, 5, 5, 0.05) 100%);
+      backdrop-filter: blur(0px) saturate(100%);
+      -webkit-backdrop-filter: blur(0px) saturate(100%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0);
+      transition: background 350ms ease, backdrop-filter 350ms ease, -webkit-backdrop-filter 350ms ease, border-color 350ms ease;
+      will-change: backdrop-filter, background;
+      transform: translateZ(0);
+      animation: header-fade-in-desktop 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .header-glass-desktop.is-scrolled {
+      background: rgba(10, 10, 12, 0.55);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
   }
 }

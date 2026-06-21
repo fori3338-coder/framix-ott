@@ -9,6 +9,7 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  const [scrolledDesktop, setScrolledDesktop] = useState(false);
   const { user, signOut } = useAuthContext();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
@@ -37,12 +38,17 @@ export default function Header() {
   }, [location]);
 
   const navLinkClass = (key: string) =>
-    `transition-colors hover:text-gold-hot ${
-      activeKey === key ? "text-gold-hot font-bold" : "text-gold-bright font-medium"
+    `transition-colors max-md:hover:text-gold-hot header-nav-link-desktop ${
+      activeKey === key
+        ? "text-gold-hot font-bold is-active"
+        : "text-gold-bright font-medium"
     }`;
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 8);
+      setScrolledDesktop(window.scrollY > 50);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -50,23 +56,27 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-40 safe-top transition-colors duration-300 ${
-        scrolled ? "bg-base/95 backdrop-blur-md border-b border-border" : "bg-gradient-to-b from-black/70 to-transparent"
+      className={`fixed top-0 left-0 right-0 z-40 safe-top transition-colors duration-300 header-glass-desktop ${
+        scrolledDesktop ? "is-scrolled" : ""
+      } ${
+        scrolled
+          ? "max-md:bg-base/95 max-md:backdrop-blur-md max-md:border-b max-md:border-border"
+          : "max-md:bg-gradient-to-b max-md:from-black/70 max-md:to-transparent"
       }`}
     >
       <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-2.5 md:py-3 md:px-8 safe-x gap-2">
 
         <Link to="/" className="flex items-center gap-1.5 shrink-0">
-          <span className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-gold-bright">FRAMIX</span>
+          <span className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-gold-bright header-logo-desktop">FRAMIX</span>
         </Link>
 
-        <nav className="flex flex-1 md:flex-none items-center gap-4 md:gap-6 text-sm md:ml-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
+        <nav className="flex flex-1 md:flex-none items-center gap-4 md:gap-9 text-sm md:ml-10 overflow-x-auto whitespace-nowrap scrollbar-hide">
           <Link to="/" className={navLinkClass("home")}>홈</Link>
           <Link to="/search?cat=trending" className={navLinkClass("trending")}>트렌딩</Link>
           <Link to="/search?cat=new" className={navLinkClass("new")}>신작</Link>
           <Link to="/my-list" className={navLinkClass("my-list")}>내 보관함</Link>
           <Link to="/subscription" className={navLinkClass("subscription")}>구독</Link>
-          <Link to="/admin" className={navLinkClass("admin")}>관리</Link>
+          <Link to="/admin" className={navLinkClass("admin")}>관리센터</Link>
         </nav>
 
         <div className="hidden sm:flex items-center gap-3 md:gap-4 shrink-0">
