@@ -1,0 +1,408 @@
+@import "tailwindcss";
+
+@theme {
+  --color-base: #050505;
+  --color-surface: #0f0f10;
+  --color-surface-2: #181818;
+  --color-surface-3: #232325;
+  --color-border: #2a2a2c;
+  --color-gold: #D4AF37;
+  --color-gold-light: #f0d77b;
+  --color-gold-dark: #9c7e23;
+  --color-text: #f5f5f0;
+  --color-text-dim: #a8a8ad;
+  --color-text-muted: #6e6e75;
+  --color-danger: #e63946;
+
+  --font-sans: "Inter", "Pretendard", "Noto Sans KR", system-ui, -apple-system, sans-serif;
+
+  --animate-fade-in: fade-in 0.4s ease-out;
+  --animate-fade-in-up: fade-in-up 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-scale-in: scale-in 0.25s ease-out;
+  --animate-shimmer: shimmer 2s infinite linear;
+  --animate-ken-burns: ken-burns 12s ease-out forwards;
+  --animate-hero-progress: hero-progress 6s linear forwards;
+  --animate-gold-pulse: gold-pulse 2.6s ease-in-out infinite;
+  --animate-card-rise: card-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-section-in: section-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -468px 0; }
+    100% { background-position: 468px 0; }
+  }
+  @keyframes ken-burns {
+    from { transform: scale(1.05) translate3d(0,0,0); }
+    to { transform: scale(1.18) translate3d(-1.5%, -1%, 0); }
+  }
+  @keyframes hero-progress {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+  @keyframes gold-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.5); }
+    50% { box-shadow: 0 0 0 12px rgba(212, 175, 55, 0); }
+  }
+  @keyframes card-rise {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes section-in {
+    from { opacity: 0; transform: translateY(32px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-base);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  img {
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+
+  button, a {
+    touch-action: manipulation;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-base);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-surface-3);
+    border-radius: 9999px;
+  }
+
+  @media (max-width: 768px) {
+    ::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+    }
+  }
+
+  /* Respect user reduced-motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  .text-gradient-gold {
+    background: linear-gradient(135deg, #f0d77b 0%, #D4AF37 50%, #9c7e23 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .bg-gradient-gold {
+    background: linear-gradient(135deg, #f0d77b 0%, #D4AF37 55%, #9c7e23 100%);
+  }
+
+  .bg-gradient-fade-bottom {
+    background: linear-gradient(to bottom, transparent 0%, var(--color-base) 100%);
+  }
+
+  .bg-gradient-fade-top {
+    background: linear-gradient(to top, transparent 0%, var(--color-base) 100%);
+  }
+
+  .bg-gradient-fade-left {
+    background: linear-gradient(to right, var(--color-base) 0%, transparent 60%);
+  }
+
+  .bg-gradient-fade-right {
+    background: linear-gradient(to left, var(--color-base) 0%, transparent 80%);
+  }
+
+  /* Premium hero scrim: deeper bottom for legibility, soft side vignette */
+  .bg-hero-scrim {
+    background:
+      linear-gradient(to top, var(--color-base) 0%, rgba(5,5,5,0.85) 18%, rgba(5,5,5,0.35) 45%, transparent 75%),
+      linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.45) 30%, transparent 65%),
+      radial-gradient(120% 80% at 80% 20%, transparent 0%, rgba(0,0,0,0.55) 100%);
+  }
+
+  .ring-gold-glow {
+    box-shadow: 0 0 0 1px rgba(212,175,55,0.6), 0 8px 32px -8px rgba(212,175,55,0.45);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-x {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .skeleton {
+    background: linear-gradient(to right, var(--color-surface-2) 8%, var(--color-surface-3) 18%, var(--color-surface-2) 33%);
+    background-size: 800px 104px;
+    animation: var(--animate-shimmer);
+  }
+
+  /* Row edge fade for premium horizontal scroller */
+  .row-edge-fade {
+    mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 48px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 48px), transparent 100%);
+  }
+
+  /* Line clamp helpers (some browsers may not have built-in) */
+  .clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Touch target minimum (a11y) */
+  .tap-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* GPU hint for smoother animations */
+  .gpu {
+    transform: translateZ(0);
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+  }
+
+  /* Showcase card gold glow on hover */
+  .showcase-card-hover {
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+  }
+  .showcase-card-hover:hover {
+    transform: scale(1.10);
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.9),
+      0 0 0 1.5px rgba(212, 175, 55, 0.5),
+      0 0 30px -5px rgba(212, 175, 55, 0.2);
+  }
+
+  /* Section divider gold line */
+  .section-gold-bar {
+    width: 3px;
+    border-radius: 9999px;
+    background: linear-gradient(to bottom, #f0d77b, #D4AF37, #9c7e23);
+  }
+
+  /* Premium badge shimmer */
+  .badge-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .badge-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+    animation: shimmer 2.5s infinite;
+  }
+}
+
+@layer utilities {
+  /* Admin grid background — subtle dot/grid pattern over dark base */
+  .admin-grid-bg {
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(212,175,55,0.06) 0%, transparent 45%),
+      radial-gradient(circle at 90% 10%, rgba(212,175,55,0.04) 0%, transparent 40%),
+      linear-gradient(to right, rgba(212,175,55,0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(212,175,55,0.04) 1px, transparent 1px);
+    background-size: auto, auto, 32px 32px, 32px 32px;
+    background-color: var(--color-base);
+  }
+
+  /* Admin card hover — premium lift with subtle gold glow */
+  .admin-card {
+    box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px -16px rgba(0,0,0,0.6);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+  .admin-card:hover {
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.04) inset,
+      0 14px 40px -16px rgba(0,0,0,0.7),
+      0 0 0 1px rgba(212,175,55,0.08);
+  }
+
+  /* ─── OTT 플레이어: PC/모바일 동일 프레임 유지 (320~1920 전 구간) ──────────
+     object-fit: contain → 뷰포트 비율과 무관하게 원본 영상 프레임 전체가
+     항상 그대로 보임 (Netflix/Disney+/YouTube/VLC 방식). 좌우/상하 잘림 없음,
+     얼굴 확대 없음. 뷰포트 비율이 영상 비율과 다르면 레터박스(여백)만 생김. */
+  .framix-player-video {
+    object-fit: contain;
+    object-position: center center;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .framix-player-stage {
+    position: fixed;
+    inset: 0;
+    width: 100dvw;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .framix-player-stage:fullscreen,
+  .framix-player-stage:-webkit-full-screen {
+    width: 100vw;
+    height: 100vh;
+  }
+
+  /* ─── AuthModal: position fixed + top/left 50% + translate centering ─── */
+  .auth-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    /* 모바일 키보드가 열려도 실제 보이는 영역(visualViewport) 기준으로 덮도록
+       JS가 설정하는 --auth-vvh를 우선 사용, 없으면 100dvh, 그것도 없으면 100vh */
+    height: var(--auth-vvh, 100dvh);
+    width: 100vw;
+  }
+
+  .auth-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .auth-modal-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    max-width: 480px;
+    height: auto;
+    max-height: calc(var(--auth-vvh, 100dvh) * 0.85);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    z-index: 101;
+  }
+
+  .auth-modal-scroll {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  /* AuthModal: Netflix류 글래스모피즘 패널 (Backdrop Blur / Glass Effect) */
+  .auth-modal-glass {
+    background: rgba(15, 15, 16, 0.86) !important;
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+  }
+
+  /* ─── 전역 UI Motion: 버튼 Press / Ripple 효과 ─────────────────────────── */
+  .btn-press {
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-press::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, transparent 70%);
+    opacity: 0;
+    transform: scale(0.6);
+    pointer-events: none;
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+  .btn-press:active::after {
+    opacity: 1;
+    transform: scale(1.5);
+    transition: opacity 0s, transform 0s;
+  }
+
+  /* 썸네일 Fade In (이미지 등장 모션) */
+  .img-fade-in {
+    animation: fade-in 0.5s ease-out both;
+  }
+
+  /* 데스크톱 카테고리 네비게이션: 밑줄 슬라이드 인 애니메이션 */
+  .nav-link-underline {
+    position: relative;
+  }
+  .nav-link-underline::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -6px;
+    height: 2px;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #f0d77b 0%, #D4AF37 100%);
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .nav-link-underline:hover::after,
+  .nav-link-underline.active::after {
+    transform: scaleX(1);
+  }
+}
