@@ -19,6 +19,22 @@ function formatTime(sec: number): string {
   return `${m}:${String(ss).padStart(2, "0")}`;
 }
 
+// ISO date → "방금 시청" / "3분 전 시청" / "어제 시청" 등 상대 시간 표시
+function formatLastWatched(iso: string): string {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  if (isNaN(then)) return "";
+  const diffMs = Date.now() - then;
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "방금 시청";
+  if (diffMin < 60) return `${diffMin}분 전 시청`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour}시간 전 시청`;
+  const diffDay = Math.floor(diffHour / 24);
+  if (diffDay === 1) return "어제 시청";
+  return `${diffDay}일 전 시청`;
+}
+
 interface ContinueWatchingRowProps {
   items: ContinueWatchingItem[];
   onRemove?: (episodeId: string) => void;
@@ -239,6 +255,11 @@ function ContinueWatchingCard({
             {item.progress}%
           </span>
         </div>
+        {item.lastWatched && (
+          <p className="text-[10px] text-white/40 mt-0.5">
+            {formatLastWatched(item.lastWatched)}
+          </p>
+        )}
 
         {/* 진행 텍스트 바 */}
         <div className="mt-1.5 flex items-center gap-2">

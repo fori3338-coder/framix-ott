@@ -145,7 +145,14 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             </button>
             <button
               onClick={() => navigate(`/drama/${drama.id}`)}
-              className="flex items-center gap-2 bg-white/10 backdrop-blur-md text-white font-bold px-5 md:px-8 py-3 md:py-3.5 rounded-md text-sm md:text-base hover:bg-white/20 transition-all duration-200 active:scale-95 border border-white/15"
+              className="flex items-center gap-2 backdrop-blur-md font-bold px-5 md:px-8 py-3 md:py-3.5 rounded-md text-sm md:text-base transition-all duration-200 active:scale-95 border"
+              style={{
+                background: "rgba(255,213,74,0.12)",
+                borderColor: "rgba(255,213,74,0.35)",
+                color: "#FFD54A",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,213,74,0.18)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,213,74,0.12)"; }}
             >
               <Info size={18} />
               <span className="hidden sm:inline">상세정보</span>
