@@ -743,6 +743,11 @@ export default function Player() {
           ref={videoRef}
           src={episode.videoUrl}
           className="framix-player-video cursor-pointer"
+          style={{
+            objectPosition: isFullscreen
+              ? "center center"
+              : `${episode.focalPoint?.x ?? 50}% ${episode.focalPoint?.y ?? 33}%`,
+          }}
           autoPlay
           muted={muted}
           onClick={handleVideoClick}
@@ -1013,7 +1018,7 @@ export default function Player() {
                       src={ep.thumbnail}
                       alt={ep.title}
                       className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).src = `https://picsum.photos/seed/${ep.id}/400/225`; }}
+                      onError={(e) => { (e.target as HTMLImageElement).src = drama?.poster || "/content/fallback-thumbnail.svg"; }}
                     />
                     {isCurrentEp && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/50">

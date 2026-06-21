@@ -64,7 +64,22 @@ export function useEpisode(episodeId: string | undefined) {
         .eq('id', episodeId)
         .single();
 
-      if (!cancelled && data) setEpisode(toFrontendEpisode(data as DbEpisode));
+      if (!cancelled && data) {
+        const ep = data as DbEpisode;
+        let seriesFallback: { thumbnail_url?: string | null; poster_url?: string | null } | undefined;
+        if (!ep.thumbnail_url && ep.series_id) {
+          const { data: seriesData } = await supabase
+            .from('series')
+            .select('thumbnail_url')
+            .eq('id', ep.series_id)
+            .single();
+          if (seriesData) {
+            const s = seriesData as DbDrama;
+            seriesFallback = { thumbnail_url: s.thumbnail_url, poster_url: s.thumbnail_url };
+          }
+        }
+        if (!cancelled) setEpisode(toFrontendEpisode(ep, seriesFallback));
+      }
       if (!cancelled) setLoading(false);
     }
 

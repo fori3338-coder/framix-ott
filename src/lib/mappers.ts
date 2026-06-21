@@ -20,17 +20,36 @@ function toAgeRating(val: string | null | undefined): AgeRating {
   return "15+";
 }
 
-export function toFrontendEpisode(e: DbEpisode): Episode {
+const FALLBACK_EPISODE_THUMBNAIL = "/content/fallback-thumbnail.svg";
+const FALLBACK_POSTER = "/content/fallback-poster.svg";
+const FALLBACK_BACKDROP = "/content/fallback-backdrop.svg";
+
+interface SeriesThumbnailFallback {
+  thumbnail_url?: string | null;
+  poster_url?: string | null;
+}
+
+export function toFrontendEpisode(e: DbEpisode, series?: SeriesThumbnailFallback): Episode {
+  const resolvedThumbnail =
+    e.thumbnail_url ||
+    series?.thumbnail_url ||
+    series?.poster_url ||
+    FALLBACK_EPISODE_THUMBNAIL;
+
   return {
     id: e.id,
     number: e.episode_number,
     title: e.title,
     duration: e.duration ?? "00:00",
-    thumbnail: e.thumbnail_url ?? `https://picsum.photos/seed/${e.id}/400/225`,
+    thumbnail: resolvedThumbnail,
     isFree: e.is_free ?? true,
     videoUrl: e.video_url ?? undefined,
     progress: 0,
     subtitles: e.subtitles ?? {},
+    focalPoint:
+      e.focal_x != null && e.focal_y != null
+        ? { x: e.focal_x, y: e.focal_y }
+        : undefined,
   };
 }
 
@@ -38,15 +57,18 @@ export function toFrontendEpisode(e: DbEpisode): Episode {
 // (episodes[0] = 1화 라는 가정을 HeroBanner, DramaDetail 등 여러 곳에서 쓰고 있음)
 export function toFrontendDrama(d: DbDrama, episodes: DbEpisode[] = []): Drama {
   const sortedEpisodes = [...episodes].sort((a, b) => a.episode_number - b.episode_number);
+  const seriesFallback: SeriesThumbnailFallback = {
+    thumbnail_url: d.thumbnail_url,
+    poster_url: d.thumbnail_url,
+  };
 
   return {
     id: d.id,
     title: d.title,
     englishTitle: d.english_title ?? undefined,
     synopsis: d.description ?? "",
-    poster: d.thumbnail_url ?? `https://picsum.photos/seed/${d.id}-poster/400/600`,
-    backdrop:
-      d.backdrop_url ?? d.thumbnail_url ?? `https://picsum.photos/seed/${d.id}-backdrop/1280/720`,
+    poster: d.thumbnail_url || FALLBACK_POSTER,
+    backdrop: d.backdrop_url || d.thumbnail_url || FALLBACK_BACKDROP,
     genres: d.genres ?? (d.genre ? [d.genre] : []),
     tags: d.tags ?? [],
     rating: d.rating ?? 0,
@@ -60,7 +82,7 @@ export function toFrontendDrama(d: DbDrama, episodes: DbEpisode[] = []): Drama {
     isNew: d.is_new ?? d.status === "new",
     isExclusive: d.is_exclusive ?? false,
     views: d.views ?? 0,
-    episodes: sortedEpisodes.map(toFrontendEpisode),
+    episodes: sortedEpisodes.map((ep) => toFrontendEpisode(ep, seriesFallback)),
     isBanner: d.banner_enabled ?? false,
     bannerOrder: d.banner_order ?? 0,
     top10Rank: d.top10_rank ?? null,

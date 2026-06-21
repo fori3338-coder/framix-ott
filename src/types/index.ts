@@ -9,6 +9,7 @@ export interface Episode {
   progress?: number; // 0-100, watch progress
   subtitles?: Record<string, string>; // { "ko": "url", "en": "url", ... }
   description?: string;
+  focalPoint?: { x: number; y: number }; // 영상 피사체 중심(%), 미설정 시 플레이어 기본값 사용
 }
 
 export interface Drama {

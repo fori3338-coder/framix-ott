@@ -280,12 +280,11 @@
       0 0 0 1px rgba(212,175,55,0.08);
   }
 
-  /* ─── OTT 플레이어 반응형 중심 유지 (320~1920 전 구간) ───────────────────
-     컨테이너 리사이즈 시에도 영상 중심점이 항상 화면 중앙에 고정되도록
-     object-fit: cover + object-position: center를 모든 뷰포트에서 강제. */
+  /* ─── OTT 플레이어 반응형 인물 중심 유지 (320~1920 전 구간) ───────────────
+     object-position은 episode.focalPoint 기반으로 인라인에서 동적 계산됨.
+     (실제 피사체 좌표는 episode마다 다르므로 고정값을 두지 않는다) */
   .framix-player-video {
     object-fit: cover;
-    object-position: center center;
     width: 100%;
     height: 100%;
     display: block;
@@ -308,6 +307,50 @@
   .framix-player-stage:fullscreen .framix-player-video,
   .framix-player-stage:-webkit-full-screen .framix-player-video {
     object-fit: contain;
-    object-position: center center;
+  }
+
+  /* ─── AuthModal: position fixed + top/left 50% + translate centering ─── */
+  .auth-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    /* 모바일 키보드가 열려도 실제 보이는 영역(visualViewport) 기준으로 덮도록
+       JS가 설정하는 --auth-vvh를 우선 사용, 없으면 100dvh, 그것도 없으면 100vh */
+    height: var(--auth-vvh, 100dvh);
+    width: 100vw;
+  }
+
+  .auth-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .auth-modal-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    max-width: 480px;
+    height: auto;
+    max-height: calc(var(--auth-vvh, 100dvh) * 0.85);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    z-index: 101;
+  }
+
+  .auth-modal-scroll {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 }

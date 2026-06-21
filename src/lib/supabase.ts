@@ -55,4 +55,6 @@ export interface DbEpisode {
   views: number | null;
   created_at: string | null;
   subtitles: Record<string, string> | null; // { "ko": "url", "en": "url", ... }
+  focal_x?: number | null; // 영상 피사체 중심 X좌표(%), 016 마이그레이션. 없으면 50
+  focal_y?: number | null; // 영상 피사체 중심 Y좌표(%), 016 마이그레이션. 없으면 33(인물 얼굴 근사)
 }

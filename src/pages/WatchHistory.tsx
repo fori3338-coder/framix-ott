@@ -237,8 +237,9 @@ export default function WatchHistory() {
                   if (!drama || !episode) return null;
                   const done = item.progress >= 100;
                   const thumb =
-                    episode.thumbnail_url ??
-                    `https://picsum.photos/seed/${episode.id}/400/225`;
+                    episode.thumbnail_url ||
+                    drama.poster_url ||
+                    "/content/fallback-thumbnail.svg";
 
                   return (
                     <div
