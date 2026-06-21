@@ -3,6 +3,7 @@ import { Home, Search, Bookmark, Clock, User } from "lucide-react";
 import { useState } from "react";
 import { useAuthContext } from "../../contexts/AuthContext";
 import AuthModal from "../AuthModal";
+import Portal from "../Portal";
 
 const tabs = [
   { to: "/", label: "홈", icon: Home, end: true },
@@ -33,13 +34,13 @@ export default function BottomNav() {
             to={to}
             end={end}
             onClick={to === "/admin" ? handleAdminClick : undefined}
-            className={({ isActive }) =>
+            className={({ isActive }: { isActive: boolean }) =>
               `flex flex-col items-center justify-center gap-1 py-2.5 min-h-[56px] text-[11px] transition-colors active:scale-95 ${
                 isActive ? "text-gold" : "text-text-muted"
               }`
             }
           >
-            {({ isActive }) => (
+            {({ isActive }: { isActive: boolean }) => (
               <>
                 <Icon size={20} strokeWidth={isActive ? 2.4 : 1.8} />
                 <span className={isActive ? "font-semibold" : ""}>{label}</span>
@@ -50,7 +51,9 @@ export default function BottomNav() {
       </div>
 
       {authModalOpen && (
-        <AuthModal onClose={() => setAuthModalOpen(false)} defaultMode="login" />
+        <Portal>
+          <AuthModal onClose={() => setAuthModalOpen(false)} defaultMode="login" />
+        </Portal>
       )}
     </nav>
   );

@@ -47,7 +47,7 @@ export default function Search() {
   // Debounced URL sync (real-time feel without spamming history)
   useEffect(() => {
     const t = setTimeout(() => {
-      setParams((p) => {
+      setParams((p: URLSearchParams) => {
         const next = new URLSearchParams(p);
         if (query) next.set("q", query);
         else next.delete("q");

@@ -49,7 +49,7 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
 
       {/* 모달 패널 */}
       <div
-        className="relative w-full max-w-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
+        className="relative w-full max-w-sm max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl"
         style={{ background: "var(--color-surface)" }}
       >
         {/* 상단 헤더 */}

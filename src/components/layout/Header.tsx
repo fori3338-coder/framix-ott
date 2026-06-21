@@ -3,6 +3,7 @@ import { Search, Bell, ChevronDown, LogOut, Crown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuthContext } from "../../contexts/AuthContext";
 import AuthModal from "../AuthModal";
+import Portal from "../Portal";
 
 export default function Header() {
   const navigate = useNavigate();
@@ -114,7 +115,9 @@ export default function Header() {
       </div>
 
       {authModalOpen && (
-        <AuthModal onClose={() => setAuthModalOpen(false)} defaultMode={authMode} />
+        <Portal>
+          <AuthModal onClose={() => setAuthModalOpen(false)} defaultMode={authMode} />
+        </Portal>
       )}
     </header>
   );

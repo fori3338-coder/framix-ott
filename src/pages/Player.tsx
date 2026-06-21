@@ -740,7 +740,7 @@ export default function Player() {
         <video
           ref={videoRef}
           src={episode.videoUrl}
-          className="w-full h-full object-cover cursor-pointer"
+          className="w-full h-full object-contain cursor-pointer bg-black"
           autoPlay
           muted={muted}
           onClick={handleVideoClick}
