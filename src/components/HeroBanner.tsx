@@ -16,6 +16,10 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
   const [paused, setPaused] = useState(false);
   // 현재 슬라이드의 banner_video_url 프리뷰가 재생 중인지 (3초 지연 후 true)
   const [videoPreviewActive, setVideoPreviewActive] = useState(false);
+  // 영상 로드/재생 실패한 작품 id 집합 — 한 번 실패하면 해당 슬라이드는 계속 이미지로 폴백.
+  const [videoErrorIds, setVideoErrorIds] = useState<Set<string>>(new Set());
+  // 현재 재생 중인 영상이 실제로 재생 가능한 상태가 되었는지 (canplay 이후 true) → opacity fade-in 트리거
+  const [videoReady, setVideoReady] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,6 +34,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
   // 3초 후 다시 영상 프리뷰를 활성화한다. (이미지 → 3초 → 음소거 영상 자동재생)
   useEffect(() => {
     setVideoPreviewActive(false);
+    setVideoReady(false);
     if (paused) return;
     const t = setTimeout(() => setVideoPreviewActive(true), VIDEO_PREVIEW_DELAY_MS);
     return () => clearTimeout(t);
@@ -84,10 +89,11 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             className={`w-full h-full object-cover ${i === index ? "animate-ken-burns" : ""}`}
             style={{ willChange: "transform" }}
           />
-          {/* Video Preview CMS: banner_video_url이 등록된 경우, 3초 후 음소거 자동재생.
-              이미지는 그대로 아래 깔려있고 영상이 위에 페이드인 — 영상 로드 실패 시에도
-              이미지가 항상 보이므로 빈 화면이 되지 않는다. */}
-          {i === index && videoPreviewActive && d.bannerVideoUrl && (
+          {/* Video Preview: banner_video_url이 등록되어 있고 아직 에러난 적 없는 경우,
+              3초 후 음소거 자동재생. 영상이 실제로 재생 가능해지는 순간(canPlay)에만
+              opacity 0→1로 부드럽게(600ms) 전환 — 그 전까지는 이미지가 계속 보인다.
+              영상 로드/재생 실패 시 onError에서 조용히(콘솔 에러 없이) 이미지로 영구 폴백. */}
+          {i === index && videoPreviewActive && d.bannerVideoUrl && !videoErrorIds.has(d.id) && (
             <video
               key={d.bannerVideoUrl}
               src={d.bannerVideoUrl}
@@ -95,9 +101,15 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
               muted
               loop
               playsInline
-              preload="auto"
-              className="absolute inset-0 w-full h-full object-cover animate-fade-in-up"
-              style={{ animationDuration: "600ms" }}
+              preload="metadata"
+              className="absolute inset-0 w-full h-full object-cover transition-opacity ease-out"
+              style={{ opacity: videoReady ? 1 : 0, transitionDuration: "650ms" }}
+              onCanPlay={() => setVideoReady(true)}
+              onError={() => {
+                // 404, 코덱 미지원, 네트워크 오류 등 — 화면을 깨뜨리지 않고 이미지로 폴백.
+                setVideoErrorIds((prev) => new Set(prev).add(d.id));
+                setVideoReady(false);
+              }}
             />
           )}
         </div>
