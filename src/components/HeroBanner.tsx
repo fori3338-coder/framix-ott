@@ -7,7 +7,7 @@ interface HeroBannerProps {
   dramas: Drama[];
 }
 
-const SLIDE_MS = 6000;
+const SLIDE_MS = 15000;
 // 홈 진입(또는 슬라이드 전환) 후 이미지 → 영상 프리뷰로 전환되기까지 대기 시간.
 const VIDEO_PREVIEW_DELAY_MS = 3000;
 
