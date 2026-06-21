@@ -131,6 +131,12 @@ export default function AdminDashboard() {
     premiumRevenue: 0, vipRevenue: 0, paymentCount: 0, arpu: 0,
   });
 
+  // ── 매출 그래프 상태 ──────────────────────────────────────────────────────
+  type RevRange = "일간" | "주간" | "월간" | "누적";
+  const [revRange, setRevRange] = useState<RevRange>("월간");
+  const [revenueChartData, setRevenueChartData] = useState<number[]>([]);
+  const [revenueChartLabels, setRevenueChartLabels] = useState<string[]>([]);
+
   // ── 콘텐츠 관리 상태 ──────────────────────────────────────────────────────
   const [allContents, setAllContents] = useState<DbSeries[]>([]);
   const [contentLoading, setContentLoading] = useState(false);
@@ -163,56 +169,86 @@ export default function AdminDashboard() {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
 
-  // ── 조회수 시계열: series 생성일 기반 집계 ───────────────────────────────
-  const buildViewsChart = useCallback((seriesRows: DbSeries[], r: Range) => {
+  // ── 조회수 시계열: episode_views.viewed_at 기반 실제 집계 ────────────────
+  const fetchViewsChart = useCallback(async (r: Range) => {
     const now = new Date();
 
     if (r === "7D") {
-      const labels = ["월","화","수","목","금","토","일"];
-      const dayMap = new Map<number, number>(); // 0=Mon..6=Sun
-      seriesRows.forEach((s) => {
-        if (!s.created_at) return;
-        const d = new Date(s.created_at);
-        const dow = (d.getDay() + 6) % 7; // JS Sun=0 → Mon=0
-        dayMap.set(dow, (dayMap.get(dow) ?? 0) + (s.views ?? 0));
+      // 7일치 일별 집계
+      const since = new Date(now);
+      since.setDate(since.getDate() - 6);
+      since.setHours(0, 0, 0, 0);
+
+      const { data } = await supabase
+        .from("episode_views")
+        .select("viewed_at")
+        .gte("viewed_at", since.toISOString());
+
+      const dayMap = new Map<string, number>();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        dayMap.set(d.toISOString().slice(0, 10), 0);
+      }
+      (data ?? []).forEach((row: { viewed_at: string }) => {
+        const key = row.viewed_at.slice(0, 10);
+        if (dayMap.has(key)) dayMap.set(key, (dayMap.get(key) ?? 0) + 1);
       });
-      const data = Array.from({ length: 7 }, (_, i) => dayMap.get(i) ?? 0);
-      setViewsChartData(data.map((v) => Math.round(v / 10000))); // 단위: 만
-      setViewsChartLabels(labels);
+      const days = [...dayMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+      const DAYS = ["일","월","화","수","목","금","토"];
+      setViewsChartData(days.map(([, v]) => v));
+      setViewsChartLabels(days.map(([k]) => {
+        const d = new Date(k);
+        return DAYS[d.getDay()];
+      }));
       return;
     }
 
     if (r === "30D") {
-      const labels = Array.from({ length: 30 }, (_, i) => `${i + 1}`);
+      const since = new Date(now);
+      since.setDate(since.getDate() - 29);
+      since.setHours(0, 0, 0, 0);
+
+      const { data } = await supabase
+        .from("episode_views")
+        .select("viewed_at")
+        .gte("viewed_at", since.toISOString());
+
       const dayMap = new Map<string, number>();
       for (let i = 29; i >= 0; i--) {
         const d = new Date(now);
         d.setDate(d.getDate() - i);
         dayMap.set(d.toISOString().slice(0, 10), 0);
       }
-      seriesRows.forEach((s) => {
-        if (!s.created_at) return;
-        const key = s.created_at.slice(0, 10);
-        if (dayMap.has(key)) dayMap.set(key, (dayMap.get(key) ?? 0) + (s.views ?? 0));
+      (data ?? []).forEach((row: { viewed_at: string }) => {
+        const key = row.viewed_at.slice(0, 10);
+        if (dayMap.has(key)) dayMap.set(key, (dayMap.get(key) ?? 0) + 1);
       });
-      const data = Array.from(dayMap.values()).map((v) => Math.round(v / 10000));
-      setViewsChartData(data);
-      setViewsChartLabels(labels);
+      const days = [...dayMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+      setViewsChartData(days.map(([, v]) => v));
+      setViewsChartLabels(days.map((_, i) => String(i + 1)));
       return;
     }
 
     // 90D → 12 weeks
-    const labels = Array.from({ length: 12 }, (_, i) => `W${i + 1}`);
+    const since = new Date(now);
+    since.setDate(since.getDate() - 89);
+    since.setHours(0, 0, 0, 0);
+
+    const { data } = await supabase
+      .from("episode_views")
+      .select("viewed_at")
+      .gte("viewed_at", since.toISOString());
+
     const weekMap = new Map<number, number>();
-    seriesRows.forEach((s) => {
-      if (!s.created_at) return;
-      const diff = Math.floor((now.getTime() - new Date(s.created_at).getTime()) / (7 * 86400 * 1000));
+    for (let i = 0; i < 12; i++) weekMap.set(i, 0);
+    (data ?? []).forEach((row: { viewed_at: string }) => {
+      const diff = Math.floor((now.getTime() - new Date(row.viewed_at).getTime()) / (7 * 86400 * 1000));
       const wk = 11 - Math.min(diff, 11);
-      weekMap.set(wk, (weekMap.get(wk) ?? 0) + (s.views ?? 0));
+      weekMap.set(wk, (weekMap.get(wk) ?? 0) + 1);
     });
-    const data = Array.from({ length: 12 }, (_, i) => Math.round((weekMap.get(i) ?? 0) / 10000));
-    setViewsChartData(data);
-    setViewsChartLabels(labels);
+    setViewsChartData(Array.from({ length: 12 }, (_, i) => weekMap.get(i) ?? 0));
+    setViewsChartLabels(Array.from({ length: 12 }, (_, i) => `W${i + 1}`));
   }, []);
 
   // ── 장르 분포: series.genres[] 또는 category 집계 ───────────────────────
@@ -242,7 +278,109 @@ export default function AdminDashboard() {
     setGenreShare(result.slice(0, 6));
   }, []);
 
-  // ── 전체 데이터 fetch ────────────────────────────────────────────────────
+  // ── 매출 차트: subscriptions.current_period_start 기반 ───────────────────
+  const fetchRevenueChart = useCallback(async (r: RevRange) => {
+    const PREMIUM_PRICE = 4900; const VIP_PRICE = 9900;
+    const now = new Date();
+    const getPrice = (level: string) => level === "vip" ? VIP_PRICE : level === "premium" ? PREMIUM_PRICE : 0;
+
+    try {
+      if (r === "일간") {
+        // 최근 7일 일별
+        const since = new Date(now);
+        since.setDate(since.getDate() - 6);
+        since.setHours(0, 0, 0, 0);
+        const { data } = await supabase
+          .from("subscriptions")
+          .select("membership_level, current_period_start")
+          .gte("current_period_start", since.toISOString())
+          .in("status", ["active", "cancelled"]);
+
+        const dayMap = new Map<string, number>();
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(now); d.setDate(d.getDate() - i);
+          dayMap.set(d.toISOString().slice(0, 10), 0);
+        }
+        (data ?? []).forEach((s: { membership_level: string; current_period_start: string }) => {
+          const key = s.current_period_start?.slice(0, 10);
+          if (dayMap.has(key)) dayMap.set(key, (dayMap.get(key) ?? 0) + getPrice(s.membership_level));
+        });
+        const days = [...dayMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+        const DAYS = ["일","월","화","수","목","금","토"];
+        setRevenueChartData(days.map(([, v]) => v));
+        setRevenueChartLabels(days.map(([k]) => DAYS[new Date(k).getDay()]));
+
+      } else if (r === "주간") {
+        // 최근 8주 주별
+        const since = new Date(now);
+        since.setDate(since.getDate() - 55);
+        since.setHours(0, 0, 0, 0);
+        const { data } = await supabase
+          .from("subscriptions")
+          .select("membership_level, current_period_start")
+          .gte("current_period_start", since.toISOString())
+          .in("status", ["active", "cancelled"]);
+
+        const weekMap = new Map<number, number>();
+        for (let i = 0; i < 8; i++) weekMap.set(i, 0);
+        (data ?? []).forEach((s: { membership_level: string; current_period_start: string }) => {
+          const diff = Math.floor((now.getTime() - new Date(s.current_period_start).getTime()) / (7 * 86400 * 1000));
+          const wk = 7 - Math.min(diff, 7);
+          weekMap.set(wk, (weekMap.get(wk) ?? 0) + getPrice(s.membership_level));
+        });
+        setRevenueChartData(Array.from({ length: 8 }, (_, i) => weekMap.get(i) ?? 0));
+        setRevenueChartLabels(Array.from({ length: 8 }, (_, i) => `W${i + 1}`));
+
+      } else if (r === "월간") {
+        // 최근 6개월
+        const since = new Date(now);
+        since.setMonth(since.getMonth() - 5);
+        since.setDate(1);
+        since.setHours(0, 0, 0, 0);
+        const { data } = await supabase
+          .from("subscriptions")
+          .select("membership_level, current_period_start")
+          .gte("current_period_start", since.toISOString())
+          .in("status", ["active", "cancelled"]);
+
+        const monthMap = new Map<string, number>();
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(now); d.setMonth(d.getMonth() - i);
+          monthMap.set(d.toISOString().slice(0, 7), 0);
+        }
+        (data ?? []).forEach((s: { membership_level: string; current_period_start: string }) => {
+          const key = s.current_period_start?.slice(0, 7);
+          if (monthMap.has(key)) monthMap.set(key, (monthMap.get(key) ?? 0) + getPrice(s.membership_level));
+        });
+        const months = [...monthMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+        setRevenueChartData(months.map(([, v]) => v));
+        setRevenueChartLabels(months.map(([k]) => k.slice(5) + "월"));
+
+      } else {
+        // 누적: 전체 월별 (최대 12개월)
+        const { data } = await supabase
+          .from("subscriptions")
+          .select("membership_level, current_period_start")
+          .in("status", ["active", "cancelled"])
+          .order("current_period_start", { ascending: true });
+
+        const monthMap = new Map<string, number>();
+        (data ?? []).forEach((s: { membership_level: string; current_period_start: string }) => {
+          if (!s.current_period_start) return;
+          const key = s.current_period_start.slice(0, 7);
+          monthMap.set(key, (monthMap.get(key) ?? 0) + getPrice(s.membership_level));
+        });
+        const sorted = [...monthMap.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-12);
+        // 누적합
+        let cum = 0;
+        const cumData = sorted.map(([, v]) => { cum += v; return cum; });
+        setRevenueChartData(cumData);
+        setRevenueChartLabels(sorted.map(([k]) => k.slice(5) + "월"));
+      }
+    } catch (e) {
+      console.error("revenue chart fetch error:", e);
+    }
+  }, []);
   const fetchAll = useCallback(async () => {
     // ── series (콘텐츠) ──────────────────────────────────────────────────
     try {
@@ -259,7 +397,7 @@ export default function AdminDashboard() {
         ...prev,
         totalContents: count ?? rows.length,
         totalViews,
-        newSignups: 320,
+        newSignups: 0,
       }));
 
       // 인기 콘텐츠 TOP 6 (views 내림차순)
@@ -270,43 +408,24 @@ export default function AdminDashboard() {
 
       // 장르 분포
       buildGenreShare(rows);
-
-      // 조회수 차트
-      buildViewsChart(rows, range);
-
-      // 최근 활동: created_at 기준 최신 5개
-      const recent = [...rows]
-        .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""))
-        .slice(0, 5);
-      const now = new Date();
-      const logs: ActivityLog[] = recent.map((s) => {
-        const d = s.created_at ? new Date(s.created_at) : now;
-        const diffMin = Math.floor((now.getTime() - d.getTime()) / 60000);
-        let when = "방금";
-        if (diffMin > 60 * 24) when = `${Math.floor(diffMin / 1440)}일 전`;
-        else if (diffMin > 60) when = `${Math.floor(diffMin / 60)}시간 전`;
-        else if (diffMin > 0) when = `${diffMin}분 전`;
-        return {
-          who: "관리자",
-          what: `'${s.title}' 콘텐츠 업로드 완료`,
-          when,
-        };
-      });
-      setRecentActivity(
-        logs.length > 0
-          ? logs
-          : [{ who: "시스템", what: "등록된 콘텐츠가 없습니다", when: "" }]
-      );
     } catch (e) {
       console.error("series fetch error:", e);
     }
 
-    // ── 총 회원수 ────────────────────────────────────────────────────────
+    // ── 총 회원수 + 신규 가입 ────────────────────────────────────────────
     try {
       const { count: memberCount } = await supabase
         .from("profiles")
         .select("id", { count: "exact", head: true });
       setLiveStats((prev) => ({ ...prev, totalMembers: memberCount ?? 0 }));
+
+      // 오늘 가입 수
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const { count: newCount } = await supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", todayStr);
+      setLiveStats((prev) => ({ ...prev, newSignups: newCount ?? 0 }));
     } catch (e) {
       console.error("profiles fetch error:", e);
     }
@@ -349,14 +468,109 @@ export default function AdminDashboard() {
     } catch (e) {
       console.error("subscriptions fetch error:", e);
     }
-  }, [range, buildGenreShare, buildViewsChart]);
+
+    // ── 최근 활동: 회원가입 + 결제(구독) + 콘텐츠 시청 ───────────────────
+    try {
+      const now = new Date();
+      const calcWhen = (isoStr: string) => {
+        const diffMin = Math.floor((now.getTime() - new Date(isoStr).getTime()) / 60000);
+        if (diffMin <= 0) return "방금";
+        if (diffMin > 60 * 24) return `${Math.floor(diffMin / 1440)}일 전`;
+        if (diffMin > 60) return `${Math.floor(diffMin / 60)}시간 전`;
+        return `${diffMin}분 전`;
+      };
+
+      const logs: ActivityLog[] = [];
+
+      // 최근 회원가입 (profiles)
+      const { data: recentProfiles } = await supabase
+        .from("profiles")
+        .select("id, created_at")
+        .order("created_at", { ascending: false })
+        .limit(3);
+      (recentProfiles ?? []).forEach((p: Record<string, unknown>) => {
+        if (p.created_at) logs.push({ who: "신규 회원", what: "회원가입 완료", when: calcWhen(p.created_at as string) });
+      });
+
+      // 최근 결제(구독 시작)
+      const { data: recentSubs } = await supabase
+        .from("subscriptions")
+        .select("membership_level, current_period_start, status")
+        .order("current_period_start", { ascending: false })
+        .limit(3);
+      (recentSubs ?? []).forEach((s: Record<string, unknown>) => {
+        if (s.current_period_start && s.status === "active") {
+          const level = (s.membership_level as string)?.toUpperCase() ?? "구독";
+          logs.push({ who: "결제", what: `${level} 멤버십 결제 완료`, when: calcWhen(s.current_period_start as string) });
+        }
+      });
+
+      // 최근 콘텐츠 시청 (episode_views)
+      const { data: recentViews } = await supabase
+        .from("episode_views")
+        .select("series_id, viewed_at")
+        .order("viewed_at", { ascending: false })
+        .limit(3);
+      (recentViews ?? []).forEach((v: Record<string, unknown>) => {
+        if (v.viewed_at) logs.push({ who: "시청", what: "콘텐츠 재생 시작", when: calcWhen(v.viewed_at as string) });
+      });
+
+      // 최근 콘텐츠 업로드 (series)
+      const { data: recentSeries } = await supabase
+        .from("series")
+        .select("title, created_at")
+        .order("created_at", { ascending: false })
+        .limit(2);
+      (recentSeries ?? []).forEach((s: Record<string, unknown>) => {
+        if (s.created_at) logs.push({ who: "관리자", what: `'${s.title as string}' 콘텐츠 업로드 완료`, when: calcWhen(s.created_at as string) });
+      });
+
+      // 최신순 정렬 후 상위 6개
+      logs.sort((a, b) => {
+        const toMin = (w: string) => {
+          if (w === "방금") return 0;
+          const m = w.match(/(\d+)(분|시간|일)/);
+          if (!m) return 9999;
+          const n = Number(m[1]);
+          if (m[2] === "분") return n;
+          if (m[2] === "시간") return n * 60;
+          return n * 1440;
+        };
+        return toMin(a.when) - toMin(b.when);
+      });
+
+      setRecentActivity(
+        logs.length > 0
+          ? logs.slice(0, 6)
+          : [{ who: "시스템", what: "활동 데이터가 없습니다", when: "" }]
+      );
+    } catch (e) {
+      console.error("recent activity fetch error:", e);
+    }
+  }, [buildGenreShare]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // range 변경 시 차트만 재계산
+  // range 변경 시 episode_views 기반 차트 재조회
   useEffect(() => {
-    if (allContents.length > 0) buildViewsChart(allContents, range);
-  }, [range, allContents, buildViewsChart]);
+    fetchViewsChart(range);
+  }, [range, fetchViewsChart]);
+
+  // 초기 로드 시 차트 데이터 조회
+  useEffect(() => {
+    fetchViewsChart(range);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 매출 차트
+  useEffect(() => {
+    fetchRevenueChart(revRange);
+  }, [revRange, fetchRevenueChart]);
+
+  useEffect(() => {
+    fetchRevenueChart(revRange);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── 콘텐츠 수정 ──────────────────────────────────────────────────────────
   const handleEditSave = async (id: string) => {
@@ -734,7 +948,7 @@ export default function AdminDashboard() {
       <div className="mb-6 md:mb-8">
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp size={15} className="text-gold" />
-          <h2 className="font-bold text-sm md:text-base text-text">매출 통계</h2>
+          <h2 className="font-bold text-sm md:text-base text-white">매출 통계</h2>
           <span className="text-[10px] text-text-muted ml-1">· Premium 4,900원 / VIP 9,900원 기준 · active + cancelled 포함</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 md:gap-4">
@@ -763,6 +977,88 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* 매출 통계 그래프 — subscriptions 기반 실제 데이터 */}
+      <div className="mb-6 md:mb-8 bg-surface border border-border rounded-2xl p-4 md:p-6 admin-card">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 mb-4 sm:flex sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={15} className="text-gold shrink-0" />
+              <h2 className="font-bold text-sm md:text-base text-white truncate">매출 통계 그래프</h2>
+            </div>
+            <p className="text-[11px] text-text-muted mt-0.5">단위: 원 · subscriptions 실제 집계</p>
+          </div>
+          <div className="inline-flex rounded-lg border border-border bg-surface-2 p-0.5 shrink-0">
+            {(["일간", "주간", "월간", "누적"] as const).map((r) => (
+              <button
+                key={r}
+                onClick={() => setRevRange(r)}
+                className={`text-[11px] md:text-xs px-2.5 md:px-3 py-1 rounded-md font-semibold transition-colors ${
+                  revRange === r ? "bg-gold text-black" : "text-text-dim hover:text-text"
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+        {revenueChartData.length > 0 ? (
+          <>
+            <div className="relative">
+              <svg viewBox="0 0 600 140" className="w-full h-32 md:h-40" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="revAreaGold" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor="#D4AF37" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#D4AF37" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                {[0.25, 0.5, 0.75].map((p) => (
+                  <line key={p} x1="0" x2="600" y1={140 * p} y2={140 * p} stroke="#2a2a2c" strokeDasharray="3 4" />
+                ))}
+                {(() => {
+                  const maxR = Math.max(...revenueChartData, 1);
+                  const pts = revenueChartData.map((v, i) => {
+                    const x = (i / Math.max(revenueChartData.length - 1, 1)) * 600;
+                    const y = 140 - (v / maxR) * 124 - 4;
+                    return [x, y] as const;
+                  });
+                  const line = pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+                  const area = pts.length >= 2 ? `${line} L600,140 L0,140 Z` : "";
+                  return (
+                    <>
+                      {area && <path d={area} fill="url(#revAreaGold)" />}
+                      {line && <path d={line} fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
+                      {pts.map(([x, y], i) =>
+                        i === pts.length - 1 ? (
+                          <g key={i}>
+                            <circle cx={x} cy={y} r="6" fill="#D4AF37" opacity="0.25" />
+                            <circle cx={x} cy={y} r="3" fill="#D4AF37" />
+                          </g>
+                        ) : null
+                      )}
+                    </>
+                  );
+                })()}
+              </svg>
+            </div>
+            <div className="flex justify-between mt-2 text-[10px] text-text-muted">
+              {revenueChartLabels
+                .filter((_, i) => i % Math.ceil(revenueChartLabels.length / 8) === 0 || i === revenueChartLabels.length - 1)
+                .map((l, i) => <span key={i}>{l}</span>)}
+            </div>
+            <div className="flex items-center gap-4 mt-2 flex-wrap">
+              {revenueChartData.slice(-3).map((v, i) => (
+                <div key={i} className="text-[11px]">
+                  <span className="text-text-muted">{revenueChartLabels[revenueChartData.length - 3 + i] ?? ""}</span>
+                  <span className="ml-1.5 font-bold text-gold">{v.toLocaleString()}원</span>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="text-xs text-text-muted text-center py-8">매출 데이터를 불러오는 중...</p>
+        )}
+      </div>
+
       {/* Main grid — 조회수 차트(실제 DB) + 장르 분포(실제 DB) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
         {/* 조회수 차트 */}
@@ -771,9 +1067,9 @@ export default function AdminDashboard() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <BarChart3 size={15} className="text-gold shrink-0" />
-                <h2 className="font-bold text-sm md:text-base truncate">조회수 추이</h2>
+                <h2 className="font-bold text-sm md:text-base text-white truncate">조회수 추이</h2>
               </div>
-              <p className="text-[11px] text-text-muted mt-0.5">단위: 만 회 · 실제 DB 기반</p>
+              <p className="text-[11px] text-text-muted mt-0.5">단위: 회 · episode_views 실제 집계</p>
             </div>
             <div className="inline-flex rounded-lg border border-border bg-surface-2 p-0.5 shrink-0">
               {(["7D", "30D", "90D"] as Range[]).map((r) => (
@@ -826,7 +1122,7 @@ export default function AdminDashboard() {
         <div className="bg-surface border border-border rounded-2xl p-4 md:p-6 admin-card">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles size={15} className="text-gold" />
-            <h2 className="font-bold text-sm md:text-base">장르별 시청 분포</h2>
+            <h2 className="font-bold text-sm md:text-base text-white">장르별 시청 분포</h2>
           </div>
           {genreShare.length > 0 ? (
             <>
@@ -871,7 +1167,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between p-4 md:p-5 border-b border-border">
             <div className="flex items-center gap-2 min-w-0">
               <PlayCircle size={15} className="text-gold shrink-0" />
-              <h2 className="font-bold text-sm md:text-base truncate">인기 콘텐츠 TOP 6</h2>
+              <h2 className="font-bold text-sm md:text-base text-white truncate">인기 콘텐츠 TOP 6</h2>
               <span className="text-[10px] text-text-muted">· 실제 조회수 순</span>
             </div>
             <button
@@ -959,8 +1255,8 @@ export default function AdminDashboard() {
         <div className="bg-surface border border-border rounded-2xl p-4 md:p-5 admin-card">
           <div className="flex items-center gap-2 mb-4">
             <Activity size={15} className="text-gold" />
-            <h2 className="font-bold text-sm md:text-base">최근 활동</h2>
-            <span className="text-[10px] text-text-muted">· 실제 업로드 로그</span>
+            <h2 className="font-bold text-sm md:text-base text-white">최근 활동</h2>
+            <span className="text-[10px] text-text-muted">· 회원가입 · 결제 · 시청</span>
           </div>
           <ol className="relative space-y-4 before:absolute before:left-[5px] before:top-1 before:bottom-1 before:w-px before:bg-border">
             {recentActivity.map((a, i) => (
@@ -980,7 +1276,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between p-4 md:p-5 border-b border-border bg-gold/5">
             <div className="flex items-center gap-2">
               <Settings size={15} className="text-gold" />
-              <h2 className="font-bold text-sm md:text-base">전체 콘텐츠 관리</h2>
+              <h2 className="font-bold text-sm md:text-base text-white">전체 콘텐츠 관리</h2>
               <span className="text-[10px] text-text-muted">· 수정 · 삭제 · 공개/비공개</span>
             </div>
             <button onClick={() => setShowContentManager(false)} className="text-text-muted hover:text-white text-xs">닫기</button>
@@ -1171,7 +1467,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between p-4 md:p-5 border-b border-border bg-gold/5">
             <div className="flex items-center gap-2">
               <UserCog size={15} className="text-gold" />
-              <h2 className="font-bold text-sm md:text-base">구독자 관리</h2>
+              <h2 className="font-bold text-sm md:text-base text-white">구독자 관리</h2>
               <span className="text-[10px] text-text-muted">· 회원 목록 · Premium/VIP 부여 · 취소 · 연장</span>
             </div>
             <button onClick={() => setShowMemberManager(false)} className="text-text-muted hover:text-white text-xs">닫기</button>
@@ -1289,7 +1585,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between p-4 md:p-5 border-b border-border bg-gold/5">
             <div className="flex items-center gap-2">
               <Settings size={15} className="text-gold" />
-              <h2 className="font-bold text-sm md:text-base">플랫폼 설정</h2>
+              <h2 className="font-bold text-sm md:text-base text-white">플랫폼 설정</h2>
               <span className="text-[10px] text-text-muted">· 공지사항 · 배너 문구 · 추천 알고리즘</span>
             </div>
             <button onClick={() => setShowPlatformSettings(false)} className="text-text-muted hover:text-white text-xs">닫기</button>
