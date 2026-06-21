@@ -176,6 +176,13 @@ export default function AdminDashboard() {
     banner_description: "",
     banner_video_url: "",
   });
+  // 배너 미리보기 영상: 직접 URL 입력 대신 실제 에피소드를 선택해
+  // episodes.video_url을 자동으로 연결한다 (재생 페이지 링크 오입력 방지).
+  const [bannerEpisodes, setBannerEpisodes] = useState<
+    { id: string; episode_number: number | null; title: string | null; video_url: string | null }[]
+  >([]);
+  const [bannerEpisodesLoading, setBannerEpisodesLoading] = useState(false);
+  const [bannerSelectedEpisodeId, setBannerSelectedEpisodeId] = useState<string>("");
   const [showContentManager, setShowContentManager] = useState(false);
 
   // ── 자막 관리 패널 상태 ───────────────────────────────────────────────────
@@ -750,6 +757,40 @@ export default function AdminDashboard() {
       banner_description: d.banner_description ?? "",
       banner_video_url: d.banner_video_url ?? "",
     });
+    setBannerSelectedEpisodeId("");
+    setBannerEpisodes([]);
+    setBannerEpisodesLoading(true);
+    supabase
+      .from("episodes")
+      .select("id, episode_number, title, video_url")
+      .eq("series_id", d.id)
+      .order("episode_number", { ascending: true })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[Banner Episode Fetch Error]", error);
+          setBannerEpisodes([]);
+        } else {
+          const list = data ?? [];
+          setBannerEpisodes(list);
+          // 기존에 저장된 banner_video_url이 특정 에피소드의 video_url과 일치하면
+          // 드롭다운에 자동으로 미리 선택해 둔다.
+          const matched = list.find((ep) => ep.video_url && ep.video_url === d.banner_video_url);
+          if (matched) setBannerSelectedEpisodeId(matched.id);
+        }
+        setBannerEpisodesLoading(false);
+      });
+  };
+
+  // ── Hero Banner CMS: 에피소드 선택 시 해당 episodes.video_url을
+  //    banner_video_url 입력값에 자동 연결한다. ────────────────────────────
+  const handleSelectBannerEpisode = (episodeId: string) => {
+    setBannerSelectedEpisodeId(episodeId);
+    if (!episodeId) {
+      setBannerEditForm((f) => ({ ...f, banner_video_url: "" }));
+      return;
+    }
+    const ep = bannerEpisodes.find((e) => e.id === episodeId);
+    setBannerEditForm((f) => ({ ...f, banner_video_url: ep?.video_url ?? "" }));
   };
 
   // ── Hero Banner CMS: 상세 편집 저장 (빈 문자열은 NULL로 저장해 폴백 동작 유지) ──
@@ -802,6 +843,8 @@ export default function AdminDashboard() {
       await fetchAll();
     }
     setBannerEditId(null);
+    setBannerEpisodes([]);
+    setBannerSelectedEpisodeId("");
     setContentLoading(false);
   };
 
@@ -1730,13 +1773,31 @@ export default function AdminDashboard() {
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold text-white mb-1 block">배너 영상 URL (등록 시 홈 진입 3초 후 음소거 자동재생)</label>
-                        <input
+                        <label className="text-[10px] font-semibold text-white mb-1 block">배너 미리보기 에피소드 선택 (홈 진입 3초 후 음소거 자동재생)</label>
+                        <select
                           className="w-full bg-surface-2 border border-border rounded px-2 py-1.5 text-xs text-text focus:outline-none focus:border-gold"
-                          value={bannerEditForm.banner_video_url}
-                          onChange={(e) => setBannerEditForm((f) => ({ ...f, banner_video_url: e.target.value }))}
-                          placeholder="https://... (선택, 비워두면 backdrop 이미지만 노출)"
-                        />
+                          value={bannerSelectedEpisodeId}
+                          onChange={(e) => handleSelectBannerEpisode(e.target.value)}
+                          disabled={bannerEpisodesLoading}
+                        >
+                          <option value="">
+                            {bannerEpisodesLoading
+                              ? "에피소드 불러오는 중..."
+                              : "선택 안 함 (backdrop 이미지만 노출)"}
+                          </option>
+                          {bannerEpisodes.map((ep) => (
+                            <option key={ep.id} value={ep.id} disabled={!ep.video_url}>
+                              {ep.episode_number != null ? `${ep.episode_number}화` : "회차 미지정"}
+                              {ep.title ? ` - ${ep.title}` : ""}
+                              {!ep.video_url ? " (영상 없음)" : ""}
+                            </option>
+                          ))}
+                        </select>
+                        {bannerEditForm.banner_video_url && (
+                          <p className="mt-1 text-[10px] text-text-muted truncate">
+                            연결된 영상: {bannerEditForm.banner_video_url}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 mt-3">
