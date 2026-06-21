@@ -394,25 +394,45 @@ export default function AdminDashboard() {
   }, []);
   const fetchAll = useCallback(async () => {
     // ── series (콘텐츠) ──────────────────────────────────────────────────
-    // 주의: "genre"(단수)·"category" 컬럼은 series 테이블에 실존하지 않음
-    // (supabase/migrations/001_init.sql 기준 실제 컬럼은 genres(text[])뿐).
-    // 과거 select 절에 두 컬럼이 포함되어 있어 PostgREST가 컬럼을 찾지 못해
-    // 쿼리 전체가 실패 → 총 콘텐츠 수/총 조회수/인기 콘텐츠 TOP/장르 분포가
-    // 전부 0·빈 배열로 표시되던 원인이었음. 존재하는 컬럼만 조회하도록 수정.
+    // 안전 2단계 조회:
+    //   1단계: 반드시 존재하는 핵심 컬럼만 조회 (통계 집계 보장)
+    //   2단계: genres/banner_enabled 등 마이그레이션 필요 컬럼을 별도 시도
+    //          (실패해도 1단계 통계는 유지 → 카드 전체가 0이 되는 현상 방지)
     try {
-      const { data: seriesData, count, error: seriesError } = await supabase
+      // 1단계: 핵심 컬럼 (항상 존재)
+      const { data: seriesCore, count, error: coreError } = await supabase
         .from("series")
-        .select("id, title, genres, views, rating, status, thumbnail_url, created_at, total_episodes, banner_enabled, banner_order, top10_rank, is_new", { count: "exact" })
+        .select("id, title, views, rating, status, thumbnail_url, created_at, total_episodes", { count: "exact" })
         .order("views", { ascending: false });
 
-      if (seriesError) {
-        console.error("series fetch error:", seriesError);
-        setDashboardError((prev) => ({ ...prev, series: seriesError.message }));
+      if (coreError) {
+        console.error("series core fetch error:", coreError);
+        setDashboardError((prev) => ({ ...prev, series: coreError.message }));
       } else {
         setDashboardError((prev) => ({ ...prev, series: null }));
       }
 
-      const rows = (seriesData ?? []) as DbSeries[];
+      // 2단계: 마이그레이션 의존 컬럼 (020_ensure_series_genres_column.sql 필요)
+      //        실패해도 통계에 영향 없음 — error만 콘솔에 기록
+      const extMap: Map<string, Partial<DbSeries>> = new Map();
+      try {
+        const { data: extData } = await supabase
+          .from("series")
+          .select("id, genres, banner_enabled, banner_order, top10_rank, is_new");
+        if (extData) {
+          (extData as Record<string, unknown>[]).forEach((r) => {
+            extMap.set(r.id as string, r as Partial<DbSeries>);
+          });
+        }
+      } catch (extErr) {
+        console.warn("series ext columns unavailable (마이그레이션 020 미적용):", extErr);
+      }
+
+      // 핵심 + 확장 컬럼 병합
+      const rows: DbSeries[] = (seriesCore ?? []).map((r) => {
+        const ext = extMap.get(r.id) ?? {};
+        return { genre: null, category: null, ...r, ...ext } as DbSeries;
+      });
 
       // 총 콘텐츠 수, 총 조회수
       const totalViews = rows.reduce((s, r) => s + (r.views ?? 0), 0);
@@ -835,7 +855,12 @@ export default function AdminDashboard() {
       .eq("id", 1)
       .maybeSingle();
     if (error) {
-      setSettingsMsg(`설정 조회 실패: ${error.message}`);
+      // platform_settings 테이블 미생성 시 007_platform_settings.sql 실행 필요
+      if (error.message?.includes("schema cache") || error.message?.includes("does not exist") || error.code === "PGRST106" || error.code === "42P01") {
+        setSettingsMsg("플랫폼 설정 테이블이 없습니다. Supabase SQL Editor에서 007_platform_settings.sql을 실행하세요.");
+      } else {
+        setSettingsMsg(`설정 조회 실패: ${error.message}`);
+      }
     } else if (data) {
       const s = data as PlatformSettings;
       setPlatformSettings(s);

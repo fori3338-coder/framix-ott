@@ -9,9 +9,9 @@
   --color-gold: #D4AF37;
   --color-gold-light: #f0d77b;
   --color-gold-dark: #9c7e23;
-  --color-text: #f5f5f0;
-  --color-text-dim: #a8a8ad;
-  --color-text-muted: #6e6e75;
+  --color-text: #ffffff;
+  --color-text-dim: #ffffff;
+  --color-text-muted: #ffffff;
   --color-danger: #e63946;
 
   --font-sans: "Inter", "Pretendard", "Noto Sans KR", system-ui, -apple-system, sans-serif;
