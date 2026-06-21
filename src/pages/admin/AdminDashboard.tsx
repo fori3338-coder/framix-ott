@@ -1020,7 +1020,7 @@ export default function AdminDashboard() {
       <div className="mb-6 md:mb-8">
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp size={15} className="text-gold" />
-          <h2 className="font-bold text-sm md:text-base text-white">매출 통계</h2>
+          <h2 className="font-bold text-sm text-white md:text-[1rem]">매출 통계</h2>
           <span className="text-[10px] text-white ml-1">· Premium 4,900원 / VIP 9,900원 기준 · active + cancelled 포함</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 md:gap-4">
@@ -1055,7 +1055,7 @@ export default function AdminDashboard() {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <TrendingUp size={15} className="text-gold shrink-0" />
-              <h2 className="font-bold text-sm md:text-base text-white truncate">매출 통계 그래프</h2>
+              <h2 className="font-bold text-sm text-white md:text-[1rem] truncate">매출 통계 그래프</h2>
             </div>
             <p className="text-[11px] text-white mt-0.5">단위: 원 · subscriptions 실제 집계</p>
           </div>
@@ -1139,7 +1139,7 @@ export default function AdminDashboard() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <BarChart3 size={15} className="text-gold shrink-0" />
-                <h2 className="font-bold text-sm md:text-base text-white truncate">조회수 추이</h2>
+                <h2 className="font-bold text-sm text-white md:text-[1rem] truncate">조회수 추이</h2>
               </div>
               <p className="text-[11px] text-white mt-0.5">단위: 회 · episode_views 실제 집계</p>
             </div>
@@ -1194,7 +1194,7 @@ export default function AdminDashboard() {
         <div className="bg-surface border border-border rounded-2xl p-4 md:p-6 admin-card">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles size={15} className="text-gold" />
-            <h2 className="font-bold text-sm md:text-base text-white">장르별 시청 분포</h2>
+            <h2 className="font-bold text-sm text-white md:text-[1rem]">장르별 시청 분포</h2>
           </div>
           {genreShare.length > 0 ? (
             <>
@@ -1239,7 +1239,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between p-4 md:p-5 border-b border-border">
             <div className="flex items-center gap-2 min-w-0">
               <PlayCircle size={15} className="text-gold shrink-0" />
-              <h2 className="font-bold text-sm md:text-base text-white truncate">인기 콘텐츠 TOP 6</h2>
+              <h2 className="font-bold text-sm text-white md:text-[1rem] truncate">인기 콘텐츠 TOP 6</h2>
               <span className="text-[10px] text-white">· 실제 조회수 순</span>
             </div>
             <button
@@ -1327,7 +1327,7 @@ export default function AdminDashboard() {
         <div className="bg-surface border border-border rounded-2xl p-4 md:p-5 admin-card">
           <div className="flex items-center gap-2 mb-4">
             <Activity size={15} className="text-gold" />
-            <h2 className="font-bold text-sm md:text-base text-white">최근 활동</h2>
+            <h2 className="font-bold text-sm text-white md:text-[1rem]">최근 활동</h2>
             <span className="text-[10px] text-white">· 회원가입 · 결제 · 시청</span>
           </div>
           <ol className="relative space-y-4 before:absolute before:left-[5px] before:top-1 before:bottom-1 before:w-px before:bg-border">
@@ -1348,7 +1348,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between p-4 md:p-5 border-b border-border bg-gold/5">
             <div className="flex items-center gap-2">
               <Settings size={15} className="text-gold" />
-              <h2 className="font-bold text-sm md:text-base text-white">전체 콘텐츠 관리</h2>
+              <h2 className="font-bold text-sm text-white md:text-[1rem]">전체 콘텐츠 관리</h2>
               <span className="text-[10px] text-white">· 수정 · 삭제 · 공개/비공개</span>
             </div>
             <button onClick={() => setShowContentManager(false)} className="text-white hover:text-white text-xs">닫기</button>
@@ -1539,7 +1539,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between p-4 md:p-5 border-b border-border bg-gold/5">
             <div className="flex items-center gap-2">
               <UserCog size={15} className="text-gold" />
-              <h2 className="font-bold text-sm md:text-base text-white">구독자 관리</h2>
+              <h2 className="font-bold text-sm text-white md:text-[1rem]">구독자 관리</h2>
               <span className="text-[10px] text-white">· 회원 목록 · Premium/VIP 부여 · 취소 · 연장</span>
             </div>
             <button onClick={() => setShowMemberManager(false)} className="text-white hover:text-white text-xs">닫기</button>
@@ -1667,7 +1667,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between p-4 md:p-5 border-b border-border bg-gold/5">
             <div className="flex items-center gap-2">
               <Settings size={15} className="text-gold" />
-              <h2 className="font-bold text-sm md:text-base text-white">플랫폼 설정</h2>
+              <h2 className="font-bold text-sm text-white md:text-[1rem]">플랫폼 설정</h2>
               <span className="text-[10px] text-white">· 공지사항 · 배너 문구 · 추천 알고리즘</span>
             </div>
             <button onClick={() => setShowPlatformSettings(false)} className="text-white hover:text-white text-xs">닫기</button>
