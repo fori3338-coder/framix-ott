@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 import HeroBanner from "../components/HeroBanner";
 import ShowcaseRow from "../components/ShowcaseRow";
@@ -28,6 +28,11 @@ export default function Home() {
   const { dramas, loading, trending } = useDramas();
   const { items: continueWatchingItems, isLoggedIn, reload: reloadCW } = useContinueWatching();
   const { favoriteIds, isLoggedIn: favLoggedIn } = useFavorites();
+
+  // 새로고침/진입 시 Hero Banner가 항상 최상단(top=0)에서 시작하도록 보정.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
 
   // 이어보기 항목 삭제 시 로컬 state에서도 즉시 제거
   const [removedEpisodeIds, setRemovedEpisodeIds] = useState<Set<string>>(new Set());
