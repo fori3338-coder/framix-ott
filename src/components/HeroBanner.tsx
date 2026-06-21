@@ -87,7 +87,15 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
           <img
             src={d.backdrop}
             alt={d.title}
-            className={`w-full h-full object-cover ${i === index ? "animate-ken-burns" : ""}`}
+            className={`w-full h-full object-cover md:hidden ${i === index ? "animate-ken-burns" : ""}`}
+            style={{ willChange: "transform" }}
+          />
+          {/* PC 전용: 기존 모바일 Ken Burns(animate-ken-burns)는 그대로 두고,
+              데스크톱에서는 더 미세하고 느린 시네마틱 줌(scale 1.00→1.04, 20s 무한 반복)을 별도 적용 */}
+          <img
+            src={d.backdrop}
+            alt={d.title}
+            className={`hidden w-full h-full object-cover md:block ${i === index ? "animate-hero-zoom-pc" : ""}`}
             style={{ willChange: "transform" }}
           />
           {/* Video Preview: banner_video_url이 등록되어 있고 아직 에러난 적 없는 경우,
@@ -116,6 +124,11 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
         </div>
       ))}
 
+      {/* PC 전용: Floating Dark Gradient Overlay — 텍스트 가독성 강화를 위한 은은한 그라데이션
+          (모바일은 기존 Premium scrim만 사용, 변경 없음) */}
+      <div className="hidden md:block absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/10 pointer-events-none" />
+      <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/55 via-transparent to-transparent pointer-events-none" />
+
       {/* Premium scrim */}
       <div className="absolute inset-0 bg-hero-scrim pointer-events-none" />
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-base pointer-events-none" />
@@ -136,15 +149,15 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
           )}
 
           <h1
-            className="text-3xl md:text-6xl font-black text-white leading-[1.05] mb-3 drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)] animate-fade-in-up"
-            style={{ animationDelay: "60ms", animationFillMode: "backwards" }}
+            className="text-3xl md:text-6xl font-black text-white leading-[1.05] mb-3 drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)] md:drop-shadow-[0_6px_32px_rgba(0,0,0,0.75)] animate-fade-in-up md:animate-hero-title-in"
+            style={{ animationFillMode: "backwards" }}
           >
             {displayTitle}
           </h1>
 
           <div
-            className="flex items-center gap-2.5 text-xs md:text-sm text-text-dim mb-4 flex-wrap animate-fade-in-up"
-            style={{ animationDelay: "120ms", animationFillMode: "backwards" }}
+            className="flex items-center gap-2.5 text-xs md:text-sm text-text-dim mb-4 flex-wrap animate-fade-in-up md:animate-hero-meta-in"
+            style={{ animationFillMode: "backwards" }}
           >
             <span className="text-gold font-bold">★ {drama.rating.toFixed(1)}</span>
             <span className="text-text-muted">•</span>
@@ -158,8 +171,8 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
           </div>
 
           <p
-            className="hidden md:block text-[15px] text-text-dim/90 leading-relaxed line-clamp-2 mb-5 max-w-xl animate-fade-in-up"
-            style={{ animationDelay: "180ms", animationFillMode: "backwards" }}
+            className="hidden md:block text-[15px] text-text-dim/90 leading-relaxed line-clamp-2 mb-5 max-w-xl drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)] animate-hero-desc-in"
+            style={{ animationFillMode: "backwards" }}
           >
             {displayDescription}
           </p>
@@ -179,27 +192,37 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
           </div>
 
           <div
-            className="flex items-center gap-2.5 md:gap-3 animate-fade-in-up"
-            style={{ animationDelay: "280ms", animationFillMode: "backwards" }}
+            className="flex items-center gap-2.5 md:gap-3 animate-fade-in-up md:animate-hero-actions-in"
+            style={{ animationFillMode: "backwards" }}
           >
             <button
               onClick={handlePlay}
               disabled={!playRoute}
-              className="flex items-center gap-2 bg-white text-black font-bold px-5 md:px-8 py-3 md:py-3.5 rounded-md text-sm md:text-base hover:bg-gold transition-all duration-200 active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 bg-white text-black font-bold px-5 md:px-8 py-3 md:py-3.5 rounded-md text-sm md:text-base transition-all duration-200 active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gold md:hover:scale-[1.03] md:hover:shadow-[0_12px_40px_rgba(255,213,74,0.35)]"
+              style={{ willChange: "transform" }}
             >
               <Play size={18} className="fill-black" />
               재생
             </button>
             <button
               onClick={() => navigate(`/drama/${drama.id}`)}
-              className="flex items-center gap-2 backdrop-blur-md font-bold px-5 md:px-8 py-3 md:py-3.5 rounded-md text-sm md:text-base transition-all duration-200 active:scale-95 border"
+              className="flex items-center gap-2 backdrop-blur-md font-bold px-5 md:px-8 py-3 md:py-3.5 rounded-md text-sm md:text-base transition-all duration-200 active:scale-95 border md:hover:scale-[1.03]"
               style={{
                 background: "rgba(255,213,74,0.12)",
                 borderColor: "rgba(255,213,74,0.35)",
                 color: "#FFD54A",
+                willChange: "transform",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,213,74,0.18)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,213,74,0.12)"; }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255,213,74,0.18)";
+                if (window.matchMedia("(min-width: 768px)").matches) {
+                  e.currentTarget.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,0.25), 0 8px 28px rgba(255,213,74,0.2)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255,213,74,0.12)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
             >
               <Info size={18} />
               <span className="hidden sm:inline">상세정보</span>
