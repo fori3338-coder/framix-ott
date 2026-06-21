@@ -36,10 +36,10 @@ export interface DbDrama {
   banner_enabled: boolean | null;
   banner_order: number | null;
   top10_rank: number | null;
-  // 022_hero_banner_cms.sql — Hero Banner CMS override 컬럼 (전부 선택, NULL이면 폴백)
+  // 023_hero_banner_cms_fix.sql — Hero Banner CMS override 컬럼 (전부 선택, NULL이면 폴백)
+  // ⚠️ banner_image_url 컬럼은 존재하지 않음 — Hero 배경 이미지는 항상 backdrop_url 사용
   banner_title: string | null;
   banner_description: string | null;
-  banner_image_url: string | null;
   banner_video_url: string | null;
 }
 

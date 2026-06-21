@@ -38,7 +38,6 @@ export interface Drama {
   top10Rank?: number | null;
   bannerTitle?: string | null;
   bannerDescription?: string | null;
-  bannerImageUrl?: string | null;
   bannerVideoUrl?: string | null;
 }
 

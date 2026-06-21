@@ -63,10 +63,10 @@ interface DbSeries {
   banner_order: number | null;
   top10_rank: number | null;
   is_new: boolean | null;
-  // 022_hero_banner_cms.sql — Hero Banner CMS override 컬럼
+  // 023_hero_banner_cms_fix.sql — Hero Banner CMS override 컬럼
+  // ⚠️ banner_image_url은 존재하지 않는 컬럼 — Hero 배경은 항상 backdrop_url 사용
   banner_title: string | null;
   banner_description: string | null;
-  banner_image_url: string | null;
   banner_video_url: string | null;
 }
 
@@ -169,12 +169,11 @@ export default function AdminDashboard() {
   const [contentMsg, setContentMsg] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
-  // ── Hero Banner CMS: 배너 상세(제목/설명/이미지/영상) 인라인 편집 ──────────
+  // ── Hero Banner CMS: 배너 상세(제목/설명/영상) 인라인 편집 ──────────
   const [bannerEditId, setBannerEditId] = useState<string | null>(null);
   const [bannerEditForm, setBannerEditForm] = useState({
     banner_title: "",
     banner_description: "",
-    banner_image_url: "",
     banner_video_url: "",
   });
   const [showContentManager, setShowContentManager] = useState(false);
@@ -441,7 +440,7 @@ export default function AdminDashboard() {
       try {
         const { data: extData } = await supabase
           .from("series")
-          .select("id, genres, banner_enabled, banner_order, top10_rank, is_new, banner_title, banner_description, banner_image_url, banner_video_url");
+          .select("id, genres, banner_enabled, banner_order, top10_rank, is_new, banner_title, banner_description, banner_video_url");
         if (extData) {
           (extData as Record<string, unknown>[]).forEach((r) => {
             extMap.set(r.id as string, r as Partial<DbSeries>);
@@ -743,7 +742,6 @@ export default function AdminDashboard() {
     setBannerEditForm({
       banner_title: d.banner_title ?? "",
       banner_description: d.banner_description ?? "",
-      banner_image_url: d.banner_image_url ?? "",
       banner_video_url: d.banner_video_url ?? "",
     });
   };
@@ -756,7 +754,6 @@ export default function AdminDashboard() {
       .update({
         banner_title: bannerEditForm.banner_title.trim() || null,
         banner_description: bannerEditForm.banner_description.trim() || null,
-        banner_image_url: bannerEditForm.banner_image_url.trim() || null,
         banner_video_url: bannerEditForm.banner_video_url.trim() || null,
       })
       .eq("id", id);
@@ -1614,7 +1611,7 @@ export default function AdminDashboard() {
                               ? "bg-gold/20 border-gold/50 text-gold"
                               : "bg-surface-2 border-border text-white hover:text-gold hover:border-gold/40"
                           }`}
-                          title="배너 제목/설명/이미지/영상 편집"
+                          title="배너 제목/설명/영상 편집"
                         >
                           <Clapperboard size={10} />
                           배너 상세
@@ -1670,7 +1667,7 @@ export default function AdminDashboard() {
                 {/* ── Hero Banner CMS 상세 편집 패널 ──────────────────────────── */}
                 {bannerEditId === d.id && (
                   <div className="px-4 md:px-5 pb-4 pt-1 bg-surface-2/30 border-t border-gold/20">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mt-2">
+                    <div className="grid grid-cols-1 gap-2.5 mt-2">
                       <div>
                         <label className="text-[10px] font-semibold text-white mb-1 block">배너 제목 (비우면 작품 제목 사용)</label>
                         <input
@@ -1681,15 +1678,6 @@ export default function AdminDashboard() {
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold text-white mb-1 block">배너 이미지 URL (비우면 기본 backdrop 사용)</label>
-                        <input
-                          className="w-full bg-surface-2 border border-border rounded px-2 py-1.5 text-xs text-text focus:outline-none focus:border-gold"
-                          value={bannerEditForm.banner_image_url}
-                          onChange={(e) => setBannerEditForm((f) => ({ ...f, banner_image_url: e.target.value }))}
-                          placeholder="https://..."
-                        />
-                      </div>
-                      <div className="md:col-span-2">
                         <label className="text-[10px] font-semibold text-white mb-1 block">배너 설명 (비우면 작품 시놉시스 사용)</label>
                         <textarea
                           rows={2}
@@ -1699,13 +1687,13 @@ export default function AdminDashboard() {
                           placeholder="AI 타임루프 복수 로맨스"
                         />
                       </div>
-                      <div className="md:col-span-2">
+                      <div>
                         <label className="text-[10px] font-semibold text-white mb-1 block">배너 영상 URL (등록 시 홈 진입 3초 후 음소거 자동재생)</label>
                         <input
                           className="w-full bg-surface-2 border border-border rounded px-2 py-1.5 text-xs text-text focus:outline-none focus:border-gold"
                           value={bannerEditForm.banner_video_url}
                           onChange={(e) => setBannerEditForm((f) => ({ ...f, banner_video_url: e.target.value }))}
-                          placeholder="https://... (선택, 비워두면 이미지만 노출)"
+                          placeholder="https://... (선택, 비워두면 backdrop 이미지만 노출)"
                         />
                       </div>
                     </div>

@@ -63,11 +63,12 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
     navigate(playRoute);
   };
 
-  // 배너 CMS override: banner_title/description/image_url이 지정되어 있으면 우선 사용,
-  // 없으면 기존 작품 정보(title/synopsis/backdrop)로 폴백한다.
+  // 배너 CMS override: banner_title/description이 지정되어 있으면 우선 사용,
+  // 없으면 기존 작품 정보(title/synopsis)로 폴백한다.
+  // 배경 이미지는 항상 backdrop(=series.backdrop_url, 없으면 thumbnail_url) 사용 —
+  // banner_image_url 컬럼은 존재하지 않으므로 별도 override가 없다.
   const displayTitle = drama.bannerTitle?.trim() || drama.title;
   const displayDescription = drama.bannerDescription?.trim() || drama.synopsis;
-  const displayImage = (d: Drama) => d.bannerImageUrl?.trim() || d.backdrop;
 
   return (
     <div
@@ -84,7 +85,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
           }`}
         >
           <img
-            src={displayImage(d)}
+            src={d.backdrop}
             alt={d.title}
             className={`w-full h-full object-cover ${i === index ? "animate-ken-burns" : ""}`}
             style={{ willChange: "transform" }}
