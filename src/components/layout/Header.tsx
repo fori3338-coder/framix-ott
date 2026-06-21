@@ -1,12 +1,13 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Search, Bell, ChevronDown, LogOut, Crown } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuthContext } from "../../contexts/AuthContext";
 import AuthModal from "../AuthModal";
 import Portal from "../Portal";
 
 export default function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const { user, signOut } = useAuthContext();
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -17,6 +18,28 @@ export default function Header() {
     setAuthMode(mode);
     setAuthModalOpen(true);
   };
+
+  // 상단 메뉴 active 판별: 트렌딩/신작은 같은 /search 경로를 cat 쿼리로 구분하므로
+  // 단순 pathname 매칭(NavLink 기본 동작)으로는 정확히 구분할 수 없어 직접 계산한다.
+  const activeKey = useMemo(() => {
+    const { pathname, search } = location;
+    if (pathname === "/") return "home";
+    if (pathname.startsWith("/search")) {
+      const cat = new URLSearchParams(search).get("cat");
+      if (cat === "new") return "new";
+      if (cat === "trending") return "trending";
+      return "";
+    }
+    if (pathname.startsWith("/my-list")) return "my-list";
+    if (pathname.startsWith("/subscription")) return "subscription";
+    if (pathname.startsWith("/admin")) return "admin";
+    return "";
+  }, [location]);
+
+  const navLinkClass = (key: string) =>
+    `transition-colors hover:text-gold-hot ${
+      activeKey === key ? "text-gold-hot font-bold" : "text-gold-bright font-medium"
+    }`;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -34,16 +57,16 @@ export default function Header() {
       <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-2.5 md:py-3 md:px-8 safe-x gap-2">
 
         <Link to="/" className="flex items-center gap-1.5 shrink-0">
-          <span className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-gradient-gold">FRAMIX</span>
+          <span className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-gold-bright">FRAMIX</span>
         </Link>
 
-        <nav className="flex flex-1 md:flex-none items-center gap-4 md:gap-6 text-sm font-medium text-text-dim md:ml-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
-          <Link to="/" className="hover:text-gold transition-colors">홈</Link>
-          <Link to="/search?cat=trending" className="hover:text-gold transition-colors">트렌딩</Link>
-          <Link to="/search?cat=new" className="hover:text-gold transition-colors">신작</Link>
-          <Link to="/my-list" className="hover:text-gold transition-colors">내 보관함</Link>
-          <Link to="/subscription" className="hover:text-gold transition-colors">구독</Link>
-          <Link to="/admin" className="hover:text-gold transition-colors">STUDIO</Link>
+        <nav className="flex flex-1 md:flex-none items-center gap-4 md:gap-6 text-sm md:ml-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
+          <Link to="/" className={navLinkClass("home")}>홈</Link>
+          <Link to="/search?cat=trending" className={navLinkClass("trending")}>트렌딩</Link>
+          <Link to="/search?cat=new" className={navLinkClass("new")}>신작</Link>
+          <Link to="/my-list" className={navLinkClass("my-list")}>내 보관함</Link>
+          <Link to="/subscription" className={navLinkClass("subscription")}>구독</Link>
+          <Link to="/admin" className={navLinkClass("admin")}>관리</Link>
         </nav>
 
         <div className="hidden sm:flex items-center gap-3 md:gap-4 shrink-0">
