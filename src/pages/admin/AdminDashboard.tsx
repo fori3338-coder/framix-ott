@@ -41,6 +41,9 @@ interface DbSeries {
   id: string;
   title: string;
   genres: string[] | null;
+  // genre/category: series 테이블에 실존하는 컬럼이 아님(스키마 기준 genres[]만 존재).
+  // select 쿼리에는 포함하지 않으며, 다른 화면(mappers.ts)과 동일하게 방어적
+  // optional-fallback 용도로만 타입을 남겨둔다 (항상 undefined로 평가되어 "기타"로 폴백됨).
   genre: string | null;
   category: string | null;
   views: number | null;
@@ -122,6 +125,14 @@ export default function AdminDashboard() {
   // ── 통계 ─────────────────────────────────────────────────────────────────
   const [liveStats, setLiveStats] = useState<LiveStats>({
     totalMembers: 0, totalContents: 0, totalViews: 0, totalSubscribers: 0, newSignups: 0,
+  });
+  // 각 통계 영역이 "조회 완료"되었는지 여부. 완료 전에는 "—"(로딩),
+  // 완료 후에는 실제 값(0 포함)을 그대로 표시해 "0인데 -로 보이는" 혼동을 없앤다.
+  const [statsLoaded, setStatsLoaded] = useState({ content: false, members: false });
+  // 각 영역의 실제 쿼리 에러 메시지 (없으면 null). UI에 그대로 노출해
+  // "코드는 고쳤지만 실제로는 안 됨" 상태를 숨기지 않는다.
+  const [dashboardError, setDashboardError] = useState<{ series: string | null; members: string | null }>({
+    series: null, members: null,
   });
   const [subStats, setSubStats] = useState<SubStats>({
     totalSubscribers: 0, premiumCount: 0, vipCount: 0, cancelledCount: 0, inactiveCount: 0,
@@ -383,11 +394,23 @@ export default function AdminDashboard() {
   }, []);
   const fetchAll = useCallback(async () => {
     // ── series (콘텐츠) ──────────────────────────────────────────────────
+    // 주의: "genre"(단수)·"category" 컬럼은 series 테이블에 실존하지 않음
+    // (supabase/migrations/001_init.sql 기준 실제 컬럼은 genres(text[])뿐).
+    // 과거 select 절에 두 컬럼이 포함되어 있어 PostgREST가 컬럼을 찾지 못해
+    // 쿼리 전체가 실패 → 총 콘텐츠 수/총 조회수/인기 콘텐츠 TOP/장르 분포가
+    // 전부 0·빈 배열로 표시되던 원인이었음. 존재하는 컬럼만 조회하도록 수정.
     try {
-      const { data: seriesData, count } = await supabase
+      const { data: seriesData, count, error: seriesError } = await supabase
         .from("series")
-        .select("id, title, genres, genre, category, views, rating, status, thumbnail_url, created_at, total_episodes, banner_enabled, banner_order, top10_rank, is_new", { count: "exact" })
+        .select("id, title, genres, views, rating, status, thumbnail_url, created_at, total_episodes, banner_enabled, banner_order, top10_rank, is_new", { count: "exact" })
         .order("views", { ascending: false });
+
+      if (seriesError) {
+        console.error("series fetch error:", seriesError);
+        setDashboardError((prev) => ({ ...prev, series: seriesError.message }));
+      } else {
+        setDashboardError((prev) => ({ ...prev, series: null }));
+      }
 
       const rows = (seriesData ?? []) as DbSeries[];
 
@@ -397,7 +420,6 @@ export default function AdminDashboard() {
         ...prev,
         totalContents: count ?? rows.length,
         totalViews,
-        newSignups: 0,
       }));
 
       // 인기 콘텐츠 TOP 6 (views 내림차순)
@@ -410,13 +432,27 @@ export default function AdminDashboard() {
       buildGenreShare(rows);
     } catch (e) {
       console.error("series fetch error:", e);
+      setDashboardError((prev) => ({ ...prev, series: e instanceof Error ? e.message : "콘텐츠 조회 중 오류" }));
+    } finally {
+      setStatsLoaded((prev) => ({ ...prev, content: true }));
     }
 
     // ── 총 회원수 + 신규 가입 ────────────────────────────────────────────
+    // 주의: profiles는 select("id")만 조회하므로 컬럼 문제로 실패할 가능성은
+    // 낮음. count가 0인데 error도 없다면 RLS 정책이 "본인 행만 조회 가능"으로
+    // 막고 있고, 현재 세션이 그 회원으로 로그인되어 있지 않을 가능성이 가장
+    // 높음 — supabase/migrations/018_admin_visibility_fix.sql 참고.
     try {
-      const { count: memberCount } = await supabase
+      const { count: memberCount, error: memberCountError } = await supabase
         .from("profiles")
         .select("id", { count: "exact", head: true });
+
+      if (memberCountError) {
+        console.error("profiles count error:", memberCountError);
+        setDashboardError((prev) => ({ ...prev, members: memberCountError.message }));
+      } else {
+        setDashboardError((prev) => ({ ...prev, members: null }));
+      }
       setLiveStats((prev) => ({ ...prev, totalMembers: memberCount ?? 0 }));
 
       // 오늘 가입 수
@@ -428,6 +464,9 @@ export default function AdminDashboard() {
       setLiveStats((prev) => ({ ...prev, newSignups: newCount ?? 0 }));
     } catch (e) {
       console.error("profiles fetch error:", e);
+      setDashboardError((prev) => ({ ...prev, members: e instanceof Error ? e.message : "회원수 조회 중 오류" }));
+    } finally {
+      setStatsLoaded((prev) => ({ ...prev, members: true }));
     }
 
     // ── 구독 통계 + 매출 ─────────────────────────────────────────────────
@@ -669,10 +708,12 @@ export default function AdminDashboard() {
 
       if (profileError) {
         setMemberMsg(`회원 목록 조회 실패: ${profileError.message}`);
+        setDashboardError((prev) => ({ ...prev, members: profileError.message }));
         setMembers([]);
         setMemberLoading(false);
         return;
       }
+      setDashboardError((prev) => ({ ...prev, members: null }));
       setMembers((profileRows ?? []) as DbProfile[]);
 
       // subscriptions: 회원별 최신 구독 1건만 매핑 (created_at 내림차순 우선)
@@ -890,13 +931,19 @@ export default function AdminDashboard() {
       </div>
 
       {/* Live Stat cards */}
+      {(dashboardError.series || dashboardError.members) && (
+        <div className="mb-4 flex flex-col gap-1.5 text-xs px-3 py-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300">
+          {dashboardError.series && <p>콘텐츠 통계 조회 실패: {dashboardError.series}</p>}
+          {dashboardError.members && <p>회원 통계 조회 실패: {dashboardError.members}</p>}
+        </div>
+      )}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8">
         {[
-          { label: "총 회원수", value: liveStats.totalMembers > 0 ? liveStats.totalMembers.toLocaleString() : "—", icon: Users, accent: "from-gold to-gold-dark", spark: [30,36,34,42,48,52,60,58,66,72,78,84] },
-          { label: "총 콘텐츠 수", value: liveStats.totalContents > 0 ? liveStats.totalContents.toString() : "—", icon: Film, accent: "from-amber-200 to-gold", spark: [10,12,14,18,22,24,26,28,30,30,32,34] },
-          { label: "총 조회수", value: liveStats.totalViews > 0 ? `${(liveStats.totalViews / 10000).toFixed(0)}만` : "—", icon: Eye, accent: "from-gold-light to-gold", spark: [50,48,55,62,58,70,68,78,82,90,88,96] },
+          { label: "총 회원수", value: statsLoaded.members ? liveStats.totalMembers.toLocaleString() : "—", icon: Users, accent: "from-gold to-gold-dark", spark: [30,36,34,42,48,52,60,58,66,72,78,84] },
+          { label: "총 콘텐츠 수", value: statsLoaded.content ? liveStats.totalContents.toString() : "—", icon: Film, accent: "from-amber-200 to-gold", spark: [10,12,14,18,22,24,26,28,30,30,32,34] },
+          { label: "총 조회수", value: statsLoaded.content ? (liveStats.totalViews >= 10000 ? `${(liveStats.totalViews / 10000).toFixed(1)}만` : liveStats.totalViews.toLocaleString()) : "—", icon: Eye, accent: "from-gold-light to-gold", spark: [50,48,55,62,58,70,68,78,82,90,88,96] },
           { label: "총 구독자 수", value: liveStats.totalSubscribers.toLocaleString(), icon: Crown, accent: "from-gold to-gold-light", spark: [88,90,86,80,84,82,78,76,80,78,74,72] },
-          { label: "회원가입 수", value: liveStats.newSignups > 0 ? `+${liveStats.newSignups}` : "—", icon: UserPlus, accent: "from-emerald-400 to-gold", spark: [5,8,12,10,14,18,16,20,22,28,24,30] },
+          { label: "회원가입 수", value: statsLoaded.members ? `+${liveStats.newSignups}` : "—", icon: UserPlus, accent: "from-emerald-400 to-gold", spark: [5,8,12,10,14,18,16,20,22,28,24,30] },
         ].map((s) => (
           <div key={s.label} className="group relative overflow-hidden bg-surface border border-border rounded-2xl p-4 md:p-5 hover:border-gold/40 transition-all admin-card">
             <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full bg-gradient-to-br ${s.accent} opacity-[0.07] blur-2xl group-hover:opacity-20 transition-opacity`} />
@@ -1501,9 +1548,19 @@ export default function AdminDashboard() {
           )}
 
           {!memberLoading && members.length === 0 ? (
-            <p className="text-xs text-text-muted text-center py-8">
-              회원 데이터를 불러올 수 없습니다 (profiles 테이블 확인 필요)
-            </p>
+            <div className="text-xs text-text-muted text-center py-8 px-6 space-y-1.5">
+              {dashboardError.members ? (
+                <p className="text-rose-300">회원 데이터를 불러올 수 없습니다: {dashboardError.members}</p>
+              ) : (
+                <>
+                  <p>조회된 회원이 없습니다.</p>
+                  <p>실제 가입된 회원이 있는데도 이 화면에 보이지 않는다면, profiles 테이블의
+                    RLS(Row Level Security) 정책이 "본인 행만 조회 가능"으로 설정되어 있어
+                    관리자 화면에서는 비어 보이는 경우가 가장 흔합니다.
+                    supabase/migrations/018_admin_visibility_fix.sql 적용 여부를 확인하세요.</p>
+                </>
+              )}
+            </div>
           ) : (
             <div className="divide-y divide-border max-h-[520px] overflow-y-auto mt-2">
               {filteredMembers.map((m) => {

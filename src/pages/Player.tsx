@@ -12,6 +12,7 @@ import {
 import { useDramaDetail } from "../hooks/useDramaDetail";
 import { useSubscription } from "../hooks/useSubscription";
 import { supabase } from "../lib/supabase";
+import { recordEpisodeView } from "../lib/viewTracking";
 
 const CONTROLS_HIDE_DELAY_MS = 3000;
 const RESUME_KEY = (id: string) => `framix_resume_${id}`;
@@ -295,6 +296,11 @@ export default function Player() {
   const autoNextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveHistoryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const seekAppliedRef = useRef(false);
+  // 조회수 중복 기록 방지: 에피소드별로 "재생 시작" 시 1회만 recordEpisodeView 호출
+  // (실제 중복/시간창 판정은 DB record_episode_view RPC의 viewer_id+30분 dedupe가 담당,
+  //  이 ref는 같은 컴포넌트 생명주기 내에서 동일 에피소드에 대해 매 timeupdate마다
+  //  반복 호출하지 않도록 막는 클라이언트 측 가드일 뿐)
+  const viewRecordedEpisodeRef = useRef<string | null>(null);
 
   // ─── Custom Subtitle Engine 상태 ────────────────────────────────────────
   const subtitleCuesRef = useRef<SubCue[]>([]);
@@ -446,6 +452,16 @@ export default function Player() {
     setProgress(pct);
 
     if (episodeId) localStorage.setItem(RESUME_KEY(episodeId), String(v.currentTime));
+
+    // ─── 조회수 기록: 실제 재생이 시작된 시점(timeupdate 최초 발생)에 1회 호출 ───
+    // 기존에는 record_episode_view RPC를 호출하는 recordEpisodeView()가 정의만
+    // 되어 있고 어디에서도 호출되지 않아, 시청 시간과 무관하게 조회수가 전혀
+    // 반영되지 않았음. 여기서 실제로 연결한다. (DB 측 30분 dedupe는
+    // record_episode_view RPC 내부에서 처리되므로 클라이언트는 단순 1회 호출.)
+    if (episodeId && id && viewRecordedEpisodeRef.current !== episodeId) {
+      viewRecordedEpisodeRef.current = episodeId;
+      recordEpisodeView(episodeId, id);
+    }
 
     if (!saveHistoryTimerRef.current && episodeId) {
       saveHistoryTimerRef.current = setTimeout(() => {
