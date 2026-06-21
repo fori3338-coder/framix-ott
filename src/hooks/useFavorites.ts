@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabase";
 
 export interface FavoriteItem {
   id: string;         // user_favorites.id
-  series_id: string;
+  drama_id: string;
   created_at: string;
 }
 
@@ -36,12 +36,12 @@ export function useFavorites() {
     try {
       const { data, error: err } = await supabase
         .from("user_favorites")
-        .select("series_id, created_at")
+        .select("drama_id, created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
       if (err) throw err;
-      setFavoriteIds((data ?? []).map((r: any) => r.series_id as string));
+      setFavoriteIds((data ?? []).map((r: any) => r.drama_id as string));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -58,7 +58,7 @@ export function useFavorites() {
     setFavoriteIds((prev) => [seriesId, ...prev]);
     const { error: err } = await supabase
       .from("user_favorites")
-      .insert({ user_id: userId, series_id: seriesId });
+      .insert({ user_id: userId, drama_id: seriesId });
     if (err) {
       // 롤백
       setFavoriteIds((prev) => prev.filter((id) => id !== seriesId));
@@ -75,7 +75,7 @@ export function useFavorites() {
       .from("user_favorites")
       .delete()
       .eq("user_id", userId)
-      .eq("series_id", seriesId);
+      .eq("drama_id", seriesId);
     if (err) {
       // 롤백
       setFavoriteIds((prev) => [seriesId, ...prev]);
