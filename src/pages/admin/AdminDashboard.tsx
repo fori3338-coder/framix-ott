@@ -438,9 +438,15 @@ export default function AdminDashboard() {
       //        실패해도 통계에 영향 없음 — error만 콘솔에 기록
       const extMap: Map<string, Partial<DbSeries>> = new Map();
       try {
-        const { data: extData } = await supabase
+        const { data: extData, error: extError } = await supabase
           .from("series")
           .select("id, genres, banner_enabled, banner_order, top10_rank, is_new, banner_title, banner_description, banner_video_url");
+        // ⚠️ 기존 코드는 error를 구조분해하지 않아 RLS/스키마 캐시 문제로
+        // 이 select 자체가 실패해도 콘솔에 아무 흔적이 남지 않았다.
+        // (Supabase는 실패해도 throw하지 않고 {data:null, error} 를 반환함)
+        if (extError) {
+          console.warn("[fetchAll] series ext columns select error (banner_video_url 등 표시 불가):", extError);
+        }
         if (extData) {
           (extData as Record<string, unknown>[]).forEach((r) => {
             extMap.set(r.id as string, r as Partial<DbSeries>);
@@ -747,18 +753,54 @@ export default function AdminDashboard() {
   };
 
   // ── Hero Banner CMS: 상세 편집 저장 (빈 문자열은 NULL로 저장해 폴백 동작 유지) ──
+  //
+  // ⚠️ 버그 수정 (banner_video_url 저장 안 되는 문제):
+  // 기존 코드는 `.update(payload).eq("id", id)` 결과에서 error만 확인했다.
+  // Supabase(PostgREST)는 RLS 정책에 막히거나 id가 매칭되지 않아 실제로
+  // 0행이 갱신되어도 error를 던지지 않는다 — 그냥 영향받은 행이 0개인
+  // 성공 응답을 반환한다. 그 결과 화면에는 "저장되었습니다"가 뜨지만
+  // DB에는 실제로 아무 값도 쓰이지 않는 현상이 발생할 수 있다.
+  // 수정: `.select()`를 체이닝해 실제로 갱신된 행을 응답으로 돌려받고,
+  // 그 배열이 비어 있으면(0행 갱신) 성공 메시지를 띄우지 않고 명확한
+  // 오류로 처리한다.
   const handleSaveBannerDetail = async (id: string) => {
     setContentLoading(true);
-    const { error } = await supabase
+
+    const payload = {
+      banner_title: bannerEditForm.banner_title.trim() || null,
+      banner_description: bannerEditForm.banner_description.trim() || null,
+      banner_video_url: bannerEditForm.banner_video_url.trim() || null,
+    };
+
+    // [Banner Save] 1. 입력값 / payload 로그
+    console.log("[Banner Save] target id:", id);
+    console.log("[Banner Save] form state:", { ...bannerEditForm });
+    console.log("[Banner Save] payload:", payload);
+
+    const { data, error, status, statusText } = await supabase
       .from("series")
-      .update({
-        banner_title: bannerEditForm.banner_title.trim() || null,
-        banner_description: bannerEditForm.banner_description.trim() || null,
-        banner_video_url: bannerEditForm.banner_video_url.trim() || null,
-      })
-      .eq("id", id);
-    if (error) setContentMsg(`배너 상세 저장 실패: ${error.message}`);
-    else { setContentMsg("배너 상세 정보가 저장되었습니다. (실시간 반영)"); await fetchAll(); }
+      .update(payload)
+      .eq("id", id)
+      .select("id, banner_title, banner_description, banner_video_url");
+
+    // [Banner Save] 2. supabase 응답 / error 객체 로그
+    console.log("[Banner Save Result]", { data, status, statusText, affectedRows: data?.length ?? 0 });
+    if (error) console.error("[Banner Save Error]", error);
+
+    if (error) {
+      setContentMsg(`배너 상세 저장 실패: ${error.message}`);
+    } else if (!data || data.length === 0) {
+      // error는 없지만 실제로 갱신된 행이 0개 — RLS 정책 또는 id 불일치로
+      // 쓰기가 조용히 무시된 경우. 이전 코드는 이 케이스를 "성공"으로
+      // 잘못 표시했다.
+      setContentMsg(
+        "배너 상세 저장 실패: DB에 0행 반영됨 (RLS 정책 또는 id 불일치 가능성 — 콘솔의 [Banner Save Result] 로그 확인)"
+      );
+    } else {
+      console.log("[Banner Save] 실제 반영된 행:", data[0]);
+      setContentMsg("배너 상세 정보가 저장되었습니다. (실시간 반영)");
+      await fetchAll();
+    }
     setBannerEditId(null);
     setContentLoading(false);
   };
