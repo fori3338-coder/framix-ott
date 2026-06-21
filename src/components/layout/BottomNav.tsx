@@ -10,14 +10,14 @@ const tabs = [
   { to: "/search", label: "검색", icon: Search, end: false },
   { to: "/my-list", label: "보관함", icon: Bookmark, end: false },
   { to: "/history", label: "시청기록", icon: Clock, end: false },
-  { to: "/admin", label: "관리", icon: User, end: false },
+  { to: "/my-info", label: "내정보", icon: User, end: false },
 ];
 
 export default function BottomNav() {
   const { user } = useAuthContext();
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
-  const handleAdminClick = (e: React.MouseEvent) => {
+  const handleMyInfoClick = (e: React.MouseEvent) => {
     if (!user) {
       e.preventDefault();
       setAuthModalOpen(true);
@@ -33,7 +33,7 @@ export default function BottomNav() {
             key={to}
             to={to}
             end={end}
-            onClick={to === "/admin" ? handleAdminClick : undefined}
+            onClick={to === "/my-info" ? handleMyInfoClick : undefined}
             className={({ isActive }: { isActive: boolean }) =>
               `flex flex-col items-center justify-center gap-1 py-2.5 min-h-[56px] text-[11px] transition-colors active:scale-95 ${
                 isActive ? "text-gold" : "text-text-muted"
