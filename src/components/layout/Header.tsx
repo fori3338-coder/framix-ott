@@ -37,12 +37,12 @@ export default function Header() {
         </Link>
 
         <nav className="flex flex-1 md:flex-none items-center gap-4 md:gap-6 text-sm font-medium text-text-dim md:ml-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
-          <Link to="/" className="nav-link-underline hover:text-gold transition-colors">홈</Link>
-          <Link to="/search?cat=trending" className="nav-link-underline hover:text-gold transition-colors">트렌딩</Link>
-          <Link to="/search?cat=new" className="nav-link-underline hover:text-gold transition-colors">신작</Link>
-          <Link to="/my-list" className="nav-link-underline hover:text-gold transition-colors">내 보관함</Link>
-          <Link to="/subscription" className="nav-link-underline hover:text-gold transition-colors">구독</Link>
-          <Link to="/admin" className="nav-link-underline hover:text-gold transition-colors">STUDIO</Link>
+          <Link to="/" className="hover:text-gold transition-colors">홈</Link>
+          <Link to="/search?cat=trending" className="hover:text-gold transition-colors">트렌딩</Link>
+          <Link to="/search?cat=new" className="hover:text-gold transition-colors">신작</Link>
+          <Link to="/my-list" className="hover:text-gold transition-colors">내 보관함</Link>
+          <Link to="/subscription" className="hover:text-gold transition-colors">구독</Link>
+          <Link to="/admin" className="hover:text-gold transition-colors">STUDIO</Link>
         </nav>
 
         <div className="hidden sm:flex items-center gap-3 md:gap-4 shrink-0">
@@ -64,9 +64,11 @@ export default function Header() {
                 className="hidden sm:flex items-center gap-1.5 rounded-md overflow-hidden border border-border hover:border-gold/60 transition-colors p-0.5"
                 aria-label="프로필"
               >
-                <div className="w-7 h-7 rounded-sm bg-gold/20 text-gold flex items-center justify-center text-[11px] font-bold">
-                  {(user.email ?? "U").charAt(0).toUpperCase()}
-                </div>
+                <img
+                  src="https://picsum.photos/seed/framix-profile/64/64"
+                  alt="profile"
+                  className="w-7 h-7 rounded-sm object-cover"
+                />
                 <ChevronDown size={14} className="text-text-dim mr-1" />
               </button>
               {profileMenuOpen && (
@@ -111,7 +113,9 @@ export default function Header() {
         </div>
       </div>
 
-      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} defaultMode={authMode} />
+      {authModalOpen && (
+        <AuthModal onClose={() => setAuthModalOpen(false)} defaultMode={authMode} />
+      )}
     </header>
   );
 }

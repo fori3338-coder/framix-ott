@@ -1,7 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { Home, Search, Bookmark, Clock, User } from "lucide-react";
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { useAuthContext } from "../../contexts/AuthContext";
 import AuthModal from "../AuthModal";
 
@@ -34,21 +33,14 @@ export default function BottomNav() {
             to={to}
             end={end}
             onClick={to === "/admin" ? handleAdminClick : undefined}
-            className={({ isActive }: { isActive: boolean }) =>
-              `relative flex flex-col items-center justify-center gap-1 py-2.5 min-h-[56px] text-[11px] transition-colors active:scale-95 ${
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center gap-1 py-2.5 min-h-[56px] text-[11px] transition-colors active:scale-95 ${
                 isActive ? "text-gold" : "text-text-muted"
               }`
             }
           >
-            {({ isActive }: { isActive: boolean }) => (
+            {({ isActive }) => (
               <>
-                {isActive && (
-                  <motion.span
-                    layoutId="bottomNavActivePill"
-                    className="absolute inset-x-3 inset-y-1 rounded-xl bg-gold/10"
-                    transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                  />
-                )}
                 <Icon size={20} strokeWidth={isActive ? 2.4 : 1.8} />
                 <span className={isActive ? "font-semibold" : ""}>{label}</span>
               </>
@@ -57,7 +49,9 @@ export default function BottomNav() {
         ))}
       </div>
 
-      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} defaultMode="login" />
+      {authModalOpen && (
+        <AuthModal onClose={() => setAuthModalOpen(false)} defaultMode="login" />
+      )}
     </nav>
   );
 }

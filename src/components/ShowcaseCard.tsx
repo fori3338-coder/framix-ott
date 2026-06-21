@@ -78,7 +78,7 @@ export default function ShowcaseCard({ drama, rank, size = "md" }: ShowcaseCardP
             decoding="async"
             loading="lazy"
             onError={() => setImgError(true)}
-            className="w-full h-full object-cover img-fade-in transition-transform duration-700 group-hover:scale-[1.04]"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-[#1e1e20] to-[#111113] p-3 text-center">
@@ -139,14 +139,14 @@ export default function ShowcaseCard({ drama, rank, size = "md" }: ShowcaseCardP
           <div className="flex items-center gap-2 mb-1">
             <button
               onClick={handlePlayClick}
-              className="btn-press w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-lg hover:bg-gold transition-colors duration-200 active:scale-90"
+              className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-lg hover:bg-gold transition-colors duration-200 active:scale-90"
               aria-label="재생"
             >
               <Play size={15} className="text-black fill-black ml-0.5" />
             </button>
             <button
               onClick={handleAddClick}
-              className="btn-press w-9 h-9 rounded-full bg-white/15 border border-white/30 flex items-center justify-center hover:border-gold hover:text-gold transition-colors duration-200 active:scale-90 text-white"
+              className="w-9 h-9 rounded-full bg-white/15 border border-white/30 flex items-center justify-center hover:border-gold hover:text-gold transition-colors duration-200 active:scale-90 text-white"
               aria-label="찜하기"
             >
               <Plus size={15} />

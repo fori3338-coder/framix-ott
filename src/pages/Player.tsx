@@ -280,28 +280,6 @@ function MembershipConversionOverlay({
   );
 }
 
-// ─── 구간별 focal point 이진탐색 ──────────────────────────────────────────
-function findFocusPointAt(
-  focusPoints: { startTime: number; endTime: number; x: number; y: number }[] | undefined,
-  t: number
-): { x: number; y: number } | null {
-  if (!focusPoints || focusPoints.length === 0) return null;
-  let lo = 0, hi = focusPoints.length - 1;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    const fp = focusPoints[mid];
-    if (t >= fp.startTime && t < fp.endTime) return { x: fp.x, y: fp.y };
-    if (t < fp.startTime) hi = mid - 1;
-    else lo = mid + 1;
-  }
-  // 구간 사이 빈틈(예: 마지막 구간 이후)에 있으면 가장 가까운 구간 값을 사용
-  if (t >= focusPoints[focusPoints.length - 1].endTime) {
-    const last = focusPoints[focusPoints.length - 1];
-    return { x: last.x, y: last.y };
-  }
-  return { x: focusPoints[0].x, y: focusPoints[0].y };
-}
-
 export default function Player() {
   const { id, episodeId } = useParams();
   const navigate = useNavigate();
@@ -356,11 +334,7 @@ export default function Player() {
     return saved === "default" || saved === "large_text" || saved === "high_contrast" ? saved : "default";
   });
 
-  // ─── Dynamic Reframe: 구간별 focal point 실시간 적용 ────────────────────
-  const [dynamicFocal, setDynamicFocal] = useState<{ x: number; y: number } | null>(null);
-
   const currentIndex = drama?.episodes.findIndex((e) => e.id === episodeId) ?? -1;
-
 
   const nextEpisode =
     currentIndex >= 0 && drama?.episodes[currentIndex + 1]
@@ -371,8 +345,6 @@ export default function Player() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDismissedNextLock(false);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDynamicFocal(null);
   }, [episodeId]);
 
   // ─── 자동 이어보기 ───────────────────────────────────────────────────────
@@ -473,15 +445,6 @@ export default function Player() {
     const pct = (v.currentTime / v.duration) * 100;
     setProgress(pct);
 
-    // ─── Dynamic Reframe: 현재 재생 시간 구간의 focal point 조회 ──────────
-    const fp = findFocusPointAt(episode?.focusPoints, v.currentTime);
-    if (fp) {
-      setDynamicFocal((prev) => (prev && prev.x === fp.x && prev.y === fp.y ? prev : fp));
-    } else if (dynamicFocal !== null) {
-      setDynamicFocal(null);
-    }
-
-
     if (episodeId) localStorage.setItem(RESUME_KEY(episodeId), String(v.currentTime));
 
     if (!saveHistoryTimerRef.current && episodeId) {
@@ -517,7 +480,7 @@ export default function Player() {
       else lo = mid + 1;
     }
     setCurrentSubtitle(found);
-  }, [episodeId, nextEpisode, showAutoNext, episode?.focusPoints, dynamicFocal]);
+  }, [episodeId, nextEpisode, showAutoNext]);
 
   // ─── 자동 다음화 카운트다운 ──────────────────────────────────────────────
   useEffect(() => {
@@ -767,10 +730,8 @@ export default function Player() {
   return (
     <div
       ref={videoContainerRef}
-      className="framix-player-stage bg-black text-white select-none"
-      style={{
-        zIndex: 30,
-      }}
+      className="fixed inset-0 bg-black text-white select-none"
+      style={{ zIndex: 30 }}
       onMouseMove={revealControls}
       onTouchStart={revealControls}
     >
@@ -779,12 +740,7 @@ export default function Player() {
         <video
           ref={videoRef}
           src={episode.videoUrl}
-          className="framix-player-video cursor-pointer"
-          style={{
-            objectPosition: isFullscreen
-              ? "center center"
-              : `${dynamicFocal?.x ?? episode.focalPoint?.x ?? 50}% ${dynamicFocal?.y ?? episode.focalPoint?.y ?? 33}%`,
-          }}
+          className="w-full h-full object-cover cursor-pointer"
           autoPlay
           muted={muted}
           onClick={handleVideoClick}
@@ -822,7 +778,7 @@ export default function Player() {
                   transform: "translateX(-50%)",
                 }),
             zIndex: 9999,
-            maxWidth: "min(85%, calc(100vw - 32px))",
+            maxWidth: "85%",
             textAlign: "center",
             whiteSpace: "pre-wrap",
             wordBreak: "keep-all",
@@ -1029,7 +985,7 @@ export default function Player() {
 
       {/* ═══ 에피소드 패널 (우측) ═══════════════════════════════════════════ */}
       {showEpisodePanel && (
-        <div className="absolute inset-y-0 right-0 w-80 max-w-[88vw] bg-zinc-900/97 z-[35] flex flex-col">
+        <div className="absolute inset-y-0 right-0 w-80 bg-zinc-900/97 z-[35] flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
             <span className="font-bold text-sm">에피소드</span>
             <button onClick={() => setShowEpisodePanel(false)} className="p-1">
@@ -1055,7 +1011,7 @@ export default function Player() {
                       src={ep.thumbnail}
                       alt={ep.title}
                       className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).src = drama?.poster || "/content/fallback-thumbnail.svg"; }}
+                      onError={(e) => { (e.target as HTMLImageElement).src = `https://picsum.photos/seed/${ep.id}/400/225`; }}
                     />
                     {isCurrentEp && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/50">
@@ -1098,7 +1054,7 @@ export default function Player() {
 
       {/* ═══ 자막 패널 (우측, Netflix 스타일) ═══════════════════════════════ */}
       <div
-        className={`absolute inset-y-0 right-0 w-80 max-w-[88vw] bg-zinc-900/90 backdrop-blur-xl z-[35] flex flex-col transform transition-all duration-300 ${
+        className={`absolute inset-y-0 right-0 w-80 max-w-[320px] bg-zinc-900/90 backdrop-blur-xl z-[35] flex flex-col transform transition-all duration-300 ${
           showSubtitlePanel ? "translate-x-0" : "translate-x-full pointer-events-none"
         }`}
         onClick={(e) => e.stopPropagation()}

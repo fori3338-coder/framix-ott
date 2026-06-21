@@ -85,11 +85,9 @@ export async function uploadVideo(
   try {
     onProgress?.(5);
 
-    const arrayBuffer = await file.arrayBuffer();
-
     const { data: sdkData, error: sdkError } = await supabase.storage
       .from(BUCKET.VIDEOS)
-      .upload(path, arrayBuffer, {
+      .upload(path, file, {
         upsert: true,
         contentType: file.type || 'video/mp4',
       });

@@ -6,14 +6,13 @@ const genresPool = [
   "서스펜스", "성장", "가족", "스릴러",
 ];
 
-function makeEpisodes(dramaId: string, count: number, posterFallback: string): Drama["episodes"] {
+function makeEpisodes(dramaId: string, count: number): Drama["episodes"] {
   return Array.from({ length: count }, (_, i) => ({
     id: `${dramaId}-ep${i + 1}`,
     number: i + 1,
     title: `${i + 1}화`,
     duration: `${10 + (i % 5)}:${(15 + i * 3) % 60 < 10 ? "0" : ""}${(15 + i * 3) % 60}`,
-    // episode.thumbnail_url → series.poster → fallback 순서 강제 (랜덤/picsum 이미지 금지)
-    thumbnail: posterFallback,
+    thumbnail: `https://picsum.photos/seed/${dramaId}-ep${i + 1}/400/225`,
     isFree: i < 3,
     progress: 0,
   }));
@@ -52,17 +51,14 @@ function pickGenres(i: number): string[] {
 export const dramas: Drama[] = titles.map((t, i) => {
   const id = `drama-${i + 1}`;
   const episodeCount = 12 + (i % 4) * 4;
-  // posterImages/bannerImages 배열을 순환시켜 항상 로컬 자산만 사용 (picsum/외부 랜덤 이미지 금지)
-  const poster = posterImages[i % posterImages.length] ?? "/content/fallback-poster.svg";
-  const backdrop = bannerImages[i % bannerImages.length] ?? "/content/fallback-backdrop.svg";
   return {
     id,
     title: t.title,
     englishTitle: t.en,
     synopsis:
       "평범한 그녀의 인생을 송두리째 바꿔놓은 하룻밤의 계약. 재벌가의 숨겨진 비밀과 얽히며 시작된 위험한 사랑, 그리고 되돌릴 수 없는 운명의 소용돌이가 펼쳐진다. 매회 반전이 쏟아지는 몰입감 100% 쇼츠 드라마.",
-    poster,
-    backdrop,
+    poster: posterImages[i] ?? `https://picsum.photos/seed/${id}-poster/400/600`,
+    backdrop: bannerImages[i] ?? `https://picsum.photos/seed/${id}-backdrop/1280/720`,
     genres: pickGenres(i),
     tags: ["#사이다", "#반전", "#몰입감폭발"],
     rating: Math.round((7 + (i % 30) / 10) * 10) / 10,
@@ -76,7 +72,7 @@ export const dramas: Drama[] = titles.map((t, i) => {
     isNew: i % 4 === 1,
     isExclusive: i % 6 === 0,
     views: 1000000 + i * 137000,
-    episodes: makeEpisodes(id, episodeCount, poster),
+    episodes: makeEpisodes(id, episodeCount),
   };
 });
 

@@ -174,13 +174,13 @@ export default function WatchHistory() {
 
       {/* 로딩 */}
       {loading && (
-        <div className="space-y-2">
+        <div className="space-y-2 animate-pulse">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex gap-3 p-2">
-              <div className="w-28 aspect-video rounded-lg skeleton shrink-0" />
+              <div className="w-28 aspect-video rounded-lg bg-surface-2 shrink-0" />
               <div className="flex-1 space-y-2 py-1">
-                <div className="h-3 skeleton rounded w-3/4" />
-                <div className="h-3 skeleton rounded w-1/2" />
+                <div className="h-3 bg-surface-2 rounded w-3/4" />
+                <div className="h-3 bg-surface-2 rounded w-1/2" />
               </div>
             </div>
           ))}
@@ -237,9 +237,8 @@ export default function WatchHistory() {
                   if (!drama || !episode) return null;
                   const done = item.progress >= 100;
                   const thumb =
-                    episode.thumbnail_url ||
-                    drama.poster_url ||
-                    "/content/fallback-thumbnail.svg";
+                    episode.thumbnail_url ??
+                    `https://picsum.photos/seed/${episode.id}/400/225`;
 
                   return (
                     <div

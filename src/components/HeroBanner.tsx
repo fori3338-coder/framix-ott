@@ -138,14 +138,14 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             <button
               onClick={handlePlay}
               disabled={!playRoute}
-              className="btn-press flex items-center gap-2 bg-white text-black font-bold px-5 md:px-8 py-3 md:py-3.5 rounded-md text-sm md:text-base hover:bg-gold transition-all duration-200 active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 bg-white text-black font-bold px-5 md:px-8 py-3 md:py-3.5 rounded-md text-sm md:text-base hover:bg-gold transition-all duration-200 active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Play size={18} className="fill-black" />
               재생
             </button>
             <button
               onClick={() => navigate(`/drama/${drama.id}`)}
-              className="btn-press flex items-center gap-2 bg-white/10 backdrop-blur-md text-white font-bold px-5 md:px-8 py-3 md:py-3.5 rounded-md text-sm md:text-base hover:bg-white/20 transition-all duration-200 active:scale-95 border border-white/15"
+              className="flex items-center gap-2 bg-white/10 backdrop-blur-md text-white font-bold px-5 md:px-8 py-3 md:py-3.5 rounded-md text-sm md:text-base hover:bg-white/20 transition-all duration-200 active:scale-95 border border-white/15"
             >
               <Info size={18} />
               <span className="hidden sm:inline">상세정보</span>

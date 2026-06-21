@@ -37,7 +37,7 @@ export default function DramaCard({ drama, rank, progress, size = "md" }: DramaC
           alt={drama.title}
           decoding="async"
           loading="lazy"
-          className="w-full h-full object-cover img-fade-in"
+          className="w-full h-full object-cover"
         />
 
         {/* 상단 배지 */}

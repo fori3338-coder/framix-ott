@@ -8,12 +8,9 @@ import {
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { uploadImage, uploadVideo, BUCKET } from "../../lib/storage";
-import { detectEpisodeFocusPoints } from "../../lib/faceDetection";
 import {
   enqueueSubtitleJob,
   subscribeSubtitleJob,
-  appendJobDebugLog,
-  recordClientFunctionCall,
   type PipelineProgress,
 } from "../../lib/subtitlePipeline";
 import SubtitlePipelineStatus from "../../components/admin/SubtitlePipelineStatus";
@@ -236,63 +233,12 @@ export default function ContentUpload() {
     }));
 
     try {
-      // STEP03: enqueueSubtitleJob (subtitlePipeline.ts 내부에서 last_step/debug_log 초기 기록됨)
       const { jobId } = await enqueueSubtitleJob({
         seriesId,
         episodeId: dbEpisodeId,
         episodeNumber,
         videoUrl,
       });
-      console.log(`[ContentUpload] STEP03_ENQUEUE_SUBTITLE_JOB OK ep${episodeNumber} jobId=${jobId}`);
-
-      // ── DB 트리거(pg_net) 의존 제거: 업로드 완료 직후 Edge Function 직접 호출 ──
-      // STEP04: functions.invoke('process-subtitle-job') — 결과를 await하여
-      // 성공/실패를 subtitle_jobs.debug_log 에 명시적으로 기록한다.
-      // (이전 버전은 fire-and-forget 이라 STEP04 자체의 성공/실패가
-      //  DB에 남지 않았음 — 이번 수정으로 무조건 기록되도록 변경)
-      try {
-        const { data: invokeData, error: invokeError } = await supabase.functions.invoke(
-          'process-subtitle-job',
-          { body: { job_id: jobId } },
-        );
-
-        if (invokeError) {
-          console.error(
-            `[ContentUpload] STEP04_FUNCTIONS_INVOKE FAIL ep${episodeNumber}:`,
-            invokeError,
-          );
-          await appendJobDebugLog(
-            jobId,
-            'STEP04_FUNCTIONS_INVOKE',
-            'FAIL',
-            `invoke 실패: ${invokeError.message ?? JSON.stringify(invokeError)}`,
-          );
-        } else {
-          console.log(
-            `[ContentUpload] STEP04_FUNCTIONS_INVOKE OK ep${episodeNumber} jobId=${jobId} response=`,
-            invokeData,
-          );
-          await appendJobDebugLog(
-            jobId,
-            'STEP04_FUNCTIONS_INVOKE',
-            'OK',
-            `invoke 응답: ${JSON.stringify(invokeData)}`,
-          );
-        }
-      } catch (invokeErr) {
-        // functions.invoke 자체가 네트워크 레벨에서 throw 한 경우
-        // (Edge Function 진입조차 안 됐을 가능성 — subtitle_function_calls 와 대조)
-        console.error(
-          `[ContentUpload] STEP04_FUNCTIONS_INVOKE EXCEPTION ep${episodeNumber}:`,
-          invokeErr,
-        );
-        await appendJobDebugLog(
-          jobId,
-          'STEP04_FUNCTIONS_INVOKE',
-          'FAIL',
-          `invoke 예외(네트워크/런타임): ${(invokeErr as Error).message}`,
-        );
-      }
 
       // Realtime 구독으로 진행 상태를 받아온다. 구독 해제 함수는
       // unmount 시 정리되도록 ref 맵에 저장 (아래 useEffect cleanup 참고).
@@ -301,7 +247,7 @@ export default function ContentUpload() {
       });
       pipelineUnsubscribeRef.current[draftId] = unsubscribe;
     } catch (err) {
-      console.error(`[ContentUpload] STEP03_ENQUEUE_SUBTITLE_JOB FAIL ep${episodeNumber}:`, err);
+      console.error(`[ContentUpload] 자막 작업 등록 실패 ep${episodeNumber}:`, err);
       setPipelineMap((prev) => ({
         ...prev,
         [draftId]: {
@@ -354,18 +300,11 @@ export default function ContentUpload() {
         .single();
 
       if (dramaErr || !dramaRow) {
-        console.error("[ContentUpload] STEP01_SERIES_INSERT FAIL:", dramaErr);
-        await recordClientFunctionCall(
-          'STEP01_SERIES_INSERT',
-          'FAIL',
-          { title, seriesPayload },
-          dramaErr?.message ?? '드라마 등록 실패',
-        );
+        console.error("[ContentUpload] series INSERT error:", dramaErr);
         throw new Error(dramaErr?.message ?? "드라마 등록 실패");
       }
       const dramaId: string = (dramaRow as { id: string }).id;
-      console.log("[ContentUpload] STEP01_SERIES_INSERT OK id:", dramaId);
-      await recordClientFunctionCall('STEP01_SERIES_INSERT', 'OK', { series_id: dramaId, title });
+      console.log("[ContentUpload] series 등록 완료 id:", dramaId);
 
       if (posterFile) {
         setUploadStatus("포스터 업로드 중...");
@@ -431,62 +370,27 @@ export default function ContentUpload() {
 
         // 수동 입력 자막 (AI 자막은 파이프라인이 나중에 DB 업데이트)
         const subtitlesJson =
-          Object.keys(ep.subtitles).length > 0 ? ep.subtitles : {};
+          Object.keys(ep.subtitles).length > 0 ? ep.subtitles : null;
 
         const { data: epRow, error: epErr } = await supabase.from("episodes").insert({
           series_id: dramaId,
           episode_number: i + 1,
           title: ep.title,
+          description: ep.title,
           video_url: videoUrl,
           thumbnail_url: episodeThumbnailUrl,
           subtitles: subtitlesJson,
         }).select().single();
 
         if (epErr || !epRow) {
-          console.error(`[ContentUpload] STEP02_EPISODE_INSERT FAIL ep${i + 1}:`, epErr?.message, epErr?.details);
-          await recordClientFunctionCall(
-            'STEP02_EPISODE_INSERT',
-            'FAIL',
-            { series_id: dramaId, episode_number: i + 1, video_url: videoUrl },
-            epErr?.message ?? `${i + 1}화 등록 실패`,
-          );
+          console.error(`[ContentUpload] ${i + 1}화 INSERT 오류:`, epErr?.message, epErr?.details);
           throw new Error(`${i + 1}화 등록 실패: ${epErr?.message}`);
         }
 
         const dbEpisodeId = (epRow as { id: string }).id;
-        await recordClientFunctionCall(
-          'STEP02_EPISODE_INSERT',
-          'OK',
-          { series_id: dramaId, episode_id: dbEpisodeId, episode_number: i + 1, video_url: videoUrl },
-        );
 
         insertedEpisodes++;
-        console.log(`[ContentUpload] STEP02_EPISODE_INSERT OK ep${i + 1} video_url:`, videoUrl, "ep_id:", dbEpisodeId);
-
-        // ── 업로드된 영상에서 자동 얼굴 검출 → episode_focus_points 저장 (비치명) ──
-        if (ep.videoFile) {
-          try {
-            const detected = await detectEpisodeFocusPoints(ep.videoFile);
-            if (detected.length > 0) {
-              const rows = detected.map((p) => ({
-                episode_id: dbEpisodeId,
-                start_time: p.startTime,
-                end_time: p.endTime,
-                focal_x: p.focalX,
-                focal_y: p.focalY,
-              }));
-              const { error: fpErr } = await supabase.from("episode_focus_points").insert(rows);
-              if (fpErr) {
-                console.warn(`[ContentUpload] ${i + 1}화 focus_points 저장 실패 (비치명):`, fpErr.message);
-              } else {
-                console.log(`[ContentUpload] ${i + 1}화 자동 focus_points ${rows.length}개 저장 완료`);
-              }
-            }
-          } catch (fdErr) {
-            console.warn(`[ContentUpload] ${i + 1}화 자동 얼굴 검출 실패 (비치명):`, fdErr);
-          }
-        }
-
+        console.log(`[ContentUpload] ${i + 1}화 등록 완료, video_url:`, videoUrl, "ep_id:", dbEpisodeId);
 
         // ── 영상 업로드 완료 즉시 AI 자막 Job 등록 ───────────────────────
         if (videoUrl && aiSubtitleEnabled) {
