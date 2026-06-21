@@ -80,9 +80,9 @@ export default function MyList() {
 
       {/* 로딩 */}
       {loading && (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 animate-pulse">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="aspect-[2/3] rounded-lg bg-surface-2" />
+            <div key={i} className="aspect-[2/3] rounded-lg skeleton" />
           ))}
         </div>
       )}

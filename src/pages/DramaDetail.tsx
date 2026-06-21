@@ -8,17 +8,17 @@ import DramaRow from "../components/DramaRow";
 // ─── 스켈레톤 로딩 UI ─────────────────────────────────────────────────────────
 function DetailSkeleton() {
   return (
-    <div className="animate-pulse">
-      <div className="w-full h-[42vh] md:h-[60vh] bg-surface-2" />
+    <div>
+      <div className="w-full h-[42vh] md:h-[60vh] skeleton" />
       <div className="px-4 md:px-8 mt-4 flex gap-3">
-        <div className="flex-1 h-12 bg-surface-2 rounded-md" />
-        <div className="w-12 h-12 bg-surface-2 rounded-md" />
-        <div className="w-12 h-12 bg-surface-2 rounded-md" />
+        <div className="flex-1 h-12 skeleton rounded-md" />
+        <div className="w-12 h-12 skeleton rounded-md" />
+        <div className="w-12 h-12 skeleton rounded-md" />
       </div>
       <div className="px-4 md:px-8 mt-5 space-y-2">
-        <div className="h-4 bg-surface-2 rounded w-3/4" />
-        <div className="h-4 bg-surface-2 rounded w-full" />
-        <div className="h-4 bg-surface-2 rounded w-5/6" />
+        <div className="h-4 skeleton rounded w-3/4" />
+        <div className="h-4 skeleton rounded w-full" />
+        <div className="h-4 skeleton rounded w-5/6" />
       </div>
     </div>
   );
@@ -94,7 +94,7 @@ export default function DramaDetail() {
         <button
           onClick={() => drama.episodes[0] && navigate(`/watch/${drama.id}/${drama.episodes[0].id}`)}
           disabled={!drama.episodes[0]}
-          className="flex-1 flex items-center justify-center gap-2 bg-gold text-black font-bold py-3 rounded-md text-sm md:text-base hover:bg-gold-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn-press flex-1 flex items-center justify-center gap-2 bg-gold text-black font-bold py-3 rounded-md text-sm md:text-base hover:bg-gold-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Play size={18} className="fill-black" />
           1화 재생
@@ -144,14 +144,21 @@ export default function DramaDetail() {
           <p className="text-sm text-text-muted py-6 text-center">등록된 에피소드가 없습니다.</p>
         ) : (
           <div className="space-y-2">
-            {drama.episodes.map((ep) => (
+            {drama.episodes.map((ep, i) => (
               <Link
                 key={ep.id}
                 to={`/watch/${drama.id}/${ep.id}`}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-2 transition-colors group"
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-2 transition-colors group animate-fade-in-up"
+                style={{ animationDelay: `${Math.min(i, 14) * 35}ms`, animationFillMode: "backwards" }}
               >
                 <div className="relative w-28 md:w-36 aspect-video rounded-md overflow-hidden shrink-0 bg-surface-2">
-                  <img src={drama.poster} alt={ep.title} className="w-full h-full object-cover" />
+                  <img
+                    src={drama.poster}
+                    alt={ep.title}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover img-fade-in"
+                  />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-colors">
                     <Play size={20} className="text-white opacity-0 group-hover:opacity-100" />
                   </div>

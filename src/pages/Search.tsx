@@ -117,7 +117,7 @@ export default function Search() {
             onBlur={() => setTimeout(() => setFocused(false), 150)}
             onKeyDown={(e) => { if (e.key === "Enter") commitRecent(query); }}
             placeholder="작품, 장르, 키워드 검색"
-            className="w-full bg-surface-2 border border-border focus:border-gold rounded-xl pl-10 pr-10 py-3 text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-gold/30 transition-all"
+            className="w-full bg-surface-2 border border-border focus:border-gold rounded-xl pl-10 pr-10 py-3 text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-gold/30 focus:scale-[1.01] transition-all duration-200 origin-center"
           />
           {query && (
             <button

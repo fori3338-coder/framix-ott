@@ -22,10 +22,45 @@
     <meta name="twitter:image" content="https://framix-ott.pages.dev/kakao.png" />
 
     <title>FRAMIX | Premium Korean Short Drama</title>
+
+    <style>
+      #initial-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #050505;
+        transition: opacity 0.45s ease, visibility 0.45s ease;
+      }
+      #initial-loader .il-logo {
+        font-family: "Inter", "Pretendard", "Noto Sans KR", system-ui, -apple-system, sans-serif;
+        font-weight: 900;
+        font-size: 28px;
+        letter-spacing: 0.05em;
+        background: linear-gradient(135deg, #f0d77b 0%, #D4AF37 50%, #9c7e23 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: il-pulse 1.4s ease-in-out infinite;
+      }
+      @keyframes il-pulse {
+        0%, 100% { opacity: 0.45; transform: scale(0.97); }
+        50% { opacity: 1; transform: scale(1); }
+      }
+      /* #root가 React에 의해 채워지면(비어있지 않으면) 로더를 자동으로 페이드아웃 */
+      #root:not(:empty) ~ #initial-loader {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+    </style>
   </head>
 
   <body>
     <div id="root"></div>
+    <div id="initial-loader" aria-hidden="true"><span class="il-logo">FRAMIX</span></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

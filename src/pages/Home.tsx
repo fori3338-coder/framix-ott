@@ -28,17 +28,17 @@ export default function Home() {
   // ── 로딩 스켈레톤 ───────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="pb-16 animate-pulse">
-        <div className="w-full h-[68vh] md:h-[88vh] min-h-[460px] bg-surface-2" />
+      <div className="pb-16">
+        <div className="w-full h-[68vh] md:h-[88vh] min-h-[460px] skeleton" />
         <div className="mt-8 space-y-10 px-5">
           {[1, 2, 3, 4].map((i) => (
             <div key={i}>
-              <div className="h-5 bg-surface-2 rounded-md w-52 mb-4" />
+              <div className="h-5 skeleton rounded-md w-52 mb-4" />
               <div className="flex gap-3">
                 {[1, 2, 3, 4, 5, 6].map((j) => (
                   <div
                     key={j}
-                    className="w-[120px] sm:w-[150px] md:w-[170px] aspect-[2/3] rounded-xl bg-surface-2 shrink-0"
+                    className="w-[120px] sm:w-[150px] md:w-[170px] aspect-[2/3] rounded-xl skeleton shrink-0"
                   />
                 ))}
               </div>
