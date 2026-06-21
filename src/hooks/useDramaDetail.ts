@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { supabase, type DbDrama, type DbEpisode } from '../lib/supabase';
-import { toFrontendDrama, toFrontendEpisode } from '../lib/mappers';
+import { supabase, type DbDrama, type DbEpisode, type DbEpisodeFocusPoint } from '../lib/supabase';
+import { toFrontendDrama, toFrontendEpisode, groupFocusPointsByEpisodeId } from '../lib/mappers';
 import type { Drama, Episode } from '../types';
 
 export function useDramaDetail(id: string | undefined) {
@@ -26,11 +26,26 @@ export function useDramaDetail(id: string | undefined) {
         ]);
 
         if (dramaRes.error) throw dramaRes.error;
+
+        const episodeIds = ((episodesRes.data ?? []) as DbEpisode[]).map((e) => e.id);
+        let focusPointsMap: Map<string, DbEpisodeFocusPoint[]> | undefined;
+        if (episodeIds.length > 0) {
+          // episode_focus_points 테이블이 없는 환경(마이그레이션 미적용)에서도 안전하게 동작
+          const focusRes = await supabase
+            .from('episode_focus_points')
+            .select('*')
+            .in('episode_id', episodeIds);
+          if (!focusRes.error && focusRes.data) {
+            focusPointsMap = groupFocusPointsByEpisodeId(focusRes.data as DbEpisodeFocusPoint[]);
+          }
+        }
+
         if (!cancelled && dramaRes.data) {
           setDrama(
             toFrontendDrama(
               dramaRes.data as DbDrama,
-              (episodesRes.data ?? []) as DbEpisode[]
+              (episodesRes.data ?? []) as DbEpisode[],
+              focusPointsMap
             )
           );
         }

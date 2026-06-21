@@ -64,11 +64,9 @@ export default function Header() {
                 className="hidden sm:flex items-center gap-1.5 rounded-md overflow-hidden border border-border hover:border-gold/60 transition-colors p-0.5"
                 aria-label="프로필"
               >
-                <img
-                  src="https://picsum.photos/seed/framix-profile/64/64"
-                  alt="profile"
-                  className="w-7 h-7 rounded-sm object-cover"
-                />
+                <div className="w-7 h-7 rounded-sm bg-gold/20 text-gold flex items-center justify-center text-[11px] font-bold">
+                  {(user.email ?? "U").charAt(0).toUpperCase()}
+                </div>
                 <ChevronDown size={14} className="text-text-dim mr-1" />
               </button>
               {profileMenuOpen && (

@@ -7,8 +7,8 @@
 // `/watch/{seriesId}/undefined` 로 이동해버리는 버그가 있었다.
 // 변환 로직을 한 곳으로 모아두면, 한쪽만 고치고 다른 쪽을 까먹는 일을 막을 수 있다.
 // ─────────────────────────────────────────────────────────────────────────
-import type { DbDrama, DbEpisode } from "./supabase";
-import type { Drama, Episode } from "../types";
+import type { DbDrama, DbEpisode, DbEpisodeFocusPoint } from "./supabase";
+import type { Drama, Episode, EpisodeFocusPoint } from "../types";
 
 const VALID_AGE_RATINGS = ["전체", "12+", "15+", "19+"] as const;
 type AgeRating = (typeof VALID_AGE_RATINGS)[number];
@@ -29,12 +29,27 @@ interface SeriesThumbnailFallback {
   poster_url?: string | null;
 }
 
-export function toFrontendEpisode(e: DbEpisode, series?: SeriesThumbnailFallback): Episode {
+export function toFrontendEpisode(
+  e: DbEpisode,
+  series?: SeriesThumbnailFallback,
+  focusPointRows?: DbEpisodeFocusPoint[]
+): Episode {
   const resolvedThumbnail =
     e.thumbnail_url ||
     series?.thumbnail_url ||
     series?.poster_url ||
     FALLBACK_EPISODE_THUMBNAIL;
+
+  const focusPoints: EpisodeFocusPoint[] | undefined = focusPointRows?.length
+    ? [...focusPointRows]
+        .sort((a, b) => a.start_time - b.start_time)
+        .map((fp) => ({
+          startTime: fp.start_time,
+          endTime: fp.end_time,
+          x: fp.focal_x,
+          y: fp.focal_y,
+        }))
+    : undefined;
 
   return {
     id: e.id,
@@ -50,12 +65,17 @@ export function toFrontendEpisode(e: DbEpisode, series?: SeriesThumbnailFallback
       e.focal_x != null && e.focal_y != null
         ? { x: e.focal_x, y: e.focal_y }
         : undefined,
+    focusPoints,
   };
 }
 
 // episodes는 항상 episode_number 순으로 정렬해서 넣어준다.
 // (episodes[0] = 1화 라는 가정을 HeroBanner, DramaDetail 등 여러 곳에서 쓰고 있음)
-export function toFrontendDrama(d: DbDrama, episodes: DbEpisode[] = []): Drama {
+export function toFrontendDrama(
+  d: DbDrama,
+  episodes: DbEpisode[] = [],
+  focusPointsByEpisodeId?: Map<string, DbEpisodeFocusPoint[]>
+): Drama {
   const sortedEpisodes = [...episodes].sort((a, b) => a.episode_number - b.episode_number);
   const seriesFallback: SeriesThumbnailFallback = {
     thumbnail_url: d.thumbnail_url,
@@ -82,11 +102,26 @@ export function toFrontendDrama(d: DbDrama, episodes: DbEpisode[] = []): Drama {
     isNew: d.is_new ?? d.status === "new",
     isExclusive: d.is_exclusive ?? false,
     views: d.views ?? 0,
-    episodes: sortedEpisodes.map((ep) => toFrontendEpisode(ep, seriesFallback)),
+    episodes: sortedEpisodes.map((ep) =>
+      toFrontendEpisode(ep, seriesFallback, focusPointsByEpisodeId?.get(ep.id))
+    ),
     isBanner: d.banner_enabled ?? false,
     bannerOrder: d.banner_order ?? 0,
     top10Rank: d.top10_rank ?? null,
   };
+}
+
+// episode_focus_points 행 목록을 episode_id별로 묶어주는 헬퍼
+export function groupFocusPointsByEpisodeId(
+  rows: DbEpisodeFocusPoint[]
+): Map<string, DbEpisodeFocusPoint[]> {
+  const map = new Map<string, DbEpisodeFocusPoint[]>();
+  for (const row of rows) {
+    const list = map.get(row.episode_id) ?? [];
+    list.push(row);
+    map.set(row.episode_id, list);
+  }
+  return map;
 }
 
 // series id 목록으로 episodes를 한 번에 불러와 series_id별로 묶어주는 헬퍼.

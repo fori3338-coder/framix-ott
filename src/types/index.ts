@@ -10,6 +10,14 @@ export interface Episode {
   subtitles?: Record<string, string>; // { "ko": "url", "en": "url", ... }
   description?: string;
   focalPoint?: { x: number; y: number }; // 영상 피사체 중심(%), 미설정 시 플레이어 기본값 사용
+  focusPoints?: EpisodeFocusPoint[]; // 구간별 동적 피사체 중심 (Netflix급 Dynamic Reframe)
+}
+
+export interface EpisodeFocusPoint {
+  startTime: number; // seconds
+  endTime: number; // seconds
+  x: number; // 0-100 %
+  y: number; // 0-100 %
 }
 
 export interface Drama {

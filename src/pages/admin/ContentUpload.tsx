@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { uploadImage, uploadVideo, BUCKET } from "../../lib/storage";
+import { detectEpisodeFocusPoints } from "../../lib/faceDetection";
 import {
   enqueueSubtitleJob,
   subscribeSubtitleJob,
@@ -461,6 +462,31 @@ export default function ContentUpload() {
 
         insertedEpisodes++;
         console.log(`[ContentUpload] STEP02_EPISODE_INSERT OK ep${i + 1} video_url:`, videoUrl, "ep_id:", dbEpisodeId);
+
+        // ── 업로드된 영상에서 자동 얼굴 검출 → episode_focus_points 저장 (비치명) ──
+        if (ep.videoFile) {
+          try {
+            const detected = await detectEpisodeFocusPoints(ep.videoFile);
+            if (detected.length > 0) {
+              const rows = detected.map((p) => ({
+                episode_id: dbEpisodeId,
+                start_time: p.startTime,
+                end_time: p.endTime,
+                focal_x: p.focalX,
+                focal_y: p.focalY,
+              }));
+              const { error: fpErr } = await supabase.from("episode_focus_points").insert(rows);
+              if (fpErr) {
+                console.warn(`[ContentUpload] ${i + 1}화 focus_points 저장 실패 (비치명):`, fpErr.message);
+              } else {
+                console.log(`[ContentUpload] ${i + 1}화 자동 focus_points ${rows.length}개 저장 완료`);
+              }
+            }
+          } catch (fdErr) {
+            console.warn(`[ContentUpload] ${i + 1}화 자동 얼굴 검출 실패 (비치명):`, fdErr);
+          }
+        }
+
 
         // ── 영상 업로드 완료 즉시 AI 자막 Job 등록 ───────────────────────
         if (videoUrl && aiSubtitleEnabled) {

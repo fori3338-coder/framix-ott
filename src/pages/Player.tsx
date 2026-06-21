@@ -280,6 +280,28 @@ function MembershipConversionOverlay({
   );
 }
 
+// ─── 구간별 focal point 이진탐색 ──────────────────────────────────────────
+function findFocusPointAt(
+  focusPoints: { startTime: number; endTime: number; x: number; y: number }[] | undefined,
+  t: number
+): { x: number; y: number } | null {
+  if (!focusPoints || focusPoints.length === 0) return null;
+  let lo = 0, hi = focusPoints.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const fp = focusPoints[mid];
+    if (t >= fp.startTime && t < fp.endTime) return { x: fp.x, y: fp.y };
+    if (t < fp.startTime) hi = mid - 1;
+    else lo = mid + 1;
+  }
+  // 구간 사이 빈틈(예: 마지막 구간 이후)에 있으면 가장 가까운 구간 값을 사용
+  if (t >= focusPoints[focusPoints.length - 1].endTime) {
+    const last = focusPoints[focusPoints.length - 1];
+    return { x: last.x, y: last.y };
+  }
+  return { x: focusPoints[0].x, y: focusPoints[0].y };
+}
+
 export default function Player() {
   const { id, episodeId } = useParams();
   const navigate = useNavigate();
@@ -334,7 +356,11 @@ export default function Player() {
     return saved === "default" || saved === "large_text" || saved === "high_contrast" ? saved : "default";
   });
 
+  // ─── Dynamic Reframe: 구간별 focal point 실시간 적용 ────────────────────
+  const [dynamicFocal, setDynamicFocal] = useState<{ x: number; y: number } | null>(null);
+
   const currentIndex = drama?.episodes.findIndex((e) => e.id === episodeId) ?? -1;
+
 
   const nextEpisode =
     currentIndex >= 0 && drama?.episodes[currentIndex + 1]
@@ -345,6 +371,8 @@ export default function Player() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDismissedNextLock(false);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDynamicFocal(null);
   }, [episodeId]);
 
   // ─── 자동 이어보기 ───────────────────────────────────────────────────────
@@ -445,6 +473,15 @@ export default function Player() {
     const pct = (v.currentTime / v.duration) * 100;
     setProgress(pct);
 
+    // ─── Dynamic Reframe: 현재 재생 시간 구간의 focal point 조회 ──────────
+    const fp = findFocusPointAt(episode?.focusPoints, v.currentTime);
+    if (fp) {
+      setDynamicFocal((prev) => (prev && prev.x === fp.x && prev.y === fp.y ? prev : fp));
+    } else if (dynamicFocal !== null) {
+      setDynamicFocal(null);
+    }
+
+
     if (episodeId) localStorage.setItem(RESUME_KEY(episodeId), String(v.currentTime));
 
     if (!saveHistoryTimerRef.current && episodeId) {
@@ -480,7 +517,7 @@ export default function Player() {
       else lo = mid + 1;
     }
     setCurrentSubtitle(found);
-  }, [episodeId, nextEpisode, showAutoNext]);
+  }, [episodeId, nextEpisode, showAutoNext, episode?.focusPoints, dynamicFocal]);
 
   // ─── 자동 다음화 카운트다운 ──────────────────────────────────────────────
   useEffect(() => {
@@ -746,7 +783,7 @@ export default function Player() {
           style={{
             objectPosition: isFullscreen
               ? "center center"
-              : `${episode.focalPoint?.x ?? 50}% ${episode.focalPoint?.y ?? 33}%`,
+              : `${dynamicFocal?.x ?? episode.focalPoint?.x ?? 50}% ${dynamicFocal?.y ?? episode.focalPoint?.y ?? 33}%`,
           }}
           autoPlay
           muted={muted}

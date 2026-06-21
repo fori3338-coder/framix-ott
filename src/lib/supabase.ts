@@ -58,3 +58,14 @@ export interface DbEpisode {
   focal_x?: number | null; // 영상 피사체 중심 X좌표(%), 016 마이그레이션. 없으면 50
   focal_y?: number | null; // 영상 피사체 중심 Y좌표(%), 016 마이그레이션. 없으면 33(인물 얼굴 근사)
 }
+
+// 017 마이그레이션: episode_focus_points (구간별 Dynamic Reframe)
+export interface DbEpisodeFocusPoint {
+  id: string;
+  episode_id: string;
+  start_time: number;
+  end_time: number;
+  focal_x: number;
+  focal_y: number;
+  created_at?: string | null;
+}
