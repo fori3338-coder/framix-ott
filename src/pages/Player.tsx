@@ -730,8 +730,10 @@ export default function Player() {
   return (
     <div
       ref={videoContainerRef}
-      className="fixed inset-0 bg-black text-white select-none"
-      style={{ zIndex: 30 }}
+      className="framix-player-stage bg-black text-white select-none"
+      style={{
+        zIndex: 30,
+      }}
       onMouseMove={revealControls}
       onTouchStart={revealControls}
     >
@@ -740,7 +742,7 @@ export default function Player() {
         <video
           ref={videoRef}
           src={episode.videoUrl}
-          className="w-full h-full object-cover cursor-pointer"
+          className="framix-player-video cursor-pointer"
           autoPlay
           muted={muted}
           onClick={handleVideoClick}
@@ -778,7 +780,7 @@ export default function Player() {
                   transform: "translateX(-50%)",
                 }),
             zIndex: 9999,
-            maxWidth: "85%",
+            maxWidth: "min(85%, calc(100vw - 32px))",
             textAlign: "center",
             whiteSpace: "pre-wrap",
             wordBreak: "keep-all",
@@ -985,7 +987,7 @@ export default function Player() {
 
       {/* ═══ 에피소드 패널 (우측) ═══════════════════════════════════════════ */}
       {showEpisodePanel && (
-        <div className="absolute inset-y-0 right-0 w-80 bg-zinc-900/97 z-[35] flex flex-col">
+        <div className="absolute inset-y-0 right-0 w-80 max-w-[88vw] bg-zinc-900/97 z-[35] flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
             <span className="font-bold text-sm">에피소드</span>
             <button onClick={() => setShowEpisodePanel(false)} className="p-1">
@@ -1054,7 +1056,7 @@ export default function Player() {
 
       {/* ═══ 자막 패널 (우측, Netflix 스타일) ═══════════════════════════════ */}
       <div
-        className={`absolute inset-y-0 right-0 w-80 max-w-[320px] bg-zinc-900/90 backdrop-blur-xl z-[35] flex flex-col transform transition-all duration-300 ${
+        className={`absolute inset-y-0 right-0 w-80 max-w-[88vw] bg-zinc-900/90 backdrop-blur-xl z-[35] flex flex-col transform transition-all duration-300 ${
           showSubtitlePanel ? "translate-x-0" : "translate-x-full pointer-events-none"
         }`}
         onClick={(e) => e.stopPropagation()}

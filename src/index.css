@@ -279,4 +279,35 @@
       0 14px 40px -16px rgba(0,0,0,0.7),
       0 0 0 1px rgba(212,175,55,0.08);
   }
+
+  /* ─── OTT 플레이어 반응형 중심 유지 (320~1920 전 구간) ───────────────────
+     컨테이너 리사이즈 시에도 영상 중심점이 항상 화면 중앙에 고정되도록
+     object-fit: cover + object-position: center를 모든 뷰포트에서 강제. */
+  .framix-player-video {
+    object-fit: cover;
+    object-position: center center;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .framix-player-stage {
+    position: fixed;
+    inset: 0;
+    width: 100dvw;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .framix-player-stage:fullscreen,
+  .framix-player-stage:-webkit-full-screen {
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .framix-player-stage:fullscreen .framix-player-video,
+  .framix-player-stage:-webkit-full-screen .framix-player-video {
+    object-fit: contain;
+    object-position: center center;
+  }
 }

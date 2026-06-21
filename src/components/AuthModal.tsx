@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Mail, Lock, User, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuthContext } from "../contexts/AuthContext";
 
@@ -17,6 +17,50 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  // body 스크롤 잠금 + iOS/Android 키보드 대응 (모달 오픈 동안 배경 고정)
+  useEffect(() => {
+    const scrollY = window.scrollY;
+    const { body } = document;
+    const prevPosition = body.style.position;
+    const prevTop = body.style.top;
+    const prevWidth = body.style.width;
+    const prevOverflow = body.style.overflow;
+
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+
+    return () => {
+      body.style.position = prevPosition;
+      body.style.top = prevTop;
+      body.style.width = prevWidth;
+      body.style.overflow = prevOverflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
+
+  // 모바일 가상 키보드 대응: visualViewport 기준으로 실제 보이는 높이를 CSS 변수로 갱신
+  useEffect(() => {
+    const setVh = () => {
+      const vv = window.visualViewport;
+      const h = vv ? vv.height : window.innerHeight;
+      if (overlayRef.current) {
+        overlayRef.current.style.setProperty("--auth-modal-vh", `${h}px`);
+      }
+    };
+    setVh();
+    window.visualViewport?.addEventListener("resize", setVh);
+    window.addEventListener("resize", setVh);
+    window.addEventListener("orientationchange", setVh);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", setVh);
+      window.removeEventListener("resize", setVh);
+      window.removeEventListener("orientationchange", setVh);
+    };
+  }, []);
 
   const handleSubmit = async () => {
     setError(null);
@@ -41,7 +85,12 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
 
   return (
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      style={{
+        height: "var(--auth-modal-vh, 100dvh)",
+        minHeight: "var(--auth-modal-vh, 100dvh)",
+      }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* 배경 */}
@@ -49,9 +98,14 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
 
       {/* 모달 패널 */}
       <div
-        className="relative w-full max-w-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
-        style={{ background: "var(--color-surface)" }}
+        className="relative w-full max-w-sm rounded-2xl border border-white/10 shadow-2xl flex flex-col"
+        style={{
+          background: "var(--color-surface)",
+          maxHeight: "calc(var(--auth-modal-vh, 100dvh) - 32px)",
+        }}
       >
+        {/* 스크롤 가능 영역 (헤더 + 폼 전체) */}
+        <div className="overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
         {/* 상단 헤더 */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4">
           <div>
@@ -119,8 +173,9 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
                       background: "var(--color-surface-2)",
                       color: "var(--color-text)",
                       borderColor: "var(--color-border)",
+                      fontSize: "16px",
                     }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = "#D4AF37"; }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = "#D4AF37"; setTimeout(() => e.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" }), 150); }}
                     onBlur={(e) => { e.currentTarget.style.borderColor = "var(--color-border)"; }}
                   />
                 </div>
@@ -140,8 +195,9 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
                     background: "var(--color-surface-2)",
                     color: "var(--color-text)",
                     borderColor: "var(--color-border)",
+                    fontSize: "16px",
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = "#D4AF37"; }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = "#D4AF37"; setTimeout(() => e.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" }), 150); }}
                   onBlur={(e) => { e.currentTarget.style.borderColor = "var(--color-border)"; }}
                 />
               </div>
@@ -160,8 +216,9 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
                     background: "var(--color-surface-2)",
                     color: "var(--color-text)",
                     borderColor: "var(--color-border)",
+                    fontSize: "16px",
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = "#D4AF37"; }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = "#D4AF37"; setTimeout(() => e.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" }), 150); }}
                   onBlur={(e) => { e.currentTarget.style.borderColor = "var(--color-border)"; }}
                 />
                 <button
@@ -187,6 +244,7 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
 
             </>
           )}
+        </div>
         </div>
       </div>
     </div>
