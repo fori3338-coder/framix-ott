@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   User as UserIcon,
@@ -12,8 +11,8 @@ import {
   Mail,
   CalendarDays,
 } from "lucide-react";
+import { useState } from "react";
 import { useAuthContext } from "../contexts/AuthContext";
-import { supabase } from "../lib/supabase";
 
 function formatDate(iso: string | null | undefined) {
   if (!iso) return "정보 없음";
@@ -22,6 +21,18 @@ function formatDate(iso: string | null | undefined) {
     month: "long",
     day: "numeric",
   });
+}
+
+// 관리자 판별: auth.users.app_metadata 기준.
+// app_metadata는 service_role(서버/Supabase 대시보드)만 변경 가능한 보안 메타데이터로,
+// 로그인 세션(JWT)에 이미 포함되어 있어 별도 DB 조회 없이 즉시 판별 가능하다.
+// (profiles 테이블/컬럼 존재를 가정하지 않음)
+// app_metadata.role === "admin" 또는 app_metadata.is_admin === true 둘 중 하나만 만족해도 관리자로 판별.
+function checkIsAdmin(appMetadata: Record<string, unknown> | undefined | null): boolean {
+  if (!appMetadata) return false;
+  if (appMetadata.role === "admin") return true;
+  if (appMetadata.is_admin === true) return true;
+  return false;
 }
 
 interface MenuRowProps {
@@ -64,40 +75,9 @@ function MenuRow({ icon: Icon, label, desc, onClick, accent, expanded }: MenuRow
 export default function MyInfo() {
   const navigate = useNavigate();
   const { user, signOut } = useAuthContext();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const isAdmin = checkIsAdmin(user?.app_metadata as Record<string, unknown> | undefined);
   const [profileOpen, setProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-
-  // 관리자 여부 확인: profiles.is_admin 컬럼을 방어적으로 조회.
-  // 컬럼/테이블이 없거나 조회에 실패하면 항상 false로 폴백한다(=일반 회원 취급).
-  // 관리자센터 메뉴를 잘못 노출하는 것보다, 컬럼이 준비되기 전까지 숨기는 쪽이 안전하다.
-  useEffect(() => {
-    let active = true;
-    if (!user) {
-      setIsAdmin(false);
-      return;
-    }
-    (async () => {
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("is_admin")
-          .eq("id", user.id)
-          .maybeSingle();
-        if (!active) return;
-        if (error || !data) {
-          setIsAdmin(false);
-          return;
-        }
-        setIsAdmin(Boolean((data as Record<string, unknown>).is_admin));
-      } catch {
-        if (active) setIsAdmin(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [user]);
 
   // 비로그인
   if (!user) {
