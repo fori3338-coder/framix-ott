@@ -60,7 +60,7 @@ function useWatchHistory() {
           progress_seconds,
           completed,
           watched_at,
-          episodes ( id, episode_number, title, video_url, series_id, series ( id, title, thumbnail_url ) )
+          episodes ( id, episode_number, title, duration, video_url, series_id, series ( id, title, thumbnail_url ) )
         `)
         .order("watched_at", { ascending: false })
         .limit(200);
@@ -77,12 +77,21 @@ function useWatchHistory() {
         const mapped: WatchHistoryRow[] = (data ?? []).map((row: any) => {
           const ep = row.episodes ?? null;
           const series = ep?.series ?? null;
+          // 실제 duration 기반 진행률 계산
+          const durStr: string = ep?.duration ?? "12:00";
+          const parts = durStr.split(":").map(Number);
+          const durSec = parts.length === 3
+            ? parts[0] * 3600 + parts[1] * 60 + parts[2]
+            : parts.length === 2 ? parts[0] * 60 + parts[1] : 720;
+          const rawProgress = row.completed
+            ? 100
+            : durSec > 0 ? Math.min(Math.round(((row.progress_seconds ?? 0) / durSec) * 100), 99) : 0;
           return {
             id: row.id,
             episode_id: row.episode_id,
             progress_seconds: row.progress_seconds ?? 0,
             completed: !!row.completed,
-            progress: row.completed ? 100 : (row.progress_seconds > 0 ? 1 : 0),
+            progress: rawProgress,
             watched_at: row.watched_at,
             series: series
               ? [{ id: series.id, title: series.title, poster_url: series.thumbnail_url ?? null }]
@@ -92,7 +101,7 @@ function useWatchHistory() {
                   id: ep.id,
                   episode_number: ep.episode_number,
                   title: ep.title,
-                  duration: "12:00",
+                  duration: ep.duration ?? "12:00",
                   thumbnail_url: null,
                 }]
               : null,

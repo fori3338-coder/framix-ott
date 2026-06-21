@@ -77,10 +77,10 @@ export const dramas: Drama[] = titles.map((t, i) => {
 });
 
 export const continueWatching: ContinueWatchingItem[] = [
-  { dramaId: "drama-1", episodeId: "drama-1-ep4", progress: 62, lastWatched: "2026-06-12T20:00:00Z" },
-  { dramaId: "drama-3", episodeId: "drama-3-ep2", progress: 30, lastWatched: "2026-06-12T10:00:00Z" },
-  { dramaId: "drama-7", episodeId: "drama-7-ep8", progress: 85, lastWatched: "2026-06-11T22:00:00Z" },
-  { dramaId: "drama-10", episodeId: "drama-10-ep1", progress: 12, lastWatched: "2026-06-10T18:00:00Z" },
+  { dramaId: "drama-1", episodeId: "drama-1-ep4", progress: 62, progressSeconds: 447, durationSeconds: 720, lastWatched: "2026-06-12T20:00:00Z", episodeNumber: 4, episodeTitle: "4화", seriesTitle: "", poster: "", thumbnail: "" },
+  { dramaId: "drama-3", episodeId: "drama-3-ep2", progress: 30, progressSeconds: 216, durationSeconds: 720, lastWatched: "2026-06-12T10:00:00Z", episodeNumber: 2, episodeTitle: "2화", seriesTitle: "", poster: "", thumbnail: "" },
+  { dramaId: "drama-7", episodeId: "drama-7-ep8", progress: 85, progressSeconds: 612, durationSeconds: 720, lastWatched: "2026-06-11T22:00:00Z", episodeNumber: 8, episodeTitle: "8화", seriesTitle: "", poster: "", thumbnail: "" },
+  { dramaId: "drama-10", episodeId: "drama-10-ep1", progress: 12, progressSeconds: 86, durationSeconds: 720, lastWatched: "2026-06-10T18:00:00Z", episodeNumber: 1, episodeTitle: "1화", seriesTitle: "", poster: "", thumbnail: "" },
 ];
 
 export const watchHistory: HistoryItem[] = [

@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
+import { useState, useCallback } from "react";
 
 import HeroBanner from "../components/HeroBanner";
 import ShowcaseRow from "../components/ShowcaseRow";
+import ContinueWatchingRow from "../components/ContinueWatchingRow";
 import { useDramas } from "../hooks/useDramas";
 import { useContinueWatching } from "../hooks/useContinueWatching";
 import type { Drama } from "../types";
@@ -23,9 +25,19 @@ function merge(dbDramas: Drama[], showcase: Drama[]): Drama[] {
 
 export default function Home() {
   const { dramas, loading, trending } = useDramas();
-  const { items: continueWatchingItems, isLoggedIn } = useContinueWatching();
+  const { items: continueWatchingItems, isLoggedIn, reload: reloadCW } = useContinueWatching();
 
-  // ── 로딩 스켈레톤 ───────────────────────────────────────────────────────────
+  // 이어보기 항목 삭제 시 로컬 state에서도 즉시 제거
+  const [removedEpisodeIds, setRemovedEpisodeIds] = useState<Set<string>>(new Set());
+  const handleRemoveCW = useCallback((episodeId: string) => {
+    setRemovedEpisodeIds((prev) => new Set(prev).add(episodeId));
+    // 약간 지연 후 서버 데이터 재조회
+    setTimeout(() => reloadCW(), 800);
+  }, [reloadCW]);
+
+  const visibleCWItems = continueWatchingItems.filter(
+    (item) => !removedEpisodeIds.has(item.episodeId)
+  );
   if (loading) {
     return (
       <div className="pb-16 animate-pulse">
@@ -68,25 +80,17 @@ export default function Home() {
   const revengeList = merge(dramas, showcaseRevenge);
   const originalsList = merge(dramas, showcaseOriginals);
 
-  // 이어보기 (로그인 시 DB 기반)
-  const continueWatchingDramas = isLoggedIn
-    ? (continueWatchingItems
-        .map((cw) => dramas.find((d) => d.id === cw.dramaId))
-        .filter(Boolean) as Drama[])
-    : [];
-
   return (
     <div className="pb-24" style={{ background: "var(--color-base)" }}>
       {/* Hero Banner */}
       <HeroBanner dramas={heroList} />
 
       <div className="mt-2 md:mt-4 space-y-0">
-        {/* 이어보기 */}
-        {continueWatchingDramas.length > 0 && (
-          <ShowcaseRow
-            title="▶ 이어보기"
-            subtitle="중단한 지점부터 다시 시작하세요"
-            dramas={continueWatchingDramas}
+        {/* 이어보기 — 로그인 사용자 + 미완료 항목 존재 시만 표시 */}
+        {isLoggedIn && visibleCWItems.length > 0 && (
+          <ContinueWatchingRow
+            items={visibleCWItems}
+            onRemove={handleRemoveCW}
           />
         )}
 

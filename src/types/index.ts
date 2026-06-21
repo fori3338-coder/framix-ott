@@ -41,8 +41,16 @@ export interface Drama {
 export interface ContinueWatchingItem {
   dramaId: string;
   episodeId: string;
-  progress: number; // 0-100
-  lastWatched: string; // ISO date
+  progress: number;         // 0-100 (실제 duration 기반)
+  progressSeconds: number;  // 재생 위치 (초)
+  durationSeconds: number;  // 전체 길이 (초)
+  lastWatched: string;      // ISO date
+  // 카드 표시용 메타
+  episodeNumber: number;
+  episodeTitle: string;
+  seriesTitle: string;
+  poster: string;
+  thumbnail: string;
 }
 
 export interface HistoryItem {

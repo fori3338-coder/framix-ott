@@ -27,6 +27,13 @@ interface SubStats {
   inactiveCount: number;
 }
 
+interface WatchStats {
+  totalPlays: number;
+  completedCount: number;
+  completionRate: number;
+  loaded: boolean;
+}
+
 interface RevenueStats {
   todayRevenue: number;
   monthRevenue: number;
@@ -136,6 +143,9 @@ export default function AdminDashboard() {
   });
   const [subStats, setSubStats] = useState<SubStats>({
     totalSubscribers: 0, premiumCount: 0, vipCount: 0, cancelledCount: 0, inactiveCount: 0,
+  });
+  const [watchStats, setWatchStats] = useState<WatchStats>({
+    totalPlays: 0, completedCount: 0, completionRate: 0, loaded: false,
   });
   const [revenueStats, setRevenueStats] = useState<RevenueStats>({
     todayRevenue: 0, monthRevenue: 0, totalRevenue: 0,
@@ -606,6 +616,30 @@ export default function AdminDashboard() {
     } catch (e) {
       console.error("recent activity fetch error:", e);
     }
+
+    // ── watch_history 통계: 총 재생수 / 완주수 / 완주율 ─────────────────
+    try {
+      const { count: totalPlays, error: wErr1 } = await supabase
+        .from("watch_history")
+        .select("id", { count: "exact", head: true });
+
+      const { count: completedCount, error: wErr2 } = await supabase
+        .from("watch_history")
+        .select("id", { count: "exact", head: true })
+        .eq("completed", true);
+
+      if (!wErr1 && !wErr2) {
+        const tp = totalPlays ?? 0;
+        const cc = completedCount ?? 0;
+        const rate = tp > 0 ? Math.round((cc / tp) * 1000) / 10 : 0;
+        setWatchStats({ totalPlays: tp, completedCount: cc, completionRate: rate, loaded: true });
+      } else {
+        setWatchStats((prev) => ({ ...prev, loaded: true }));
+      }
+    } catch (e) {
+      console.error("watch_history stats error:", e);
+      setWatchStats((prev) => ({ ...prev, loaded: true }));
+    }
   }, [buildGenreShare]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -1044,6 +1078,54 @@ export default function AdminDashboard() {
                 {s.fmt === "won" ? `${s.value.toLocaleString()}원` : `${s.value.toLocaleString()}건`}
               </p>
               <p className="text-[10px] md:text-xs text-white mt-0.5">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 시청 통계 (watch_history 기반) */}
+      <div className="mb-6 md:mb-8 bg-surface border border-border rounded-2xl p-4 md:p-6 admin-card">
+        <div className="flex items-center gap-2 mb-4">
+          <PlayCircle size={15} className="text-yellow-400 shrink-0" />
+          <h2 className="font-bold text-sm text-white md:text-[1rem]">시청 통계</h2>
+          <span className="text-[10px] text-white/50 ml-1">· watch_history 테이블 기반 실제 집계</span>
+        </div>
+        <div className="grid grid-cols-3 gap-3 md:gap-4">
+          {[
+            {
+              label: "총 재생수",
+              value: watchStats.loaded ? watchStats.totalPlays.toLocaleString() : "—",
+              desc: "전체 에피소드 재생 횟수",
+              color: "text-yellow-400",
+              accent: "from-yellow-400 to-amber-600",
+            },
+            {
+              label: "완주수",
+              value: watchStats.loaded ? watchStats.completedCount.toLocaleString() : "—",
+              desc: "90% 이상 시청 완료",
+              color: "text-emerald-400",
+              accent: "from-emerald-400 to-emerald-600",
+            },
+            {
+              label: "완주율",
+              value: watchStats.loaded ? `${watchStats.completionRate}%` : "—",
+              desc: "완주수 / 총 재생수",
+              color: "text-sky-300",
+              accent: "from-sky-400 to-sky-600",
+            },
+          ].map((s) => (
+            <div
+              key={s.label}
+              className="group relative overflow-hidden bg-surface-2 border border-border rounded-xl p-4 md:p-5 hover:border-yellow-400/40 transition-all"
+            >
+              <div
+                className={`absolute -top-10 -right-10 w-28 h-28 rounded-full bg-gradient-to-br ${s.accent} opacity-[0.08] blur-2xl group-hover:opacity-20 transition-opacity`}
+              />
+              <p className={`text-2xl md:text-3xl font-black tracking-tight tabular-nums ${s.color}`}>
+                {s.value}
+              </p>
+              <p className="text-xs font-bold text-white mt-1">{s.label}</p>
+              <p className="text-[10px] text-white/40 mt-0.5">{s.desc}</p>
             </div>
           ))}
         </div>

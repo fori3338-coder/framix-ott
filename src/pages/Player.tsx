@@ -163,7 +163,7 @@ async function saveWatchHistory(episodeId: string, currentTime: number, duration
     if (!userId) return;
     const progressSeconds = Math.round(currentTime);
     const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
-    const completed = progressPercent >= 95;
+    const completed = progressPercent >= 90;
     await supabase.from("watch_history").upsert(
       {
         user_id: userId,
@@ -342,6 +342,7 @@ export default function Player() {
   const [showEpisodePanel, setShowEpisodePanel] = useState(false);
   const [showSubtitlePanel, setShowSubtitlePanel] = useState(false);
   const [subtitleNotice, setSubtitleNotice] = useState<string>("");
+  const [resumeToast, setResumeToast] = useState<string>("");
   const [subtitleLang, setSubtitleLang] = useState<string>(() =>
     localStorage.getItem(SUBTITLE_KEY) ?? "off"
   );
@@ -388,7 +389,10 @@ export default function Player() {
           const applySeek = () => {
             if (seekAppliedRef.current) return;
             seekAppliedRef.current = true;
-            if (videoRef.current) videoRef.current.currentTime = hist.progressSeconds;
+            if (videoRef.current) {
+              videoRef.current.currentTime = hist.progressSeconds;
+              setResumeToast(`${formatTime(hist.progressSeconds)}부터 이어보기`);
+            }
           };
           if (videoRef.current && videoRef.current.readyState >= 1) applySeek();
           else videoRef.current?.addEventListener("loadedmetadata", applySeek, { once: true });
@@ -402,7 +406,10 @@ export default function Player() {
           const applySeek = () => {
             if (seekAppliedRef.current) return;
             seekAppliedRef.current = true;
-            if (videoRef.current) videoRef.current.currentTime = t;
+            if (videoRef.current) {
+              videoRef.current.currentTime = t;
+              setResumeToast(`${formatTime(t)}부터 이어보기`);
+            }
           };
           if (videoRef.current && videoRef.current.readyState >= 1) applySeek();
           else videoRef.current?.addEventListener("loadedmetadata", applySeek, { once: true });
@@ -457,6 +464,13 @@ export default function Player() {
     const t = setTimeout(() => setSubtitleNotice(""), 2500);
     return () => clearTimeout(t);
   }, [subtitleNotice]);
+
+  // 이어보기 토스트 자동 숨김 (3초)
+  useEffect(() => {
+    if (!resumeToast) return;
+    const t = setTimeout(() => setResumeToast(""), 3000);
+    return () => clearTimeout(t);
+  }, [resumeToast]);
 
   // 에피소드 변경 시 재로드
   useEffect(() => {
@@ -944,6 +958,35 @@ export default function Player() {
           }}
         >
           {subtitleNotice}
+        </div>
+      )}
+
+      {/* ═══ 이어보기 토스트 — 재개 위치 알림 ═══════════════════════════════ */}
+      {resumeToast && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "calc(140px + env(safe-area-inset-bottom, 0px))",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 9999,
+            background: "#000000",
+            border: "1px solid #FFD54A",
+            color: "#FFFFFF",
+            fontSize: "13px",
+            fontWeight: 700,
+            padding: "8px 18px",
+            borderRadius: "999px",
+            pointerEvents: "none",
+            whiteSpace: "nowrap",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.6)",
+          }}
+        >
+          <span style={{ color: "#FFD54A", fontSize: "14px" }}>▶</span>
+          {resumeToast}
         </div>
       )}
 
