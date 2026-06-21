@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Play, Plus, Check, Share2, Star, Lock, ChevronLeft } from "lucide-react";
 import { useDramaDetail } from "../hooks/useDramaDetail";
 import { useDramas } from "../hooks/useDramas";
+import { useFavorites } from "../hooks/useFavorites";
 import DramaRow from "../components/DramaRow";
 
 // ─── 스켈레톤 로딩 UI ─────────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ export default function DramaDetail() {
   // ── Supabase 조회 ──────────────────────────────────────────────────────────
   const { drama, loading, error } = useDramaDetail(id);
   const { dramas: allDramas } = useDramas();
-  const [inList, setInList] = useState(false);
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   // ── 로딩 상태 ──────────────────────────────────────────────────────────────
   if (loading) return <DetailSkeleton />;
@@ -50,6 +50,8 @@ export default function DramaDetail() {
   const similar = allDramas
     .filter((d) => d.id !== drama.id && d.genres.some((g) => drama.genres.includes(g)))
     .slice(0, 10);
+
+  const inList = isFavorite(drama.id);
 
   return (
     <div className="animate-fade-in">
@@ -100,7 +102,7 @@ export default function DramaDetail() {
           1화 재생
         </button>
         <button
-          onClick={() => setInList((v) => !v)}
+          onClick={() => toggleFavorite(drama.id)}
           aria-label="내 보관함에 추가"
           className={`w-12 h-12 rounded-md border flex items-center justify-center transition-colors ${
             inList ? "border-gold text-gold bg-gold/10" : "border-border text-text hover:border-gold"

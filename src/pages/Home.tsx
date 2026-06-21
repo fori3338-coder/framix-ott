@@ -6,6 +6,7 @@ import ShowcaseRow from "../components/ShowcaseRow";
 import ContinueWatchingRow from "../components/ContinueWatchingRow";
 import { useDramas } from "../hooks/useDramas";
 import { useContinueWatching } from "../hooks/useContinueWatching";
+import { useFavorites } from "../hooks/useFavorites";
 import type { Drama } from "../types";
 
 import {
@@ -26,6 +27,7 @@ function merge(dbDramas: Drama[], showcase: Drama[]): Drama[] {
 export default function Home() {
   const { dramas, loading, trending } = useDramas();
   const { items: continueWatchingItems, isLoggedIn, reload: reloadCW } = useContinueWatching();
+  const { favoriteIds, isLoggedIn: favLoggedIn } = useFavorites();
 
   // 이어보기 항목 삭제 시 로컬 state에서도 즉시 제거
   const [removedEpisodeIds, setRemovedEpisodeIds] = useState<Set<string>>(new Set());
@@ -80,6 +82,11 @@ export default function Home() {
   const revengeList = merge(dramas, showcaseRevenge);
   const originalsList = merge(dramas, showcaseOriginals);
 
+  // ── 내 보관함(My List): favoriteIds 순서(최근 추가순) 기준으로 dramas 매칭 ──
+  const favoritedList = favoriteIds
+    .map((fid) => dramas.find((d) => d.id === fid))
+    .filter((d): d is Drama => Boolean(d));
+
   return (
     <div className="pb-24" style={{ background: "var(--color-base)" }}>
       {/* Hero Banner */}
@@ -91,6 +98,16 @@ export default function Home() {
           <ContinueWatchingRow
             items={visibleCWItems}
             onRemove={handleRemoveCW}
+          />
+        )}
+
+        {/* 내 보관함(My List) — 로그인 사용자 + 찜한 콘텐츠 존재 시만 표시 */}
+        {favLoggedIn && favoritedList.length > 0 && (
+          <ShowcaseRow
+            title="🔖 내 보관함"
+            subtitle="찜한 콘텐츠를 모아봤어요"
+            dramas={favoritedList}
+            badge="MY LIST"
           />
         )}
 

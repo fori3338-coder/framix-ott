@@ -8,8 +8,9 @@
  */
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Play, Plus, Star } from "lucide-react";
+import { Play, Plus, Check, Star } from "lucide-react";
 import type { Drama } from "../types";
+import { useFavorites } from "../hooks/useFavorites";
 
 interface ShowcaseCardProps {
   drama: Drama;
@@ -20,6 +21,8 @@ interface ShowcaseCardProps {
 export default function ShowcaseCard({ drama, rank, size = "md" }: ShowcaseCardProps) {
   const [imgError, setImgError] = useState(false);
   const navigate = useNavigate();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const favorited = isFavorite(drama.id);
 
   const widthClass =
     size === "sm"
@@ -48,7 +51,7 @@ export default function ShowcaseCard({ drama, rank, size = "md" }: ShowcaseCardP
 
   const handleAddClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // 찜하기 — 추후 구현
+    toggleFavorite(drama.id);
   };
 
   return (
@@ -146,10 +149,14 @@ export default function ShowcaseCard({ drama, rank, size = "md" }: ShowcaseCardP
             </button>
             <button
               onClick={handleAddClick}
-              className="w-9 h-9 rounded-full bg-white/15 border border-white/30 flex items-center justify-center hover:border-gold hover:text-gold transition-colors duration-200 active:scale-90 text-white"
-              aria-label="찜하기"
+              className={`w-9 h-9 rounded-full border flex items-center justify-center transition-colors duration-200 active:scale-90 ${
+                favorited
+                  ? "bg-gold/15 border-gold text-gold"
+                  : "bg-white/15 border-white/30 text-white hover:border-gold hover:text-gold"
+              }`}
+              aria-label={favorited ? "찜 해제" : "찜하기"}
             >
-              <Plus size={15} />
+              {favorited ? <Check size={15} /> : <Plus size={15} />}
             </button>
           </div>
           {/* 별점 */}
