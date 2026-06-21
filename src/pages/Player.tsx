@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useDramaDetail } from "../hooks/useDramaDetail";
 import { useSubscription } from "../hooks/useSubscription";
+import { useFavorites } from "../hooks/useFavorites";
 import { supabase } from "../lib/supabase";
 import { recordEpisodeView } from "../lib/viewTracking";
 
@@ -301,6 +302,7 @@ export default function Player() {
   const { drama, loading } = useDramaDetail(id);
   const episode = drama?.episodes.find((e) => e.id === episodeId);
   const { isActive: isSubscribed } = useSubscription();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
@@ -332,7 +334,6 @@ export default function Player() {
   const thumbCacheRef = useRef<Map<number, string>>(new Map());
   const thumbRafRef = useRef<number | null>(null);
   const thumbSrcRef = useRef<string | null>(null);
-  const [liked, setLiked] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
@@ -1014,8 +1015,13 @@ export default function Player() {
           <ArrowLeft size={26} />
         </button>
         <span />
-        <button onClick={() => setLiked((p) => !p)} className="p-1 shrink-0">
-          <Heart size={22} className={liked ? "text-red-500 fill-red-500" : ""} />
+        <button
+          onClick={() => drama && toggleFavorite(drama.id)}
+          disabled={!drama}
+          aria-label={drama && isFavorite(drama.id) ? "찜 해제" : "찜하기"}
+          className="p-1 shrink-0"
+        >
+          <Heart size={22} className={drama && isFavorite(drama.id) ? "text-red-500 fill-red-500" : ""} />
         </button>
       </div>
 
