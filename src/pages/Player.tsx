@@ -1027,7 +1027,11 @@ export default function Player() {
                       src={ep.thumbnail}
                       alt={ep.title}
                       className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).src = `https://picsum.photos/seed/${ep.id}/400/225`; }}
+                      onError={(e) => {
+                        const img = e.target as HTMLImageElement;
+                        if (img.src.endsWith("/content/fallback-thumbnail.svg")) return;
+                        img.src = "/content/fallback-thumbnail.svg";
+                      }}
                     />
                     {isCurrentEp && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/50">

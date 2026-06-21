@@ -20,13 +20,23 @@ function toAgeRating(val: string | null | undefined): AgeRating {
   return "15+";
 }
 
-export function toFrontendEpisode(e: DbEpisode): Episode {
+// seriesPoster: 에피소드 자체 썸네일(episodes.thumbnail_url)이 없을 때 쓸 대체 이미지.
+// 과거에는 picsum.photos 랜덤 사진(산/사막/자연풍경)으로 떨어졌는데, 실제 콘텐츠와
+// 무관한 샘플 이미지가 노출되는 문제가 있었다. 같은 시리즈의 포스터
+// (series.thumbnail_url)가 있으면 이를 우선 사용하고, 그마저도 없으면 프로젝트
+// 자체 기본 이미지(/content/fallback-thumbnail.svg)를 쓴다 — 외부 랜덤 사진 서비스는
+// 더 이상 사용하지 않는다.
+const FALLBACK_THUMBNAIL = "/content/fallback-thumbnail.svg";
+const FALLBACK_POSTER = "/content/fallback-poster.svg";
+const FALLBACK_BACKDROP = "/content/fallback-backdrop.svg";
+
+export function toFrontendEpisode(e: DbEpisode, seriesPoster?: string | null): Episode {
   return {
     id: e.id,
     number: e.episode_number,
     title: e.title,
     duration: e.duration ?? "00:00",
-    thumbnail: e.thumbnail_url ?? `https://picsum.photos/seed/${e.id}/400/225`,
+    thumbnail: e.thumbnail_url ?? seriesPoster ?? FALLBACK_THUMBNAIL,
     isFree: e.is_free ?? true,
     videoUrl: e.video_url ?? undefined,
     progress: 0,
@@ -38,15 +48,15 @@ export function toFrontendEpisode(e: DbEpisode): Episode {
 // (episodes[0] = 1화 라는 가정을 HeroBanner, DramaDetail 등 여러 곳에서 쓰고 있음)
 export function toFrontendDrama(d: DbDrama, episodes: DbEpisode[] = []): Drama {
   const sortedEpisodes = [...episodes].sort((a, b) => a.episode_number - b.episode_number);
+  const seriesPoster = d.thumbnail_url ?? null;
 
   return {
     id: d.id,
     title: d.title,
     englishTitle: d.english_title ?? undefined,
     synopsis: d.description ?? "",
-    poster: d.thumbnail_url ?? `https://picsum.photos/seed/${d.id}-poster/400/600`,
-    backdrop:
-      d.backdrop_url ?? d.thumbnail_url ?? `https://picsum.photos/seed/${d.id}-backdrop/1280/720`,
+    poster: d.thumbnail_url ?? FALLBACK_POSTER,
+    backdrop: d.backdrop_url ?? d.thumbnail_url ?? FALLBACK_BACKDROP,
     genres: d.genres ?? (d.genre ? [d.genre] : []),
     tags: d.tags ?? [],
     rating: d.rating ?? 0,
@@ -60,7 +70,7 @@ export function toFrontendDrama(d: DbDrama, episodes: DbEpisode[] = []): Drama {
     isNew: d.is_new ?? d.status === "new",
     isExclusive: d.is_exclusive ?? false,
     views: d.views ?? 0,
-    episodes: sortedEpisodes.map(toFrontendEpisode),
+    episodes: sortedEpisodes.map((ep) => toFrontendEpisode(ep, seriesPoster)),
     isBanner: d.banner_enabled ?? false,
     bannerOrder: d.banner_order ?? 0,
     top10Rank: d.top10_rank ?? null,

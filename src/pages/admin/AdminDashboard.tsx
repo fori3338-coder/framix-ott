@@ -902,13 +902,13 @@ export default function AdminDashboard() {
             <span className="text-gradient-gold">FRAMIX</span>{" "}
             <span className="text-text">관리자 센터</span>
           </h1>
-          <p className="hidden sm:block text-xs text-text-muted mt-1">실시간 운영 현황과 콘텐츠 퍼포먼스를 한눈에 확인하세요.</p>
+          <p className="hidden sm:block text-xs text-white mt-1">실시간 운영 현황과 콘텐츠 퍼포먼스를 한눈에 확인하세요.</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button className="hidden md:flex w-9 h-9 rounded-full bg-surface border border-border items-center justify-center text-text-dim hover:text-gold hover:border-gold/40 transition-colors" aria-label="검색">
+          <button className="hidden md:flex w-9 h-9 rounded-full bg-surface border border-border items-center justify-center text-white hover:text-gold hover:border-gold/40 transition-colors" aria-label="검색">
             <Search size={16} />
           </button>
-          <button className="hidden md:flex w-9 h-9 rounded-full bg-surface border border-border items-center justify-center text-text-dim hover:text-gold hover:border-gold/40 transition-colors relative" aria-label="알림">
+          <button className="hidden md:flex w-9 h-9 rounded-full bg-surface border border-border items-center justify-center text-white hover:text-gold hover:border-gold/40 transition-colors relative" aria-label="알림">
             <Bell size={16} />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-gold rounded-full" />
           </button>
@@ -952,8 +952,8 @@ export default function AdminDashboard() {
                 <s.icon size={16} className="text-gold" />
               </div>
             </div>
-            <p className="text-xl md:text-2xl font-black tracking-tight">{s.value}</p>
-            <p className="text-[11px] md:text-xs text-text-muted mt-0.5">{s.label}</p>
+            <p className="text-xl md:text-2xl font-black tracking-tight text-white">{s.value}</p>
+            <p className="text-[11px] md:text-xs text-white mt-0.5">{s.label}</p>
             <svg viewBox="0 0 100 32" className="w-full h-8 mt-2 overflow-visible">
               <defs>
                 <linearGradient id={`g-${s.label}`} x1="0" x2="0" y1="0" y2="1">
@@ -975,7 +975,7 @@ export default function AdminDashboard() {
           { label: "Premium 회원", value: subStats.premiumCount, icon: Star, accent: "from-amber-300 to-gold", color: "text-amber-300" },
           { label: "VIP 회원", value: subStats.vipCount, icon: Sparkles, accent: "from-gold-light to-gold", color: "text-gold-light" },
           { label: "해지 예약", value: subStats.cancelledCount, icon: TrendingDown, accent: "from-rose-400 to-rose-600", color: "text-rose-400" },
-          { label: "만료", value: subStats.inactiveCount, icon: Activity, accent: "from-text-muted to-border", color: "text-text-dim" },
+          { label: "만료", value: subStats.inactiveCount, icon: Activity, accent: "from-text-muted to-border", color: "text-white" },
           { label: "총 회원수", value: liveStats.totalMembers, icon: Users, accent: "from-emerald-400 to-gold", color: "text-emerald-400" },
         ].map((s) => (
           <div key={s.label} className="group relative overflow-hidden bg-surface border border-border rounded-2xl p-3 md:p-4 hover:border-gold/40 transition-all admin-card">
@@ -986,7 +986,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             <p className={`text-lg md:text-xl font-black tracking-tight ${s.color}`}>{s.value.toLocaleString()}</p>
-            <p className="text-[10px] md:text-xs text-text-muted mt-0.5">{s.label}</p>
+            <p className="text-[10px] md:text-xs text-white mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
@@ -996,7 +996,7 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp size={15} className="text-gold" />
           <h2 className="font-bold text-sm md:text-base text-white">매출 통계</h2>
-          <span className="text-[10px] text-text-muted ml-1">· Premium 4,900원 / VIP 9,900원 기준 · active + cancelled 포함</span>
+          <span className="text-[10px] text-white ml-1">· Premium 4,900원 / VIP 9,900원 기준 · active + cancelled 포함</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 md:gap-4">
           {[
@@ -1018,7 +1018,7 @@ export default function AdminDashboard() {
               <p className={`text-base md:text-lg font-black tracking-tight ${s.color} tabular-nums`}>
                 {s.fmt === "won" ? `${s.value.toLocaleString()}원` : `${s.value.toLocaleString()}건`}
               </p>
-              <p className="text-[10px] md:text-xs text-text-muted mt-0.5">{s.label}</p>
+              <p className="text-[10px] md:text-xs text-white mt-0.5">{s.label}</p>
             </div>
           ))}
         </div>
@@ -1032,7 +1032,7 @@ export default function AdminDashboard() {
               <TrendingUp size={15} className="text-gold shrink-0" />
               <h2 className="font-bold text-sm md:text-base text-white truncate">매출 통계 그래프</h2>
             </div>
-            <p className="text-[11px] text-text-muted mt-0.5">단위: 원 · subscriptions 실제 집계</p>
+            <p className="text-[11px] text-white mt-0.5">단위: 원 · subscriptions 실제 집계</p>
           </div>
           <div className="inline-flex rounded-lg border border-border bg-surface-2 p-0.5 shrink-0">
             {(["일간", "주간", "월간", "누적"] as const).map((r) => (
@@ -1040,7 +1040,7 @@ export default function AdminDashboard() {
                 key={r}
                 onClick={() => setRevRange(r)}
                 className={`text-[11px] md:text-xs px-2.5 md:px-3 py-1 rounded-md font-semibold transition-colors ${
-                  revRange === r ? "bg-gold text-black" : "text-text-dim hover:text-text"
+                  revRange === r ? "bg-gold text-black" : "text-white"
                 }`}
               >
                 {r}
@@ -1087,7 +1087,7 @@ export default function AdminDashboard() {
                 })()}
               </svg>
             </div>
-            <div className="flex justify-between mt-2 text-[10px] text-text-muted">
+            <div className="flex justify-between mt-2 text-[10px] text-white">
               {revenueChartLabels
                 .filter((_, i) => i % Math.ceil(revenueChartLabels.length / 8) === 0 || i === revenueChartLabels.length - 1)
                 .map((l, i) => <span key={i}>{l}</span>)}
@@ -1095,14 +1095,14 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-4 mt-2 flex-wrap">
               {revenueChartData.slice(-3).map((v, i) => (
                 <div key={i} className="text-[11px]">
-                  <span className="text-text-muted">{revenueChartLabels[revenueChartData.length - 3 + i] ?? ""}</span>
+                  <span className="text-white">{revenueChartLabels[revenueChartData.length - 3 + i] ?? ""}</span>
                   <span className="ml-1.5 font-bold text-gold">{v.toLocaleString()}원</span>
                 </div>
               ))}
             </div>
           </>
         ) : (
-          <p className="text-xs text-text-muted text-center py-8">매출 데이터를 불러오는 중...</p>
+          <p className="text-xs text-white text-center py-8">매출 데이터를 불러오는 중...</p>
         )}
       </div>
 
@@ -1116,7 +1116,7 @@ export default function AdminDashboard() {
                 <BarChart3 size={15} className="text-gold shrink-0" />
                 <h2 className="font-bold text-sm md:text-base text-white truncate">조회수 추이</h2>
               </div>
-              <p className="text-[11px] text-text-muted mt-0.5">단위: 회 · episode_views 실제 집계</p>
+              <p className="text-[11px] text-white mt-0.5">단위: 회 · episode_views 실제 집계</p>
             </div>
             <div className="inline-flex rounded-lg border border-border bg-surface-2 p-0.5 shrink-0">
               {(["7D", "30D", "90D"] as Range[]).map((r) => (
@@ -1124,7 +1124,7 @@ export default function AdminDashboard() {
                   key={r}
                   onClick={() => setRange(r)}
                   className={`text-[11px] md:text-xs px-2.5 md:px-3 py-1 rounded-md font-semibold transition-colors ${
-                    range === r ? "bg-gold text-black" : "text-text-dim hover:text-text"
+                    range === r ? "bg-gold text-black" : "text-white"
                   }`}
                 >
                   {r}
@@ -1158,7 +1158,7 @@ export default function AdminDashboard() {
             </svg>
           </div>
 
-          <div className="flex justify-between mt-2 text-[10px] text-text-muted">
+          <div className="flex justify-between mt-2 text-[10px] text-white">
             {viewsChartLabels.filter((_, i) => i % Math.ceil(viewsChartLabels.length / 7) === 0).map((l) => (
               <span key={l}>{l}</span>
             ))}
@@ -1196,14 +1196,14 @@ export default function AdminDashboard() {
                 {genreShare.map((g, i) => (
                   <div key={g.name} className="flex items-center gap-2 text-xs">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: palette[i % palette.length] }} />
-                    <span className="flex-1 text-text-dim truncate">{g.name}</span>
-                    <span className="font-semibold tabular-nums">{g.pct}%</span>
+                    <span className="flex-1 text-white truncate">{g.name}</span>
+                    <span className="font-semibold tabular-nums text-white">{g.pct}%</span>
                   </div>
                 ))}
               </div>
             </>
           ) : (
-            <p className="text-xs text-text-muted text-center py-8">콘텐츠가 없습니다</p>
+            <p className="text-xs text-white text-center py-8">콘텐츠가 없습니다</p>
           )}
         </div>
       </div>
@@ -1215,7 +1215,7 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-2 min-w-0">
               <PlayCircle size={15} className="text-gold shrink-0" />
               <h2 className="font-bold text-sm md:text-base text-white truncate">인기 콘텐츠 TOP 6</h2>
-              <span className="text-[10px] text-text-muted">· 실제 조회수 순</span>
+              <span className="text-[10px] text-white">· 실제 조회수 순</span>
             </div>
             <button
               onClick={() => setShowContentManager((v) => !v)}
@@ -1225,12 +1225,12 @@ export default function AdminDashboard() {
             </button>
           </div>
           {topDramas.length === 0 ? (
-            <p className="text-xs text-text-muted text-center py-8">등록된 콘텐츠가 없습니다</p>
+            <p className="text-xs text-white text-center py-8">등록된 콘텐츠가 없습니다</p>
           ) : (
             <>
               {/* Desktop table */}
               <div className="hidden md:block">
-                <div className="grid grid-cols-[24px_56px_minmax(0,1fr)_90px_90px_30px] gap-3 px-5 py-2 text-[10px] uppercase tracking-wider text-text-muted border-b border-border bg-surface-2/40">
+                <div className="grid grid-cols-[24px_56px_minmax(0,1fr)_90px_90px_30px] gap-3 px-5 py-2 text-[10px] uppercase tracking-wider text-white border-b border-border bg-surface-2/40">
                   <span>#</span><span /><span>제목</span><span>평점</span><span>조회수</span><span />
                 </div>
                 <div className="divide-y divide-border">
@@ -1241,26 +1241,26 @@ export default function AdminDashboard() {
                         <img src={d.thumbnail_url} alt={d.title} className="w-12 h-16 object-cover rounded-md" />
                       ) : (
                         <div className="w-12 h-16 rounded-md bg-surface-2 flex items-center justify-center">
-                          <Film size={16} className="text-text-muted" />
+                          <Film size={16} className="text-white" />
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold truncate">{d.title}</p>
-                        <p className="text-[11px] text-text-muted truncate mt-0.5">
+                        <p className="text-sm font-semibold truncate text-white">{d.title}</p>
+                        <p className="text-[11px] text-white truncate mt-0.5">
                           {(d.genres?.slice(0, 2) ?? [d.genre ?? "기타"]).join(" · ")}
                         </p>
                         <span className={`text-[10px] px-1.5 py-0.5 rounded ${d.status === "active" ? "text-emerald-400" : "text-rose-400"}`}>
                           {d.status === "active" ? "공개" : "비공개"}
                         </span>
                       </div>
-                      <span className="text-sm font-semibold flex items-center gap-1">
+                      <span className="text-sm font-semibold flex items-center gap-1 text-white">
                         <Star size={12} className="text-gold fill-gold" />
                         {(d.rating ?? 0).toFixed(1)}
                       </span>
-                      <span className="text-sm font-bold tabular-nums">
+                      <span className="text-sm font-bold tabular-nums text-white">
                         {d.views != null ? (d.views >= 10000 ? `${(d.views / 10000).toFixed(0)}만` : d.views.toLocaleString()) : "—"}
                       </span>
-                      <button className="text-text-muted hover:text-gold" aria-label="더보기">
+                      <button className="text-white hover:text-gold" aria-label="더보기">
                         <MoreVertical size={15} />
                       </button>
                     </div>
@@ -1276,18 +1276,18 @@ export default function AdminDashboard() {
                       <img src={d.thumbnail_url} alt={d.title} className="w-11 h-14 object-cover rounded-md" />
                     ) : (
                       <div className="w-11 h-14 rounded-md bg-surface-2 flex items-center justify-center">
-                        <Film size={14} className="text-text-muted" />
+                        <Film size={14} className="text-white" />
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold truncate">{d.title}</p>
-                      <p className="text-[11px] text-text-muted mt-0.5 flex items-center gap-1">
+                      <p className="text-sm font-semibold truncate text-white">{d.title}</p>
+                      <p className="text-[11px] text-white mt-0.5 flex items-center gap-1">
                         <Star size={10} className="text-gold fill-gold" />
                         {(d.rating ?? 0).toFixed(1)} · {(d.genres?.[0] ?? d.genre ?? "기타")}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-bold tabular-nums">
+                      <p className="text-sm font-bold tabular-nums text-white">
                         {d.views != null ? `${(d.views / 10000).toFixed(0)}만` : "—"}
                       </p>
                     </div>
@@ -1303,14 +1303,14 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-2 mb-4">
             <Activity size={15} className="text-gold" />
             <h2 className="font-bold text-sm md:text-base text-white">최근 활동</h2>
-            <span className="text-[10px] text-text-muted">· 회원가입 · 결제 · 시청</span>
+            <span className="text-[10px] text-white">· 회원가입 · 결제 · 시청</span>
           </div>
           <ol className="relative space-y-4 before:absolute before:left-[5px] before:top-1 before:bottom-1 before:w-px before:bg-border">
             {recentActivity.map((a, i) => (
               <li key={i} className="pl-5 relative">
                 <span className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full bg-gold ring-2 ring-base" />
-                <p className="text-xs md:text-sm leading-snug">{a.what}</p>
-                <p className="text-[10px] text-text-muted mt-0.5">{a.who}{a.when ? ` · ${a.when}` : ""}</p>
+                <p className="text-xs md:text-sm leading-snug text-white">{a.what}</p>
+                <p className="text-[10px] text-white mt-0.5">{a.who}{a.when ? ` · ${a.when}` : ""}</p>
               </li>
             ))}
           </ol>
@@ -1324,27 +1324,27 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-2">
               <Settings size={15} className="text-gold" />
               <h2 className="font-bold text-sm md:text-base text-white">전체 콘텐츠 관리</h2>
-              <span className="text-[10px] text-text-muted">· 수정 · 삭제 · 공개/비공개</span>
+              <span className="text-[10px] text-white">· 수정 · 삭제 · 공개/비공개</span>
             </div>
-            <button onClick={() => setShowContentManager(false)} className="text-text-muted hover:text-white text-xs">닫기</button>
+            <button onClick={() => setShowContentManager(false)} className="text-white hover:text-white text-xs">닫기</button>
           </div>
 
           {contentMsg && (
             <div className="mx-4 mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg bg-gold/10 border border-gold/30 text-gold">
               <CheckCircle size={13} />
               {contentMsg}
-              <button onClick={() => setContentMsg(null)} className="ml-auto text-text-muted hover:text-white">✕</button>
+              <button onClick={() => setContentMsg(null)} className="ml-auto text-white hover:text-white">✕</button>
             </div>
           )}
 
           {contentLoading && (
-            <div className="flex items-center gap-2 px-5 py-3 text-xs text-text-muted">
+            <div className="flex items-center gap-2 px-5 py-3 text-xs text-white">
               <AlertCircle size={13} className="animate-spin" /> 처리 중...
             </div>
           )}
 
           {allContents.length === 0 ? (
-            <p className="text-xs text-text-muted text-center py-8">등록된 콘텐츠가 없습니다</p>
+            <p className="text-xs text-white text-center py-8">등록된 콘텐츠가 없습니다</p>
           ) : (
             <div className="divide-y divide-border max-h-[480px] overflow-y-auto">
               {allContents.map((d) => (
@@ -1353,7 +1353,7 @@ export default function AdminDashboard() {
                     <img src={d.thumbnail_url} alt={d.title} className="w-10 h-14 object-cover rounded-md shrink-0" />
                   ) : (
                     <div className="w-10 h-14 rounded-md bg-surface-2 flex items-center justify-center shrink-0">
-                      <Film size={14} className="text-text-muted" />
+                      <Film size={14} className="text-white" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
@@ -1372,16 +1372,16 @@ export default function AdminDashboard() {
                         >저장</button>
                         <button
                           onClick={() => setEditingId(null)}
-                          className="text-xs px-2 py-1 bg-surface border border-border rounded text-text-muted"
+                          className="text-xs px-2 py-1 bg-surface border border-border rounded text-white"
                         >취소</button>
                       </div>
                     ) : (
-                      <p className="text-sm font-semibold truncate">{d.title}</p>
+                      <p className="text-sm font-semibold truncate text-white">{d.title}</p>
                     )}
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <span className="text-[10px] text-text-muted">{d.genres?.[0] ?? d.genre ?? "장르 미설정"}</span>
-                      <span className="text-[10px] text-text-muted">·</span>
-                      <span className="text-[10px] text-text-muted">
+                      <span className="text-[10px] text-white">{d.genres?.[0] ?? d.genre ?? "장르 미설정"}</span>
+                      <span className="text-[10px] text-white">·</span>
+                      <span className="text-[10px] text-white">
                         {d.views != null ? `${(d.views / 10000).toFixed(1)}만 조회` : "조회수 없음"}
                       </span>
                       <span className={`text-[10px] font-semibold ${d.status === "active" ? "text-emerald-400" : "text-rose-400"}`}>
@@ -1404,7 +1404,7 @@ export default function AdminDashboard() {
                         className={`text-[10px] px-2 py-1 rounded-md border flex items-center gap-1 transition-colors ${
                           d.banner_enabled
                             ? "bg-gold/10 border-gold/40 text-gold"
-                            : "bg-surface-2 border-border text-text-dim hover:text-gold hover:border-gold/40"
+                            : "bg-surface-2 border-border text-white hover:text-gold hover:border-gold/40"
                         }`}
                         title="배너 ON/OFF"
                       >
@@ -1437,7 +1437,7 @@ export default function AdminDashboard() {
                         {d.top10_rank != null && (
                           <button
                             onClick={() => handleTop10RankChange(d.id, null)}
-                            className="text-[10px] px-1.5 py-1 rounded-md bg-surface-2 border border-border text-text-dim hover:text-sky-400 hover:border-sky-400/40"
+                            className="text-[10px] px-1.5 py-1 rounded-md bg-surface-2 border border-border text-white hover:text-sky-400 hover:border-sky-400/40"
                             title="자동 집계로 전환"
                           >
                             자동
@@ -1449,7 +1449,7 @@ export default function AdminDashboard() {
                         className={`text-[10px] px-2 py-1 rounded-md border flex items-center gap-1 transition-colors ${
                           d.is_new
                             ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
-                            : "bg-surface-2 border-border text-text-dim hover:text-emerald-300 hover:border-emerald-400/40"
+                            : "bg-surface-2 border-border text-white hover:text-emerald-300 hover:border-emerald-400/40"
                         }`}
                         title="신작(NEW 배지) ON/OFF"
                       >
@@ -1463,7 +1463,7 @@ export default function AdminDashboard() {
                     {/* 자막 관리 */}
                     <button
                       onClick={() => setSubtitleTarget({ id: d.id, title: d.title })}
-                      className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-text-dim hover:text-[#D4AF37] hover:border-[#D4AF37]/40 transition-colors"
+                      className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-white hover:text-[#D4AF37] hover:border-[#D4AF37]/40 transition-colors"
                       aria-label="자막 관리"
                       title="자막 관리"
                     >
@@ -1472,7 +1472,7 @@ export default function AdminDashboard() {
                     {/* 수정 */}
                     <button
                       onClick={() => { setEditingId(d.id); setEditTitle(d.title); }}
-                      className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-text-dim hover:text-gold hover:border-gold/40 transition-colors"
+                      className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-white hover:text-gold hover:border-gold/40 transition-colors"
                       aria-label="제목 수정"
                       title="제목 수정"
                     >
@@ -1483,7 +1483,7 @@ export default function AdminDashboard() {
                       onClick={() => handleToggleStatus(d.id, d.status)}
                       className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-colors ${
                         d.status === "active"
-                          ? "bg-surface-2 border-border text-text-dim hover:text-amber-400 hover:border-amber-400/40"
+                          ? "bg-surface-2 border-border text-white hover:text-amber-400 hover:border-amber-400/40"
                           : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
                       }`}
                       aria-label={d.status === "active" ? "비공개로 전환" : "공개로 전환"}
@@ -1494,7 +1494,7 @@ export default function AdminDashboard() {
                     {/* 삭제 */}
                     <button
                       onClick={() => handleDelete(d.id, d.title)}
-                      className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-text-dim hover:text-rose-400 hover:border-rose-400/40 transition-colors"
+                      className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-white hover:text-rose-400 hover:border-rose-400/40 transition-colors"
                       aria-label="삭제"
                       title="삭제"
                     >
@@ -1515,15 +1515,15 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-2">
               <UserCog size={15} className="text-gold" />
               <h2 className="font-bold text-sm md:text-base text-white">구독자 관리</h2>
-              <span className="text-[10px] text-text-muted">· 회원 목록 · Premium/VIP 부여 · 취소 · 연장</span>
+              <span className="text-[10px] text-white">· 회원 목록 · Premium/VIP 부여 · 취소 · 연장</span>
             </div>
-            <button onClick={() => setShowMemberManager(false)} className="text-text-muted hover:text-white text-xs">닫기</button>
+            <button onClick={() => setShowMemberManager(false)} className="text-white hover:text-white text-xs">닫기</button>
           </div>
 
           {/* 검색 */}
           <div className="px-4 md:px-5 pt-3">
             <div className="flex items-center gap-2 bg-surface-2 border border-border rounded-lg px-3 py-2">
-              <Search size={14} className="text-text-muted shrink-0" />
+              <Search size={14} className="text-white shrink-0" />
               <input
                 value={memberSearch}
                 onChange={(e) => setMemberSearch(e.target.value)}
@@ -1537,18 +1537,18 @@ export default function AdminDashboard() {
             <div className="mx-4 md:mx-5 mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg bg-gold/10 border border-gold/30 text-gold">
               <CheckCircle size={13} />
               {memberMsg}
-              <button onClick={() => setMemberMsg(null)} className="ml-auto text-text-muted hover:text-white">✕</button>
+              <button onClick={() => setMemberMsg(null)} className="ml-auto text-white hover:text-white">✕</button>
             </div>
           )}
 
           {memberLoading && (
-            <div className="flex items-center gap-2 px-5 py-3 text-xs text-text-muted">
+            <div className="flex items-center gap-2 px-5 py-3 text-xs text-white">
               <AlertCircle size={13} className="animate-spin" /> 처리 중...
             </div>
           )}
 
           {!memberLoading && members.length === 0 ? (
-            <div className="text-xs text-text-muted text-center py-8 px-6 space-y-1.5">
+            <div className="text-xs text-white text-center py-8 px-6 space-y-1.5">
               {dashboardError.members ? (
                 <p className="text-rose-300">회원 데이터를 불러올 수 없습니다: {dashboardError.members}</p>
               ) : (
@@ -1569,12 +1569,12 @@ export default function AdminDashboard() {
                 return (
                   <div key={m.id} className="flex items-center gap-3 px-4 md:px-5 py-3 hover:bg-surface-2/40 transition-colors flex-wrap">
                     <div className="w-9 h-9 rounded-full bg-surface-2 border border-border flex items-center justify-center shrink-0">
-                      <Users size={14} className="text-text-muted" />
+                      <Users size={14} className="text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold truncate">{memberDisplayName(m)}</p>
+                      <p className="text-sm font-semibold truncate text-white">{memberDisplayName(m)}</p>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className="text-[10px] text-text-muted font-mono truncate max-w-[160px]">{m.id}</span>
+                        <span className="text-[10px] text-white font-mono truncate max-w-[160px]">{m.id}</span>
                         {sub ? (
                           <span
                             className={`text-[10px] font-semibold ${
@@ -1582,14 +1582,14 @@ export default function AdminDashboard() {
                                 ? "text-emerald-400"
                                 : sub.status === "cancelled"
                                 ? "text-amber-400"
-                                : "text-text-muted"
+                                : "text-white"
                             }`}
                           >
                             ● {sub.membership_level?.toUpperCase()} ·{" "}
                             {sub.status === "active" ? "구독중" : sub.status === "cancelled" ? "해지예약" : "만료"}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-text-muted">구독 없음</span>
+                          <span className="text-[10px] text-white">구독 없음</span>
                         )}
                       </div>
                     </div>
@@ -1597,14 +1597,14 @@ export default function AdminDashboard() {
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         onClick={() => handleGrantMembership(m.id, "premium")}
-                        className="text-[10px] px-2 py-1.5 rounded-md bg-surface-2 border border-border text-text-dim hover:text-gold hover:border-gold/40 flex items-center gap-1"
+                        className="text-[10px] px-2 py-1.5 rounded-md bg-surface-2 border border-border text-white hover:text-gold hover:border-gold/40 flex items-center gap-1"
                         title="Premium 부여"
                       >
                         <Sparkles size={11} /> Premium
                       </button>
                       <button
                         onClick={() => handleGrantMembership(m.id, "vip")}
-                        className="text-[10px] px-2 py-1.5 rounded-md bg-surface-2 border border-border text-text-dim hover:text-gold hover:border-gold/40 flex items-center gap-1"
+                        className="text-[10px] px-2 py-1.5 rounded-md bg-surface-2 border border-border text-white hover:text-gold hover:border-gold/40 flex items-center gap-1"
                         title="VIP 부여"
                       >
                         <Gem size={11} /> VIP
@@ -1612,7 +1612,7 @@ export default function AdminDashboard() {
                       <button
                         onClick={() => handleExtendSubscription(m.id)}
                         disabled={!sub}
-                        className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-text-dim hover:text-emerald-400 hover:border-emerald-400/40 disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-white hover:text-emerald-400 hover:border-emerald-400/40 disabled:opacity-30 disabled:cursor-not-allowed"
                         title="구독 30일 연장"
                         aria-label="구독 연장"
                       >
@@ -1621,7 +1621,7 @@ export default function AdminDashboard() {
                       <button
                         onClick={() => handleCancelSubscription(m.id)}
                         disabled={!isActiveSub || sub?.status !== "active"}
-                        className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-text-dim hover:text-rose-400 hover:border-rose-400/40 disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-white hover:text-rose-400 hover:border-rose-400/40 disabled:opacity-30 disabled:cursor-not-allowed"
                         title="구독 취소"
                         aria-label="구독 취소"
                       >
@@ -1643,23 +1643,23 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-2">
               <Settings size={15} className="text-gold" />
               <h2 className="font-bold text-sm md:text-base text-white">플랫폼 설정</h2>
-              <span className="text-[10px] text-text-muted">· 공지사항 · 배너 문구 · 추천 알고리즘</span>
+              <span className="text-[10px] text-white">· 공지사항 · 배너 문구 · 추천 알고리즘</span>
             </div>
-            <button onClick={() => setShowPlatformSettings(false)} className="text-text-muted hover:text-white text-xs">닫기</button>
+            <button onClick={() => setShowPlatformSettings(false)} className="text-white hover:text-white text-xs">닫기</button>
           </div>
 
           {settingsMsg && (
             <div className="mx-4 md:mx-5 mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg bg-gold/10 border border-gold/30 text-gold">
               <CheckCircle size={13} />
               {settingsMsg}
-              <button onClick={() => setSettingsMsg(null)} className="ml-auto text-text-muted hover:text-white">✕</button>
+              <button onClick={() => setSettingsMsg(null)} className="ml-auto text-white hover:text-white">✕</button>
             </div>
           )}
 
           <div className="p-4 md:p-5 space-y-4">
             {/* 공지사항 */}
             <div>
-              <label className="flex items-center gap-1.5 text-xs font-semibold text-text-dim mb-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-white mb-1.5">
                 <Megaphone size={12} className="text-gold" /> 공지사항
               </label>
               <textarea
@@ -1673,7 +1673,7 @@ export default function AdminDashboard() {
 
             {/* 메인 배너 문구 */}
             <div>
-              <label className="text-xs font-semibold text-text-dim mb-1.5 block">메인 배너 문구</label>
+              <label className="text-xs font-semibold text-white mb-1.5 block">메인 배너 문구</label>
               <input
                 value={settingsForm.hero_banner_text}
                 onChange={(e) => setSettingsForm((f) => ({ ...f, hero_banner_text: e.target.value }))}
@@ -1685,7 +1685,7 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* 추천 알고리즘 */}
               <div>
-                <label className="text-xs font-semibold text-text-dim mb-1.5 block">추천 알고리즘</label>
+                <label className="text-xs font-semibold text-white mb-1.5 block">추천 알고리즘</label>
                 <select
                   value={settingsForm.recommend_algorithm}
                   onChange={(e) => setSettingsForm((f) => ({ ...f, recommend_algorithm: e.target.value }))}
@@ -1700,13 +1700,13 @@ export default function AdminDashboard() {
 
               {/* TOP10 자동 여부 */}
               <div>
-                <label className="text-xs font-semibold text-text-dim mb-1.5 block">TOP10 자동 집계</label>
+                <label className="text-xs font-semibold text-white mb-1.5 block">TOP10 자동 집계</label>
                 <button
                   onClick={() => setSettingsForm((f) => ({ ...f, top10_auto: !f.top10_auto }))}
                   className={`w-full px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
                     settingsForm.top10_auto
                       ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                      : "bg-surface-2 border-border text-text-dim"
+                      : "bg-surface-2 border-border text-white"
                   }`}
                 >
                   {settingsForm.top10_auto ? "자동 ON (조회수 기준)" : "자동 OFF (수동 우선)"}
@@ -1715,7 +1715,7 @@ export default function AdminDashboard() {
 
               {/* 신작 노출 개수 */}
               <div>
-                <label className="text-xs font-semibold text-text-dim mb-1.5 block">신작 노출 개수</label>
+                <label className="text-xs font-semibold text-white mb-1.5 block">신작 노출 개수</label>
                 <input
                   type="number"
                   min={1}
@@ -1738,12 +1738,12 @@ export default function AdminDashboard() {
               <button
                 onClick={fetchPlatformSettings}
                 disabled={settingsLoading}
-                className="flex items-center gap-2 bg-surface-2 border border-border text-text-dim font-semibold text-xs md:text-sm px-4 py-2.5 rounded-md hover:text-gold hover:border-gold/40 transition-all disabled:opacity-50"
+                className="flex items-center gap-2 bg-surface-2 border border-border text-white font-semibold text-xs md:text-sm px-4 py-2.5 rounded-md hover:text-gold hover:border-gold/40 transition-all disabled:opacity-50"
               >
                 <RefreshCw size={13} className={settingsLoading ? "animate-spin" : ""} /> 새로고침
               </button>
               {platformSettings?.updated_at && (
-                <span className="text-[10px] text-text-muted ml-auto">
+                <span className="text-[10px] text-white ml-auto">
                   마지막 저장: {new Date(platformSettings.updated_at).toLocaleString("ko-KR")}
                 </span>
               )}
@@ -1765,8 +1765,8 @@ export default function AdminDashboard() {
                 <a.icon size={18} className="text-gold" />
               </div>
               <div className="min-w-0">
-                <p className="font-bold text-sm truncate">{a.title}</p>
-                <p className="text-[11px] text-text-muted mt-0.5 truncate">{a.desc}</p>
+                <p className="font-bold text-sm truncate text-white">{a.title}</p>
+                <p className="text-[11px] text-white mt-0.5 truncate">{a.desc}</p>
               </div>
             </div>
           );
