@@ -30,8 +30,13 @@ export default function Home() {
   const { favoriteIds, isLoggedIn: favLoggedIn } = useFavorites();
 
   // 새로고침/진입 시 Hero Banner가 항상 최상단(top=0)에서 시작하도록 보정.
+  // 브라우저 기본 스크롤 복원(scrollRestoration)을 막아 F5 시 이전 스크롤
+  // 위치로 되돌아가는 것을 방지한다.
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+    window.scrollTo(0, 0);
   }, []);
 
   // 이어보기 항목 삭제 시 로컬 state에서도 즉시 제거
