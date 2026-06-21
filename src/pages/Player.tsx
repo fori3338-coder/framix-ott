@@ -281,6 +281,19 @@ function MembershipConversionOverlay({
   );
 }
 
+// ─── 시간 포맷 (mm:ss / hh:mm:ss) ──────────────────────────────────────────
+function formatTime(seconds: number): string {
+  if (!isFinite(seconds) || seconds < 0) return "0:00";
+  const s = Math.floor(seconds);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  }
+  return `${m}:${String(sec).padStart(2, "0")}`;
+}
+
 export default function Player() {
   const { id, episodeId } = useParams();
   const navigate = useNavigate();
@@ -310,6 +323,15 @@ export default function Player() {
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [hoverTooltip, setHoverTooltip] = useState<{ visible: boolean; x: number; time: number; thumb: string | null }>({ visible: false, x: 0, time: 0, thumb: null });
+  // ─── Thumbnail Preview (Offscreen Video + Canvas) ────────────────────────
+  const thumbVideoRef = useRef<HTMLVideoElement | null>(null);
+  const thumbCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const thumbCacheRef = useRef<Map<number, string>>(new Map());
+  const thumbRafRef = useRef<number | null>(null);
+  const thumbSrcRef = useRef<string | null>(null);
   const [liked, setLiked] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
@@ -450,6 +472,8 @@ export default function Player() {
     if (!v?.duration) return;
     const pct = (v.currentTime / v.duration) * 100;
     setProgress(pct);
+    setCurrentTime(v.currentTime);
+    setDuration(v.duration);
 
     if (episodeId) localStorage.setItem(RESUME_KEY(episodeId), String(v.currentTime));
 
@@ -723,6 +747,84 @@ export default function Player() {
     };
   }, []);
 
+  // ─── Thumbnail Preview: Offscreen Video + Canvas 초기화 ──────────────────
+  useEffect(() => {
+    const src = episode?.videoUrl;
+    if (!src) return;
+    if (thumbSrcRef.current === src) return;
+    thumbSrcRef.current = src;
+    // 캐시 초기화
+    thumbCacheRef.current.clear();
+
+    // Offscreen video element 생성
+    const tv = document.createElement("video");
+    tv.src = src;
+    tv.crossOrigin = "anonymous";
+    tv.preload = "metadata";
+    tv.muted = true;
+    tv.playsInline = true;
+    thumbVideoRef.current = tv;
+
+    // Offscreen canvas 생성 (160×90, 16:9)
+    const canvas = document.createElement("canvas");
+    canvas.width = 160;
+    canvas.height = 90;
+    thumbCanvasRef.current = canvas;
+
+    return () => {
+      tv.src = "";
+      thumbVideoRef.current = null;
+      thumbCacheRef.current.clear();
+      if (thumbRafRef.current) cancelAnimationFrame(thumbRafRef.current);
+    };
+  }, [episode?.videoUrl]);
+
+  // ─── 썸네일 추출 함수 (캐시 + rAF) ──────────────────────────────────────
+  const extractThumb = useCallback((time: number, x: number) => {
+    // bucket: 2초 단위로 캐시
+    const bucket = Math.floor(time / 2) * 2;
+    const cached = thumbCacheRef.current.get(bucket);
+    if (cached) {
+      setHoverTooltip({ visible: true, x, time, thumb: cached });
+      return;
+    }
+    const tv = thumbVideoRef.current;
+    const canvas = thumbCanvasRef.current;
+    if (!tv || !canvas) {
+      setHoverTooltip({ visible: true, x, time, thumb: null });
+      return;
+    }
+    if (thumbRafRef.current) cancelAnimationFrame(thumbRafRef.current);
+
+    const doSeekAndCapture = () => {
+      tv.currentTime = bucket;
+    };
+
+    const onSeeked = () => {
+      thumbRafRef.current = requestAnimationFrame(() => {
+        try {
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
+          ctx.drawImage(tv, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+          // 빈 캔버스 체크 (drawImage 실패 시 검은 이미지)
+          if (dataUrl && dataUrl.length > 5000) {
+            thumbCacheRef.current.set(bucket, dataUrl);
+            setHoverTooltip((prev) =>
+              prev.visible ? { ...prev, time: tv.currentTime || time, thumb: dataUrl } : prev
+            );
+          }
+        } catch {
+          // crossOrigin 오류 등 — thumb null 유지
+        }
+        tv.removeEventListener("seeked", onSeeked);
+      });
+    };
+
+    tv.addEventListener("seeked", onSeeked, { once: true });
+    doSeekAndCapture();
+  }, []);
+
   if (loading) return <div className="text-white p-10">Loading...</div>;
   if (!drama || !episode) return <div className="text-white p-10">Not Found</div>;
 
@@ -879,9 +981,16 @@ export default function Player() {
       {/* ═══ BOTTOM CONTROLS ════════════════════════════════════════════════ */}
       {!isLocked && (
         <div className={`absolute bottom-0 left-0 right-0 px-4 pb-4 z-20 ${fadeClass}`}>
+          {/* 시간 표시 */}
+          <div className="flex items-center gap-1 mb-2 text-xs font-mono select-none pointer-events-none">
+            <span className="text-white font-semibold tabular-nums">{formatTime(currentTime)}</span>
+            <span className="text-white/50">/</span>
+            <span className="text-white/70 tabular-nums">{formatTime(duration)}</span>
+          </div>
+
           {/* 프로그레스 바 */}
           <div
-            className="h-1 bg-white/30 rounded cursor-pointer pointer-events-auto mb-4 group"
+            className="relative h-1 bg-white/30 rounded cursor-pointer pointer-events-auto mb-4 group"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const pct = ((e.clientX - rect.left) / rect.width) * 100;
@@ -891,9 +1000,100 @@ export default function Player() {
               if (episodeId && videoRef.current)
                 saveWatchHistory(episodeId, videoRef.current.currentTime, videoRef.current.duration);
             }}
+            onMouseMove={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+              const t = pct * (videoRef.current?.duration ?? 0);
+              const xPos = e.clientX - rect.left;
+              setHoverTooltip((prev) => ({ ...prev, visible: true, x: xPos, time: t }));
+              extractThumb(t, xPos);
+            }}
+            onMouseLeave={() => setHoverTooltip((prev) => ({ ...prev, visible: false, thumb: null }))}
           >
+            {/* Hover Thumbnail Preview */}
+            {hoverTooltip.visible && (
+              <div
+                className="absolute pointer-events-none z-10"
+                style={{
+                  left: hoverTooltip.x,
+                  bottom: "calc(100% + 10px)",
+                  transform: "translateX(-50%)",
+                }}
+              >
+                {/* 썸네일 카드 */}
+                <div
+                  style={{
+                    background: "#000000",
+                    border: "2px solid #FFD54A",
+                    borderRadius: "6px",
+                    overflow: "hidden",
+                    width: "160px",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.8)",
+                  }}
+                >
+                  {/* 썸네일 이미지 영역 (160×90) */}
+                  <div
+                    style={{
+                      width: "160px",
+                      height: "90px",
+                      background: "#111",
+                      position: "relative",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {hoverTooltip.thumb ? (
+                      <img
+                        src={hoverTooltip.thumb}
+                        alt=""
+                        style={{ width: "160px", height: "90px", objectFit: "cover", display: "block" }}
+                      />
+                    ) : (
+                      <img
+                        src={episode?.thumbnail || drama?.poster || ""}
+                        alt=""
+                        style={{ width: "160px", height: "90px", objectFit: "cover", display: "block", opacity: 0.5 }}
+                      />
+                    )}
+                  </div>
+                  {/* 시간 표시 */}
+                  <div
+                    style={{
+                      background: "#000000",
+                      padding: "4px 8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "#FFFFFF",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        fontVariantNumeric: "tabular-nums",
+                        fontFamily: "monospace",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      {formatTime(hoverTooltip.time)}
+                    </span>
+                  </div>
+                </div>
+                {/* 말풍선 꼬리 */}
+                <div
+                  style={{
+                    margin: "0 auto",
+                    width: 0,
+                    height: 0,
+                    borderLeft: "6px solid transparent",
+                    borderRight: "6px solid transparent",
+                    borderTop: "6px solid #FFD54A",
+                  }}
+                />
+              </div>
+            )}
             <div
-              className="h-full bg-red-600 rounded transition-all relative group-hover:h-1.5"
+              className="h-full bg-[#FFD54A] rounded transition-all relative group-hover:h-1.5"
               style={{ width: `${progress}%` }}
             >
               <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity" />
