@@ -60,9 +60,35 @@ export default function Header() {
           </button>
           {user ? (
             <div className="relative">
+              <div className="hidden sm:flex items-center gap-2 md:gap-2.5 rounded-md border border-border hover:border-gold/60 transition-colors pl-0.5 pr-2 py-0.5">
+                <button
+                  onClick={() => setProfileMenuOpen((p) => !p)}
+                  className="flex items-center shrink-0 rounded-sm overflow-hidden"
+                  aria-label="프로필"
+                >
+                  <img
+                    src="https://picsum.photos/seed/framix-profile/64/64"
+                    alt="profile"
+                    className="w-7 h-7 rounded-sm object-cover"
+                  />
+                </button>
+                <button
+                  onClick={() => setProfileMenuOpen((p) => !p)}
+                  className="text-sm font-medium text-white hover:text-gold transition-colors whitespace-nowrap"
+                >
+                  {user.user_metadata?.display_name || "내 계정"}
+                </button>
+                <button
+                  onClick={() => setProfileMenuOpen((p) => !p)}
+                  aria-label="프로필 메뉴 열기"
+                  className="text-text-dim hover:text-gold transition-colors"
+                >
+                  <ChevronDown size={14} />
+                </button>
+              </div>
               <button
                 onClick={() => setProfileMenuOpen((p) => !p)}
-                className="hidden sm:flex items-center gap-1.5 rounded-md overflow-hidden border border-border hover:border-gold/60 transition-colors p-0.5"
+                className="sm:hidden flex items-center rounded-md overflow-hidden border border-border hover:border-gold/60 transition-colors p-0.5"
                 aria-label="프로필"
               >
                 <img
