@@ -7,7 +7,6 @@ import {
 import { useDramaDetail } from "../hooks/useDramaDetail";
 import { useDramas } from "../hooks/useDramas";
 import { useFavorites } from "../hooks/useFavorites";
-import DramaCard from "../components/DramaCard";
 import DramaRow from "../components/DramaRow";
 
 // ─── Scroll Reveal Hook ────────────────────────────────────────────────────
