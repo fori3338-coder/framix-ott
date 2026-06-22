@@ -303,20 +303,31 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              <div className="framix-auth-btns">
+              <>
+                {/* 모바일: 로그인 아이콘 버튼 */}
                 <button
-                  className="framix-btn-ghost"
+                  className="framix-icon-btn framix-mobile-only"
                   onClick={() => openAuth("login")}
+                  aria-label="로그인"
                 >
-                  로그인
+                  <User size={20} />
                 </button>
-                <button
-                  className="framix-btn-primary"
-                  onClick={() => openAuth("signup")}
-                >
-                  시작하기
-                </button>
-              </div>
+                {/* 데스크탑: 텍스트 버튼 */}
+                <div className="framix-auth-btns framix-desktop-only">
+                  <button
+                    className="framix-btn-ghost"
+                    onClick={() => openAuth("login")}
+                  >
+                    로그인
+                  </button>
+                  <button
+                    className="framix-btn-primary"
+                    onClick={() => openAuth("signup")}
+                  >
+                    시작하기
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>

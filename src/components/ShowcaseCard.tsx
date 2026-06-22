@@ -248,7 +248,7 @@ function DefaultCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" 
           "shadow-[0_2px_8px_rgba(0,0,0,0.3),0_8px_24px_rgba(0,0,0,0.45),0_16px_48px_rgba(0,0,0,0.6)]",
           "transition-[transform,box-shadow,ring-color] duration-[320ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
           "md:group-hover:scale-[1.08]",
-          "md:group-hover:-translate-y-[10px]",
+          "md:group-hover:-translate-y-[8px]",
           "md:group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.4),0_20px_48px_rgba(0,0,0,0.6),0_32px_80px_rgba(0,0,0,0.75)]",
           "md:group-hover:ring-white/24",
           "group-active:scale-[0.97]",
@@ -377,8 +377,8 @@ function Top10Card({ drama, rank, size = "md" }: { drama: Drama; rank: number; s
     : size === "lg" ? "w-[160px] sm:w-[190px] md:w-[220px]"
     : "w-[145px] sm:w-[170px] md:w-[195px]";
 
-  // Rank font: crisp large outline style
-  const rankSize = rank >= 10 ? "clamp(78px, 13vw, 130px)" : "clamp(88px, 15vw, 150px)";
+  // Rank font: crisp large outline style — 지시서 스펙 150~180px
+  const rankSize = rank >= 10 ? "clamp(120px, 16vw, 160px)" : "clamp(130px, 18vw, 180px)";
 
   const handlePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -417,13 +417,15 @@ function Top10Card({ drama, rank, size = "md" }: { drama: Drama; rank: number; s
           fontFamily: "'Arial Black', 'Impact', sans-serif",
           letterSpacing: "-0.08em",
           WebkitTextStroke: rank === 1
-            ? "2px rgba(212,175,55,0.65)"
+            ? "3px rgba(212,175,55,0.85)"
             : rank <= 3
-            ? "2px rgba(180,160,100,0.45)"
-            : "2px rgba(255,255,255,0.14)",
+            ? "2.5px rgba(192,192,192,0.65)"
+            : "2px rgba(255,255,255,0.18)",
           paintOrder: "stroke fill",
           textShadow: rank === 1
-            ? "0 8px 32px rgba(212,175,55,0.25), 0 2px 8px rgba(0,0,0,0.8)"
+            ? "0 0 40px rgba(212,175,55,0.35), 0 8px 32px rgba(212,175,55,0.25), 0 2px 8px rgba(0,0,0,0.9)"
+            : rank <= 3
+            ? "0 0 30px rgba(192,192,192,0.20), 0 6px 24px rgba(0,0,0,0.8)"
             : "0 4px 16px rgba(0,0,0,0.8)",
         }}
         aria-hidden="true"
@@ -442,7 +444,7 @@ function Top10Card({ drama, rank, size = "md" }: { drama: Drama; rank: number; s
             "shadow-[0_4px_12px_rgba(0,0,0,0.3),0_12px_32px_rgba(0,0,0,0.5),0_20px_60px_rgba(0,0,0,0.7)]",
             "transition-[transform,box-shadow,ring-color] duration-[320ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
             "md:group-hover:scale-[1.08]",
-            "md:group-hover:-translate-y-[10px]",
+            "md:group-hover:-translate-y-[8px]",
             "md:group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.45),0_24px_56px_rgba(0,0,0,0.65),0_36px_84px_rgba(0,0,0,0.8)]",
             "md:group-hover:ring-white/25",
             "group-active:scale-[0.97]",

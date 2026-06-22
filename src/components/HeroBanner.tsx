@@ -9,7 +9,7 @@
  */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Play, Info, Plus, Check, Volume2, VolumeX } from "lucide-react";
+import { Play, Info, Plus, Check } from "lucide-react";
 import type { Drama } from "../types";
 import { useFavorites } from "../hooks/useFavorites";
 
@@ -21,7 +21,6 @@ const SLIDE_MS = 7000;
 
 export default function HeroBanner({ dramas }: HeroBannerProps) {
   const [index, setIndex] = useState(0);
-  const [muted, setMuted] = useState(true);
   const [paused, setPaused] = useState(false);
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -100,7 +99,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             {/* ── Title ─────────────────────────────────────────────── */}
             <h1
               className="hero-v10-title hero-fade-in"
-              style={{ animationDelay: "60ms", animationFillMode: "backwards" }}
+              style={{ animationDelay: "0ms", animationFillMode: "backwards" }}
             >
               {drama.title}
             </h1>
@@ -108,7 +107,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             {/* ── Cinematic Metadata Row ─────────────────────────────── */}
             <div
               className="hero-v10-metadata hero-fade-in"
-              style={{ animationDelay: "130ms", animationFillMode: "backwards" }}
+              style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
             >
               {/* Rating box */}
               <div className="hero-v10-meta-item">
@@ -150,7 +149,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             {/* ── Description ───────────────────────────────────────── */}
             <p
               className="hero-v10-description hero-fade-in"
-              style={{ animationDelay: "190ms", animationFillMode: "backwards" }}
+              style={{ animationDelay: "120ms", animationFillMode: "backwards" }}
             >
               {drama.synopsis}
             </p>
@@ -158,7 +157,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             {/* ── Genre Tags ────────────────────────────────────────── */}
             <div
               className="hero-v10-genre-tags hero-fade-in"
-              style={{ animationDelay: "250ms", animationFillMode: "backwards" }}
+              style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
             >
               {drama.genres.slice(0, 3).map((g) => (
                 <span key={g} className="hero-v10-genre-tag">{g}</span>
@@ -168,7 +167,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             {/* ── Action Buttons ────────────────────────────────────── */}
             <div
               className="hero-v10-actions hero-fade-in"
-              style={{ animationDelay: "320ms", animationFillMode: "backwards" }}
+              style={{ animationDelay: "360ms", animationFillMode: "backwards" }}
             >
               {/* Play — primary white pill */}
               <button
@@ -202,15 +201,6 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
                 ) : (
                   <Plus size={19} strokeWidth={2} />
                 )}
-              </button>
-
-              {/* Volume */}
-              <button
-                onClick={() => setMuted((m) => !m)}
-                className="hero-v10-btn-icon"
-                aria-label={muted ? "음소거 해제" : "음소거"}
-              >
-                {muted ? <VolumeX size={17} strokeWidth={2} /> : <Volume2 size={17} strokeWidth={2} />}
               </button>
             </div>
           </div>
