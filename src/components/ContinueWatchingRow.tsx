@@ -249,7 +249,7 @@ function ContinueWatchingCard({
         <div className="absolute inset-0 flex items-center justify-center">
           <div
             className={[
-              "w-12 h-12 rounded-full flex items-center justify-center",
+              "w-14 h-14 rounded-full flex items-center justify-center",
               "transition-[transform,opacity,background,box-shadow] duration-[280ms]",
               "opacity-60 md:group-hover:opacity-100",
               "scale-90 md:group-hover:scale-110",
@@ -257,7 +257,7 @@ function ContinueWatchingCard({
               "shadow-[0_4px_20px_rgba(0,0,0,0.45)] md:group-hover:shadow-[0_8px_32px_rgba(0,0,0,0.6)]",
             ].join(" ")}
           >
-            <Play size={20} className="text-black fill-black ml-0.5" />
+            <Play size={24} className="text-black fill-black ml-1" />
           </div>
         </div>
 

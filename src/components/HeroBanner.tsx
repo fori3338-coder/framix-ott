@@ -9,7 +9,7 @@
  */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Play, Info, Plus, Check } from "lucide-react";
+import { Play, Info, Plus, Check, Volume2, VolumeX } from "lucide-react";
 import type { Drama } from "../types";
 import { useFavorites } from "../hooks/useFavorites";
 
@@ -21,6 +21,7 @@ const SLIDE_MS = 7000;
 
 export default function HeroBanner({ dramas }: HeroBannerProps) {
   const [index, setIndex] = useState(0);
+  const [muted, setMuted] = useState(true);
   const [paused, setPaused] = useState(false);
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -156,7 +157,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
 
             {/* ── Genre Tags ────────────────────────────────────────── */}
             <div
-              className="hero-v10-genre-tags hero-fade-in hero-genre-tags-mobile-hide"
+              className="hero-v10-genre-tags hero-fade-in"
               style={{ animationDelay: "300ms", animationFillMode: "backwards" }}
             >
               {drama.genres.slice(0, 3).map((g) => (
@@ -201,6 +202,15 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
                 ) : (
                   <Plus size={19} strokeWidth={2} />
                 )}
+              </button>
+
+              {/* Volume */}
+              <button
+                onClick={() => setMuted((m) => !m)}
+                className="hero-v10-btn-icon"
+                aria-label={muted ? "음소거 해제" : "음소거"}
+              >
+                {muted ? <VolumeX size={17} strokeWidth={2} /> : <Volume2 size={17} strokeWidth={2} />}
               </button>
             </div>
           </div>
