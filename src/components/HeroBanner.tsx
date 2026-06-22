@@ -1,12 +1,17 @@
+/**
+ * HeroBanner V10 — Cinematic Dual-Column Layout
+ * Left: Premium text content with metadata
+ * Right: Full cinematic artwork with Ken Burns
+ * Desktop-first responsive scaling
+ */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Play, Info, Volume2, VolumeX, Plus, Eye } from "lucide-react";
+import { Play, Info, Plus, Volume2, VolumeX } from "lucide-react";
 import type { Drama } from "../types";
-import type { ContinueWatchingItem } from "../types";
+import { useFavorites } from "../hooks/useFavorites";
 
 interface HeroBannerProps {
   dramas: Drama[];
-  continueWatchingItems?: ContinueWatchingItem[];
 }
 
 const SLIDE_MS = 7000;
@@ -16,6 +21,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
   const [muted, setMuted] = useState(true);
   const [paused, setPaused] = useState(false);
   const navigate = useNavigate();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   useEffect(() => {
     if (paused) return;
@@ -23,18 +29,21 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
       setIndex((i) => (i + 1) % dramas.length);
     }, SLIDE_MS);
     return () => clearInterval(timer);
-  }, [dramas.length, paused, index]);
+  }, [dramas.length, paused]);
 
   const drama = dramas[index];
   if (!drama) return null;
 
+  const firstEpisodeId = drama.episodes[0]?.id;
+  const isFav = isFavorite(drama.id);
+
   return (
     <div
-      className="relative w-full h-[72vh] md:h-[92vh] min-h-[500px] overflow-hidden bg-base"
+      className="relative w-full h-[100vh] min-h-[920px] overflow-hidden bg-black"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* ── Backdrop layers with Ken Burns ─────────────────────────── */}
+      {/* ── Backdrop Layer (Right side cinematic artwork) ──────────────── */}
       {dramas.map((d, i) => (
         <div
           key={d.id}
@@ -51,142 +60,139 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
         </div>
       ))}
 
-      {/* ── Cinematic Scrim (deeper, more premium) ──────────────────── */}
-      <div className="hero-cinematic-scrim pointer-events-none" />
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-b from-transparent to-base pointer-events-none" />
+      {/* ── Hero Gradient Scrim: Strong bottom-to-top black gradient ──── */}
+      <div className="hero-v10-scrim absolute inset-0 pointer-events-none" />
 
-      {/* ── Main Content ─────────────────────────────────────────────── */}
-      <div className="hero-content-layout-v3">
-        <div className="hero-left-v3" key={drama.id}>
-
-          {/* Original badge */}
-          {drama.isOriginal && (
-            <div className="flex items-center gap-2 mb-4 hero-fade-in">
-              <span className="hero-original-badge">FRAMIX ORIGINAL</span>
-            </div>
-          )}
-
-          {/* ── Title — Much larger, bolder ────────────────────────── */}
-          <h1
-            className="hero-title-v5"
-            style={{ animationDelay: "60ms", animationFillMode: "backwards" }}
-          >
-            {drama.title}
-          </h1>
-
-          {/* ── Synopsis ─────────────────────────────────────────────── */}
-          <p
-            className="hero-synopsis-v5 hero-fade-in"
-            style={{ animationDelay: "160ms", animationFillMode: "backwards" }}
-          >
-            {drama.synopsis}
-          </p>
-
-          {/* ── Glass Metadata Panel ─────────────────────────────────── */}
-          <div
-            className="hero-glass-panel hero-fade-in"
-            style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
-          >
-            {/* Rating */}
-            <div className="hero-meta-item">
-              <svg width="13" height="13" viewBox="0 0 10 10" fill="rgba(255,255,255,0.9)">
-                <path d="M5 0.5l1.3 2.6 2.9.4-2.1 2 .5 2.9L5 6.9l-2.6 1.5.5-2.9-2.1-2 2.9-.4z" />
-              </svg>
-              <span className="hero-meta-value">{drama.rating.toFixed(1)}</span>
-            </div>
-            <div className="hero-meta-divider" />
-            {/* Genre */}
-            <span className="hero-meta-label">{drama.genres[0]}</span>
-            <div className="hero-meta-divider" />
-            {/* Episodes */}
-            <span className="hero-meta-label">{drama.totalEpisodes}부작</span>
-            <div className="hero-meta-divider" />
-            {/* Views */}
-            {drama.views !== undefined && (
-              <>
-                <div className="flex items-center gap-1">
-                  <Eye size={11} className="text-white/50" />
-                  <span className="hero-meta-label">
-                    {drama.views >= 10000
-                      ? `${(drama.views / 10000).toFixed(1)}만`
-                      : drama.views.toLocaleString()}
-                  </span>
-                </div>
-                <div className="hero-meta-divider" />
-              </>
+      {/* ── Dual-Column Layout Container ──────────────────────────────── */}
+      <div className="hero-v10-container relative z-10 h-full flex items-center">
+        {/* LEFT COLUMN: Premium Text Content */}
+        <div className="hero-v10-left">
+          <div className="hero-v10-content" key={drama.id}>
+            {/* Badge: ORIGINAL / PREMIUM / VIP */}
+            {drama.isOriginal && (
+              <div
+                className="hero-v10-badge hero-fade-in"
+                style={{ animationDelay: "0ms", animationFillMode: "backwards" }}
+              >
+                FRAMIX ORIGINAL
+              </div>
             )}
-            {/* Year + Age */}
-            <span className="hero-meta-label">{drama.year}</span>
-            <span className="hero-age-badge">{drama.ageRating}</span>
-          </div>
 
-          {/* ── Genre tags ──────────────────────────────────────────── */}
-          <div
-            className="flex flex-wrap gap-1.5 mb-6 md:mb-8 hero-fade-in"
-            style={{ animationDelay: "300ms", animationFillMode: "backwards" }}
-          >
-            {drama.genres.map((g) => (
-              <span key={g} className="hero-genre-tag">{g}</span>
-            ))}
-          </div>
-
-          {/* ── Action Buttons ───────────────────────────────────────── */}
-          <div
-            className="hero-actions-v5 hero-fade-in"
-            style={{ animationDelay: "360ms", animationFillMode: "backwards" }}
-          >
-            <button
-              onClick={() => {
-                const firstEp = drama.episodes[0];
-                if (firstEp) navigate(`/watch/${drama.id}/${firstEp.id}`);
-                else navigate(`/drama/${drama.id}`);
-              }}
-              className="hero-btn-play"
+            {/* TITLE: 40% larger (now clamp(3rem, 7vw, 6.5rem)) */}
+            <h1
+              className="hero-v10-title hero-fade-in"
+              style={{ animationDelay: "60ms", animationFillMode: "backwards" }}
             >
-              <Play size={20} className="fill-black" />
-              <span>재생</span>
-            </button>
+              {drama.title}
+            </h1>
 
-            <button
-              onClick={() => navigate(`/drama/${drama.id}`)}
-              className="hero-btn-info"
+            {/* DESCRIPTION: 3-line limit */}
+            <p
+              className="hero-v10-description hero-fade-in"
+              style={{ animationDelay: "120ms", animationFillMode: "backwards" }}
             >
-              <Info size={18} />
-              <span className="hidden sm:inline">상세보기</span>
-              <span className="sm:hidden">정보</span>
-            </button>
+              {drama.synopsis}
+            </p>
 
-            <button aria-label="찜하기" className="hero-btn-icon hidden sm:flex">
-              <Plus size={18} />
-            </button>
-
-            <button
-              onClick={() => setMuted((m) => !m)}
-              aria-label="음소거 토글"
-              className="hero-btn-icon ml-auto"
+            {/* METADATA ROW: Rating, Genre, Episodes, Views */}
+            <div
+              className="hero-v10-metadata hero-fade-in"
+              style={{ animationDelay: "180ms", animationFillMode: "backwards" }}
             >
-              {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-            </button>
+              {/* Rating */}
+              <div className="hero-v10-meta-item">
+                <svg width="14" height="14" viewBox="0 0 10 10" fill="rgba(255,255,255,0.95)">
+                  <path d="M5 0.5l1.3 2.6 2.9.4-2.1 2 .5 2.9L5 6.9l-2.6 1.5.5-2.9-2.1-2 2.9-.4z" />
+                </svg>
+                <span className="text-sm font-semibold">{drama.rating.toFixed(1)}</span>
+              </div>
+
+              {/* Genre */}
+              <span className="text-sm text-white/65 font-medium">{drama.genres[0]}</span>
+
+              {/* Episodes */}
+              <span className="text-sm text-white/65 font-medium">{drama.totalEpisodes}부작</span>
+
+              {/* Views */}
+              {drama.views !== undefined && (
+                <span className="text-sm text-white/65 font-medium">
+                  조회 {drama.views >= 10000 ? `${(drama.views / 10000).toFixed(1)}만` : drama.views.toLocaleString()}
+                </span>
+              )}
+            </div>
+
+            {/* GENRES as tags */}
+            <div
+              className="hero-v10-genre-tags hero-fade-in"
+              style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
+            >
+              {drama.genres.map((g) => (
+                <span key={g} className="hero-v10-genre-tag">{g}</span>
+              ))}
+            </div>
+
+            {/* ACTION BUTTONS */}
+            <div
+              className="hero-v10-actions hero-fade-in"
+              style={{ animationDelay: "300ms", animationFillMode: "backwards" }}
+            >
+              <button
+                onClick={() => {
+                  if (firstEpisodeId) navigate(`/watch/${drama.id}/${firstEpisodeId}`);
+                  else navigate(`/drama/${drama.id}`);
+                }}
+                className="hero-v10-btn-play"
+              >
+                <Play size={20} className="fill-black" />
+                <span className="font-bold">재생</span>
+              </button>
+
+              <button
+                onClick={() => navigate(`/drama/${drama.id}`)}
+                className="hero-v10-btn-secondary"
+              >
+                <Info size={18} />
+                <span className="font-semibold">상세보기</span>
+              </button>
+
+              <button
+                onClick={() => toggleFavorite(drama.id)}
+                className="hero-v10-btn-icon"
+                aria-label="찜"
+              >
+                <Plus size={20} className={isFav ? "text-gold" : ""} />
+              </button>
+
+              <button
+                onClick={() => setMuted((m) => !m)}
+                className="hero-v10-btn-icon"
+                aria-label="음소거"
+              >
+                {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* RIGHT COLUMN: Large Cinematic Artwork (implicit via background) */}
+        <div className="hero-v10-right" />
       </div>
 
-      {/* ── Slide Indicators ─────────────────────────────────────────── */}
-      <div className="absolute bottom-4 md:bottom-7 right-5 md:right-14 flex items-center gap-2">
+      {/* ── Slide Indicators (Bottom right) ─────────────────────────── */}
+      <div className="absolute bottom-6 md:bottom-10 right-5 md:right-12 flex items-center gap-2 z-20">
         {dramas.map((d, i) => (
           <button
             key={d.id}
             onClick={() => setIndex(i)}
             aria-label={`슬라이드 ${i + 1}`}
-            className={`relative h-[2px] rounded-full overflow-hidden transition-all duration-300 ${
-              i === index ? "w-10 md:w-14 bg-white/15" : "w-3 md:w-4 bg-white/20 hover:bg-white/35"
+            className={`relative h-1 rounded-full transition-all duration-300 ${
+              i === index
+                ? "w-10 md:w-14 bg-white/80"
+                : "w-2 md:w-3 bg-white/30 hover:bg-white/55"
             }`}
           >
             {i === index && !paused && (
-              <span
-                key={`${drama.id}-${i}`}
-                className="absolute inset-0 bg-white origin-left animate-[hero-progress_7s_linear_forwards]"
-              />
+              <span className="absolute inset-0 bg-white origin-left animate-[hero-progress_7s_linear_forwards]" />
             )}
             {i === index && paused && <span className="absolute inset-0 bg-white" />}
           </button>

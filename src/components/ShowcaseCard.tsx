@@ -200,7 +200,7 @@ function MobileOverlay({
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// ── 1. DEFAULT Card ── Standard portrait, hover float info ───────────────
+// ── 1. DEFAULT Card V4 ── OTT Premium with 3-layer shadows, overlay system ──
 // ══════════════════════════════════════════════════════════════════════════
 
 function DefaultCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" | "lg" }) {
@@ -212,9 +212,9 @@ function DefaultCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" 
   const firstEpisodeId = drama.episodes[0]?.id;
 
   const widthClass =
-    size === "sm" ? "w-[90px] sm:w-[108px] md:w-[130px]"
-    : size === "lg" ? "w-[140px] sm:w-[168px] md:w-[196px] lg:w-[210px]"
-    : "w-[110px] sm:w-[140px] md:w-[164px] lg:w-[180px]";
+    size === "sm" ? "w-[100px] sm:w-[120px] md:w-[140px]"
+    : size === "lg" ? "w-[150px] sm:w-[180px] md:w-[210px]"
+    : "w-[125px] sm:w-[155px] md:w-[180px]";
 
   const handlePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -240,16 +240,24 @@ function DefaultCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" 
       onClick={() => navigate(`/drama/${drama.id}`)}
       onTouchEnd={handleMobileTap}
     >
-      {/* Poster */}
+      {/* Card Container with 3-layer shadow system */}
       <div
         className={[
-          "relative aspect-[9/16] rounded-xl overflow-hidden bg-[#1a1a1c]",
-          "ring-1 ring-white/8",
-          "transition-[transform,box-shadow] duration-[350ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
-          "md:group-hover:scale-[1.06] md:group-hover:shadow-[0_30px_80px_rgba(0,0,0,0.55)] md:group-hover:ring-white/18",
-          "group-active:scale-[0.97] will-change-[transform]",
+          "relative w-full aspect-[9/16] rounded-xl overflow-hidden bg-[#0f0f10]",
+          "ring-1 ring-white/10",
+          // 3-layer shadow system: near + mid + far depth
+          "shadow-[0_2px_8px_rgba(0,0,0,0.25), 0_8px_24px_rgba(0,0,0,0.4), 0_16px_48px_rgba(0,0,0,0.6)]",
+          // Hover: scale(1.12) + translateY(-12px) + enhanced shadows
+          "transition-[transform,box-shadow,ring-color] duration-[300ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
+          "md:group-hover:scale-[1.12]",
+          "md:group-hover:-translate-y-3",
+          "md:group-hover:shadow-[0_4px_12px_rgba(0,0,0,0.35), 0_16px_40px_rgba(0,0,0,0.55), 0_28px_72px_rgba(0,0,0,0.75)]",
+          "md:group-hover:ring-white/22",
+          "group-active:scale-[0.98]",
+          "will-change-[transform,box-shadow]",
         ].join(" ")}
       >
+        {/* Image with individual hover zoom */}
         {!imgError ? (
           <img
             src={drama.poster || drama.backdrop}
@@ -257,52 +265,62 @@ function DefaultCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" 
             decoding="async"
             loading="lazy"
             onError={() => setImgError(true)}
-            className="w-full h-full object-cover transition-transform duration-[350ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] md:group-hover:scale-[1.12] will-change-transform"
+            className="w-full h-full object-cover transition-transform duration-[300ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] md:group-hover:scale-[1.15] will-change-transform"
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-[#1e1e20] to-[#111113] p-3 text-center">
-            <span className="text-white/40 text-2xl mb-2">🎬</span>
-            <span className="text-[10px] text-white/50 leading-snug">{drama.title}</span>
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-[#1a1a1c] to-[#0a0a0c] p-2 text-center">
+            <span className="text-white/30 text-xl mb-1">🎬</span>
+            <span className="text-[9px] text-white/40 leading-tight">{drama.title}</span>
           </div>
         )}
 
-        {/* Badges */}
+        {/* Top badges: New, Exclusive */}
         <div className="absolute top-2 left-2 flex flex-col gap-1 items-start z-10">
           {drama.isExclusive && (
-            <span className="bg-white text-black text-[9px] font-black px-1.5 py-0.5 rounded tracking-wide">독점</span>
+            <span className="bg-white text-black text-[8px] font-black px-1.5 py-0.5 rounded tracking-wider">독점</span>
           )}
           {drama.isNew && (
-            <span className="bg-white/90 text-black text-[9px] font-black px-1.5 py-0.5 rounded tracking-wide">NEW</span>
+            <span className="bg-white/95 text-black text-[8px] font-black px-1.5 py-0.5 rounded tracking-wider">NEW</span>
           )}
         </div>
 
-        {/* Desktop hover overlay — spec gradient */}
+        {/* Bottom Overlay: Appears on hover with Play, Save, Details */}
         <div
           className={[
             "absolute inset-0",
-            "opacity-0 md:group-hover:opacity-100 transition-opacity duration-[350ms]",
-            "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
-            "flex flex-col items-center justify-end pb-3 gap-2",
+            "bg-gradient-to-t from-black/95 via-black/50 to-transparent",
+            "opacity-0 md:group-hover:opacity-100",
+            "transition-opacity duration-[280ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
+            "flex flex-col items-center justify-end pb-2.5",
             "pointer-events-none md:group-hover:pointer-events-auto",
           ].join(" ")}
-          style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.20), transparent)" }}
         >
           <div
-            className="w-full px-2.5 opacity-0 md:group-hover:opacity-100 translate-y-3 md:group-hover:translate-y-0 transition-[opacity,transform] duration-[250ms] will-change-[opacity,transform]"
-            style={{ transitionDelay: "55ms" }}
+            className="w-full px-2 opacity-0 md:group-hover:opacity-100 translate-y-3 md:group-hover:translate-y-0 transition-[opacity,transform] duration-[240ms]"
+            style={{ transitionDelay: "60ms" }}
           >
-            <p className="text-white font-bold text-[12px] md:text-[13px] truncate leading-tight mb-1">{drama.title}</p>
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <svg width="9" height="9" viewBox="0 0 10 10" fill="#E0E0E0">
+            {/* Title */}
+            <p className="text-white font-bold text-[10px] md:text-[11px] truncate leading-tight mb-1.5">
+              {drama.title}
+            </p>
+
+            {/* Info: Rating, Genre, Episodes */}
+            <div className="flex items-center gap-1 mb-2 flex-wrap text-[9px] font-medium">
+              <svg width="7" height="7" viewBox="0 0 10 10" fill="#E0E0E0">
                 <path d="M5 0.5l1.3 2.6 2.9.4-2.1 2 .5 2.9L5 6.9l-2.6 1.5.5-2.9-2.1-2 2.9-.4z" />
               </svg>
-              <span className="text-[10px] text-white/90 font-semibold">{drama.rating.toFixed(1)}</span>
-              <span className="text-[10px] text-white/45">·</span>
-              <span className="text-[10px] text-white/65">{drama.totalEpisodes}부작</span>
+              <span className="text-white/85 font-semibold">{drama.rating.toFixed(1)}</span>
+              <span className="text-white/35">·</span>
+              <span className="text-white/65">{drama.genres[0]}</span>
+              <span className="text-white/35">·</span>
+              <span className="text-white/65">{drama.totalEpisodes}부작</span>
             </div>
+
+            {/* Quick Actions: Play, Save, Details */}
             <QuickActions
               dramaId={drama.id}
               firstEpisodeId={firstEpisodeId}
+              compact
               onPlay={handlePlay}
               onAdd={handleAdd}
               onDetail={handleDetail}
@@ -323,22 +341,19 @@ function DefaultCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" 
         )}
       </div>
 
-      {/* Below-card text */}
+      {/* Below-card Info: Title + Genre */}
       <div className="mt-2.5 px-0.5">
-        <p className="text-[11px] md:text-[13px] font-semibold text-white/85 truncate leading-snug transition-colors duration-200 md:group-hover:text-white">
+        <p className="text-[10px] md:text-[11px] font-semibold text-white/80 truncate leading-snug md:group-hover:text-white transition-colors duration-200">
           {drama.title}
         </p>
-        <div className="flex items-center gap-1 mt-0.5">
-          <svg width="8" height="8" viewBox="0 0 10 10" fill="#aaa">
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <svg width="7" height="7" viewBox="0 0 10 10" fill="#999">
             <path d="M5 0.5l1.3 2.6 2.9.4-2.1 2 .5 2.9L5 6.9l-2.6 1.5.5-2.9-2.1-2 2.9-.4z" />
           </svg>
-          <span className="text-[10px] text-white/45">{drama.rating.toFixed(1)}</span>
-          <span className="text-[10px] text-white/25">·</span>
-          <span className="text-[10px] text-white/45">{drama.totalEpisodes}부작</span>
-        </div>
-        <div className="flex gap-1 mt-1 flex-wrap">
-          {drama.genres.slice(0, 2).map((g) => (
-            <span key={g} className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 text-white/35 border border-white/8 leading-none">{g}</span>
+          <span className="text-[8px] text-white/45">{drama.rating.toFixed(1)}</span>
+          <span className="text-[8px] text-white/25">·</span>
+          {drama.genres.slice(0, 1).map((g) => (
+            <span key={g} className="text-[8px] text-white/40">{g}</span>
           ))}
         </div>
       </div>
@@ -347,7 +362,7 @@ function DefaultCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" 
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// ── 2. TOP 10 Card ── Netflix-style large rank + portrait ────────────────
+// ── 2. TOP 10 Card V3 ── Netflix Global Top10 style with large rank ────────
 // ══════════════════════════════════════════════════════════════════════════
 
 function Top10Card({ drama, rank, size = "md" }: { drama: Drama; rank: number; size?: "sm" | "md" | "lg" }) {
@@ -358,16 +373,15 @@ function Top10Card({ drama, rank, size = "md" }: { drama: Drama; rank: number; s
   const favorited = isFavorite(drama.id);
   const firstEpisodeId = drama.episodes[0]?.id;
 
-  // Width: wider to accommodate rank number
+  // Card width (standard portrait)
   const widthClass =
-    size === "sm" ? "w-[100px] sm:w-[118px] md:w-[140px]"
-    : size === "lg" ? "w-[148px] sm:w-[178px] md:w-[206px] lg:w-[220px]"
-    : "w-[118px] sm:w-[148px] md:w-[172px] lg:w-[188px]";
+    size === "sm" ? "w-[130px] sm:w-[150px] md:w-[170px]"
+    : size === "lg" ? "w-[160px] sm:w-[190px] md:w-[220px]"
+    : "w-[145px] sm:w-[170px] md:w-[195px]";
 
-  // Rank font size: 1-digit vs 2-digit
-  const rankSize = rank >= 10 ? "clamp(3.8rem,7.5vw,6rem)" : "clamp(4.8rem,9vw,7.5rem)";
-  const rankStroke = rank === 1 ? "3px #ffffff" : rank <= 3 ? "2.5px #d4d4d4" : "2px #888888";
-  const rankShadow = rank <= 3 ? "0 2px 20px rgba(0,0,0,0.9), 0 0 0 1px rgba(0,0,0,0.5)" : "0 2px 14px rgba(0,0,0,0.85)";
+  // Rank font: 120px+ (using larger clamp)
+  const rankSize = rank >= 10 ? "clamp(80px, 14vw, 140px)" : "clamp(90px, 16vw, 160px)";
+  const rankColor = rank === 1 ? "#FFD700" : rank <= 3 ? "rgba(212,175,55,0.95)" : "rgba(255,255,255,0.2)";
 
   const handlePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -388,44 +402,51 @@ function Top10Card({ drama, rank, size = "md" }: { drama: Drama; rank: number; s
 
   return (
     <div
-      className={`group relative shrink-0 cursor-pointer select-none`}
+      className="group relative shrink-0 cursor-pointer select-none"
       style={{ isolation: "isolate" }}
       onClick={() => navigate(`/drama/${drama.id}`)}
       onTouchEnd={handleMobileTap}
     >
-      {/* Rank number — behind card, left offset */}
+      {/* Large Rank Number: Behind card, left-aligned, breaking through */}
       <div
         className="absolute pointer-events-none select-none z-0"
         style={{
-          left: "-0.15em",
-          bottom: "36px", // above below-card text area
-          lineHeight: 0.85,
+          left: "0",
+          bottom: "-12px",
+          lineHeight: 0.8,
           fontSize: rankSize,
           fontWeight: 900,
-          fontStyle: "italic",
-          color: "transparent",
-          WebkitTextStroke: rankStroke,
-          filter: `drop-shadow(${rankShadow})`,
+          color: rankColor,
           fontFamily: "'Arial Black', 'Impact', sans-serif",
-          letterSpacing: "-0.04em",
+          letterSpacing: "-0.08em",
+          textShadow: `0 4px 16px rgba(0,0,0,0.8), 0 0 40px ${rank === 1 ? 'rgba(255,215,0,0.3)' : 'rgba(0,0,0,0.5)'}`,
+          filter: rank === 1 ? "drop-shadow(0 0 12px rgba(255,215,0,0.4))" : "none",
         }}
         aria-hidden="true"
       >
         {rank}
       </div>
 
-      {/* Card — offset right to reveal rank */}
-      <div className={`relative ${widthClass} ml-7 md:ml-9`}>
-        {/* Poster */}
+      {/* Card Container: Position relative to allow overlap with rank */}
+      <div className={`relative ${widthClass} z-[2]`}>
+        {/* Poster: 3-layer shadow system */}
         <div
           className={[
-            "relative aspect-[9/16] rounded-xl overflow-hidden bg-[#1a1a1c]",
-            "ring-1 ring-white/10",
-            "transition-[transform,box-shadow] duration-[350ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
-            "md:group-hover:scale-[1.06] md:group-hover:shadow-[0_20px_56px_rgba(0,0,0,0.55)] md:group-hover:ring-white/22",
-            "group-active:scale-[0.97] will-change-[transform]",
+            "relative w-full aspect-[9/16] rounded-xl overflow-hidden",
+            "bg-[#1a1a1c]",
+            "ring-1 ring-white/12",
+            // 3-layer shadow system
+            "shadow-[0_4px_12px_rgba(0,0,0,0.3), 0_12px_32px_rgba(0,0,0,0.5), 0_20px_60px_rgba(0,0,0,0.7)]",
+            // Hover state: scale up, increase shadows
+            "transition-[transform,box-shadow,ring-color] duration-[300ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
+            "md:group-hover:scale-[1.15]",
+            "md:group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.4), 0_24px_56px_rgba(0,0,0,0.6), 0_32px_80px_rgba(0,0,0,0.8)]",
+            "md:group-hover:ring-white/25",
+            "group-active:scale-[0.97]",
+            "will-change-[transform,box-shadow]",
           ].join(" ")}
         >
+          {/* Image with hover zoom */}
           {!imgError ? (
             <img
               src={drama.poster || drama.backdrop}
@@ -433,42 +454,51 @@ function Top10Card({ drama, rank, size = "md" }: { drama: Drama; rank: number; s
               decoding="async"
               loading="lazy"
               onError={() => setImgError(true)}
-              className="w-full h-full object-cover transition-transform duration-[350ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] md:group-hover:scale-[1.12] will-change-transform"
+              className="w-full h-full object-cover transition-transform duration-[300ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] md:group-hover:scale-[1.15] will-change-transform"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-[#1e1e20] to-[#111113] p-3 text-center">
-              <span className="text-white/40 text-2xl mb-2">🎬</span>
-              <span className="text-[10px] text-white/50 leading-snug">{drama.title}</span>
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-[#1e1e20] to-[#0a0a0c] p-2 text-center">
+              <span className="text-white/30 text-2xl mb-2">🎬</span>
+              <span className="text-[9px] text-white/40 leading-tight">{drama.title}</span>
             </div>
           )}
 
-          {/* Desktop hover overlay */}
+          {/* Preview Overlay: Bottom gradient + action buttons */}
           <div
             className={[
-              "absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent",
-              "opacity-0 md:group-hover:opacity-100 transition-opacity duration-[350ms]",
-              "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
+              "absolute inset-0",
+              "bg-gradient-to-t from-black/90 via-black/40 to-transparent",
+              "opacity-0 md:group-hover:opacity-100",
+              "transition-opacity duration-[280ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
               "flex flex-col items-center justify-end pb-3",
               "pointer-events-none md:group-hover:pointer-events-auto",
             ].join(" ")}
           >
+            {/* Overlay Content: Title, Rating, Actions */}
             <div
-              className="w-full px-2.5 opacity-0 md:group-hover:opacity-100 translate-y-3 md:group-hover:translate-y-0 transition-[opacity,transform] duration-[250ms]"
-              style={{ transitionDelay: "55ms" }}
+              className="w-full px-2.5 opacity-0 md:group-hover:opacity-100 translate-y-4 md:group-hover:translate-y-0 transition-[opacity,transform] duration-[240ms]"
+              style={{ transitionDelay: "60ms" }}
             >
-              <p className="text-white font-bold text-[11px] md:text-[12px] truncate leading-tight mb-1">{drama.title}</p>
-              {/* Rank badge */}
-              <div className="flex items-center gap-1.5 mb-2">
-                <span className="text-[9px] font-black text-white/60 tracking-widest uppercase">TOP {rank}</span>
-                <span className="text-[9px] text-white/35">·</span>
-                <svg width="8" height="8" viewBox="0 0 10 10" fill="#ccc">
+              {/* Title */}
+              <p className="text-white font-bold text-[11px] md:text-[12px] truncate leading-tight mb-1.5">
+                {drama.title}
+              </p>
+
+              {/* Info Row: Rating, Episodes, Genre */}
+              <div className="flex items-center gap-1 mb-2.5 flex-wrap">
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="#E0E0E0">
                   <path d="M5 0.5l1.3 2.6 2.9.4-2.1 2 .5 2.9L5 6.9l-2.6 1.5.5-2.9-2.1-2 2.9-.4z" />
                 </svg>
-                <span className="text-[10px] text-white/80 font-semibold">{drama.rating.toFixed(1)}</span>
+                <span className="text-[9px] font-semibold text-white/85">{drama.rating.toFixed(1)}</span>
+                <span className="text-[8px] text-white/35">·</span>
+                <span className="text-[9px] text-white/60">{drama.totalEpisodes}부작</span>
               </div>
+
+              {/* Quick Actions: Play, Save, Details */}
               <QuickActions
                 dramaId={drama.id}
                 firstEpisodeId={firstEpisodeId}
+                compact
                 onPlay={handlePlay}
                 onAdd={handleAdd}
                 onDetail={handleDetail}
@@ -489,13 +519,13 @@ function Top10Card({ drama, rank, size = "md" }: { drama: Drama; rank: number; s
           )}
         </div>
 
-        {/* Below-card text */}
-        <div className="mt-2.5 px-0.5">
-          <p className="text-[11px] md:text-[12px] font-semibold text-white/80 truncate leading-snug md:group-hover:text-white transition-colors duration-200">
+        {/* Below-card: Title + Rank */}
+        <div className="mt-3 px-0.5">
+          <p className="text-[11px] md:text-[12px] font-semibold text-white/80 truncate leading-tight md:group-hover:text-white transition-colors duration-200">
             {drama.title}
           </p>
           <div className="flex items-center gap-1 mt-0.5">
-            <span className="text-[9px] font-bold text-white/35 tracking-wider">#{rank} TODAY</span>
+            <span className="text-[8px] font-black text-white/40 tracking-wider">TOP {rank}</span>
           </div>
         </div>
       </div>

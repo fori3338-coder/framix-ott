@@ -199,7 +199,8 @@ function ContinueWatchingCard({
     <div
       className="relative shrink-0 cursor-pointer group"
       style={{
-        width: "clamp(260px, 36vw, 360px)",
+        width: "clamp(280px, 42vw, 380px)",
+        height: "clamp(280px, 38vw, 340px)",
         scrollSnapAlign: "start",
         opacity: 0,
         animation: revealed
@@ -208,26 +209,25 @@ function ContinueWatchingCard({
       }}
       onClick={onPlay}
     >
-      {/* ── Thumbnail 16:9 ────────────────────────────────────────────────── */}
+      {/* ── Thumbnail 16:9 with Netflix-style enhancement ─────────────── */}
       <div
         className={[
-          "relative w-full rounded-xl overflow-hidden bg-zinc-900",
-          "transition-[transform,box-shadow] duration-[350ms]",
+          "relative w-full h-3/5 rounded-lg overflow-hidden bg-zinc-900",
+          "transition-[transform,box-shadow] duration-[300ms]",
           "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
-          "md:group-hover:scale-[1.03]",
-          "md:group-hover:shadow-[0_20px_52px_rgba(0,0,0,0.6)]",
+          "md:group-hover:scale-[1.06]",
+          "md:group-hover:shadow-[0_24px_60px_rgba(0,0,0,0.65)]",
           "will-change-[transform]",
         ].join(" ")}
-        style={{ aspectRatio: "16/9" }}
       >
         <img
           src={item.thumbnail}
           alt={item.seriesTitle}
           className={[
             "w-full h-full object-cover",
-            "transition-transform duration-[350ms]",
+            "transition-transform duration-[300ms]",
             "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
-            "md:group-hover:scale-[1.07]",
+            "md:group-hover:scale-[1.08]",
             "will-change-transform",
           ].join(" ")}
           onError={(e) => {
@@ -237,23 +237,22 @@ function ContinueWatchingCard({
           }}
         />
 
-        {/* Dark Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+        {/* Dark Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-        {/* ── Play Button — always visible, emphasis on hover ──────────── */}
+        {/* ── Play Button: Large, always visible, emphasized on hover ──── */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div
             className={[
-              "w-13 h-13 rounded-full flex items-center justify-center shadow-2xl",
+              "w-14 h-14 rounded-full flex items-center justify-center shadow-lg",
               "transition-[transform,opacity,background] duration-[280ms]",
               // Resting: semi-visible
-              "opacity-55 md:group-hover:opacity-100",
-              "scale-90 md:group-hover:scale-100",
-              "bg-white/80 md:group-hover:bg-white",
+              "opacity-50 md:group-hover:opacity-100",
+              "scale-90 md:group-hover:scale-110",
+              "bg-white/85 md:group-hover:bg-white",
             ].join(" ")}
-            style={{ width: 52, height: 52 }}
           >
-            <Play size={22} className="text-black fill-black ml-1" />
+            <Play size={24} className="text-black fill-black ml-1" />
           </div>
         </div>
 
@@ -261,87 +260,73 @@ function ContinueWatchingCard({
         <button
           onClick={onRemove}
           className={[
-            "absolute top-2.5 right-2.5 w-7 h-7 rounded-full",
-            "bg-black/70 border border-white/15",
-            "flex items-center justify-center text-white/55",
-            "hover:text-white hover:bg-black/90 hover:border-white/30",
+            "absolute top-3 right-3 w-8 h-8 rounded-full",
+            "bg-black/75 border border-white/20",
+            "flex items-center justify-center text-white/60",
+            "hover:text-white hover:bg-black/95 hover:border-white/40",
             "transition-all z-10",
             "opacity-0 md:group-hover:opacity-100",
             "active:scale-90",
           ].join(" ")}
           aria-label="이어보기 목록에서 삭제"
         >
-          <X size={12} />
+          <X size={14} />
         </button>
 
-        {/* ── Episode Info badge — top left ─────────────────────────────── */}
-        <div className="absolute top-2.5 left-2.5 z-10">
+        {/* ── Episode Info badge ────────────────────────────────────────── */}
+        <div className="absolute top-3 left-3 z-10">
           <span
-            className="text-[9px] font-bold text-white/70 px-1.5 py-0.5 rounded border border-white/12"
-            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+            className="text-[9px] font-bold text-white/75 px-2 py-1 rounded border border-white/15"
+            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
           >
             {item.episodeNumber}화
             {item.episodeTitle ? ` · ${item.episodeTitle}` : ""}
           </span>
         </div>
 
-        {/* ── Remaining Time — bottom right ────────────────────────────── */}
-        <div className="absolute bottom-4 right-3 text-[10px] font-semibold text-white/70 tabular-nums">
-          {formatTime(remainSec)} 남음
-        </div>
-
-        {/* ── Progress Bar — thick, at very bottom ─────────────────────── */}
-        <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-white/12">
+        {/* ── Progress Bar ──────────────────────────────────────────────── */}
+        <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/15">
           <div
-            className="h-full rounded-full transition-[width] duration-500"
+            className="h-full transition-[width] duration-500"
             style={{ width: `${progressPct}%`, background: progressColor }}
           />
         </div>
       </div>
 
-      {/* ── Text Info ─────────────────────────────────────────────────────── */}
-      <div className="mt-3 px-0.5">
-        {/* Series title */}
+      {/* ── Info Section (Title, Progress, Time, Button) ────────────── */}
+      <div className="mt-3 h-2/5 flex flex-col justify-between">
+        {/* Series Title */}
         <p className="text-white font-semibold text-[13px] md:text-sm truncate leading-tight">
           {item.seriesTitle}
         </p>
 
-        {/* Progress row */}
-        <div className="flex items-center justify-between mt-1.5">
-          <span className="text-white/40 text-[11px]">
+        {/* Progress & Last Watched */}
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-white/50 text-[11px] font-medium">
             {item.lastWatched ? formatLastWatched(item.lastWatched) : `${item.episodeNumber}화`}
           </span>
-          {/* Progress percentage — bold, right */}
-          <div className="flex items-center gap-1">
-            <div
-              className="w-[52px] h-[3px] rounded-full bg-white/10 overflow-hidden"
-            >
-              <div
-                className="h-full rounded-full"
-                style={{ width: `${progressPct}%`, background: progressColor }}
-              />
-            </div>
-            <span
-              className="text-[11px] font-bold tabular-nums"
-              style={{ color: progressPct >= 85 ? "#e50914" : "rgba(255,255,255,0.65)" }}
-            >
-              {progressPct}%
-            </span>
-          </div>
+          <span className="text-white/60 text-[11px] font-bold tabular-nums">
+            {progressPct}%
+          </span>
         </div>
 
-        {/* ── Resume Button ────────────────────────────────────────────── */}
+        {/* Remaining Time */}
+        <div className="text-white/50 text-[10px] font-medium">
+          {formatTime(remainSec)} 남음
+        </div>
+
+        {/* ── Resume Button (Always visible) ────────────────────────────── */}
         <button
           onClick={(e) => { e.stopPropagation(); onPlay(); }}
           className={[
-            "mt-2.5 w-full flex items-center justify-center gap-1.5 py-2 rounded-lg",
+            "w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg",
             "text-[11px] font-bold tracking-wide",
             "bg-white text-black",
-            "hover:bg-white/90",
-            "transition-all duration-200 active:scale-[0.98] shadow-sm",
+            "hover:bg-white/95",
+            "transition-all duration-200 active:scale-[0.98] shadow-md",
           ].join(" ")}
         >
-          <Play size={11} className="fill-black text-black" />
+          <Play size={12} className="fill-black text-black" />
           이어보기
         </button>
       </div>

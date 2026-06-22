@@ -162,7 +162,7 @@ export default function Home() {
   return (
     <div className="pb-0 home-v4-root">
       {/* ── Hero Banner ────────────────────────────────────────────────── */}
-      <HeroBanner dramas={heroList} continueWatchingItems={continueWatchingItems} />
+      <HeroBanner dramas={heroList} />
 
       {/* ── Main Content ──────────────────────────────────────────────── */}
       <div className="home-v4-content">
