@@ -174,7 +174,7 @@ export default function Home() {
   return (
     <div className="pb-0" style={{ background: "var(--color-base)" }}>
       {/* ── Hero Banner ────────────────────────────────────────────────── */}
-      <HeroBanner dramas={heroList} />
+      <HeroBanner dramas={heroList} continueWatchingItems={continueWatchingItems} />
 
       {/* ── Main Content ──────────────────────────────────────────────── */}
       <div className="mt-6 md:mt-10">

@@ -1,30 +1,55 @@
 /**
- * HeroBanner.tsx — FRAMIX Hero V2 Core Structure
- * 
+ * HeroBanner.tsx — FRAMIX Hero V2 Premium Experience
+ *
  * Features:
- *  - 5-item rotation, 6s interval
- *  - Left/Right arrow support
- *  - Metadata: rating / episodes / genre / views
- *  - AI PICK badge
- *  - FRAMIX ORIGINAL badge
- *  - CTA: 재생 / 내 목록 / 상세보기 (Desktop: row, Mobile: col)
- *  - Hero Reveal: opacity + translateY GPU transform only
- *  - Mobile optimized: iPhone / Galaxy / Fold / Tablet
+ *  - Hero Preview Rail (하단 썸네일 5개, 클릭 시 Hero 변경)
+ *  - Continue Watching Hero (최근 시청 작품 Hero 후보 포함 + 이어보기 버튼)
+ *  - Hero Progress Indicator (Netflix 스타일 슬라이드 진행 표시)
+ *  - Cinematic Motion: Ken Burns + Slow Zoom + Parallax (GPU transform only)
+ *  - Mobile Swipe (Hero Rail 좌우 스와이프)
+ *  - Layout Shift 금지 / 60fps 유지
+ *  - 색상: White / Silver / Glass / Dark (Gold Glow / Neon 금지)
  */
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import {
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { useNavigate } from "react-router-dom";
-import { Play, Plus, Info, ChevronLeft, ChevronRight, Sparkles, Star, Eye } from "lucide-react";
-import type { Drama } from "../types";
+import {
+  Play,
+  Plus,
+  Info,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  Star,
+  Eye,
+  Clock,
+} from "lucide-react";
+import type { Drama, ContinueWatchingItem } from "../types";
 
-interface HeroBannerProps {
-  dramas: Drama[];
-}
-
+// ── Constants ──────────────────────────────────────────────────────────────────
 const SLIDE_MS = 6000;
 const VIDEO_DELAY_MS = 3000;
+const SWIPE_THRESHOLD = 50;
 
-// ── Format view count ─────────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────────────
+interface HeroBannerProps {
+  dramas: Drama[];
+  continueWatchingItems?: ContinueWatchingItem[];
+}
+
+// "CW Hero" entry augments Drama with progress info
+interface HeroItem {
+  drama: Drama;
+  cwItem?: ContinueWatchingItem; // 이어보기 컨텍스트
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
 function formatViews(views: number): string {
   if (views >= 100_000_000) return `${(views / 100_000_000).toFixed(1)}억`;
   if (views >= 10_000) return `${Math.round(views / 10_000)}만`;
@@ -32,7 +57,13 @@ function formatViews(views: number): string {
   return String(views);
 }
 
-// ── AI Pick Badge ──────────────────────────────────────────────────────────────
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+// ── Badges ─────────────────────────────────────────────────────────────────────
 function AiPickBadge() {
   return (
     <span className="hero-ai-badge">
@@ -42,7 +73,6 @@ function AiPickBadge() {
   );
 }
 
-// ── FRAMIX Original Badge ─────────────────────────────────────────────────────
 function OriginalBadge() {
   return (
     <div className="hero-original-badge">
@@ -53,32 +83,32 @@ function OriginalBadge() {
   );
 }
 
-// ── Slide Indicators ───────────────────────────────────────────────────────────
+// ── Progress Indicator (Netflix style) ────────────────────────────────────────
 function SlideIndicators({
-  dramas,
+  count,
   index,
   paused,
   onSelect,
 }: {
-  dramas: Drama[];
+  count: number;
   index: number;
   paused: boolean;
   onSelect: (i: number) => void;
 }) {
   return (
     <div className="hero-indicators">
-      {dramas.map((d, i) => (
+      {Array.from({ length: count }).map((_, i) => (
         <button
-          key={d.id}
+          key={i}
           onClick={() => onSelect(i)}
           aria-label={`슬라이드 ${i + 1}`}
           className={`hero-indicator-dot${i === index ? " active" : ""}`}
         >
-          {i === index && !paused && (
-            <span className="hero-indicator-progress" />
-          )}
-          {i === index && paused && (
-            <span className="hero-indicator-progress paused" />
+          {i === index && (
+            <span
+              key={`progress-${index}-${paused}`}
+              className={`hero-indicator-progress${paused ? " paused" : ""}`}
+            />
           )}
         </button>
       ))}
@@ -86,8 +116,121 @@ function SlideIndicators({
   );
 }
 
+// ── Preview Rail (하단 썸네일 5개) ─────────────────────────────────────────────
+function PreviewRail({
+  items,
+  activeIndex,
+  onSelect,
+}: {
+  items: HeroItem[];
+  activeIndex: number;
+  onSelect: (i: number) => void;
+}) {
+  const railRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+
+  // Mobile swipe on rail
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+    if (dx < 0) {
+      onSelect((activeIndex + 1) % items.length);
+    } else {
+      onSelect((activeIndex - 1 + items.length) % items.length);
+    }
+  };
+
+  return (
+    <div
+      className="hero-rail-wrap"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
+      <div className="hero-rail" ref={railRef}>
+        {items.map((item, i) => {
+          const isActive = i === activeIndex;
+          return (
+            <button
+              key={item.drama.id}
+              className={`hero-rail-card${isActive ? " active" : ""}`}
+              onClick={() => onSelect(i)}
+              aria-label={item.drama.title}
+            >
+              {/* Thumbnail */}
+              <div className="hero-rail-thumb">
+                <img
+                  src={item.drama.poster}
+                  alt={item.drama.title}
+                  className="hero-rail-img"
+                  loading="lazy"
+                />
+                {/* CW progress bar on thumbnail */}
+                {item.cwItem && (
+                  <div className="hero-rail-progress-bar">
+                    <div
+                      className="hero-rail-progress-fill"
+                      style={{ width: `${item.cwItem.progress}%` }}
+                    />
+                  </div>
+                )}
+                {/* Active ring */}
+                {isActive && <div className="hero-rail-active-ring" />}
+              </div>
+              {/* Label */}
+              <div className="hero-rail-label">
+                <p className="hero-rail-title">{item.drama.title}</p>
+                {item.cwItem ? (
+                  <p className="hero-rail-sub cw">
+                    <Clock size={9} />
+                    {formatTime(
+                      item.cwItem.durationSeconds -
+                        item.cwItem.progressSeconds
+                    )}{" "}
+                    남음
+                  </p>
+                ) : (
+                  <p className="hero-rail-sub">{item.drama.totalEpisodes}화</p>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Main HeroBanner ────────────────────────────────────────────────────────────
-export default function HeroBanner({ dramas }: HeroBannerProps) {
+export default function HeroBanner({
+  dramas,
+  continueWatchingItems = [],
+}: HeroBannerProps) {
+  // Build hero item list: CW 항목 최대 1개를 맨 앞에 배치
+  const heroItems = useMemo<HeroItem[]>(() => {
+    const cwFirst = continueWatchingItems.slice(0, 1);
+    const cwHeroItems: HeroItem[] = cwFirst
+      .map((cw): HeroItem | null => {
+        const d = dramas.find((dr) => dr.id === cw.dramaId);
+        if (!d) return null;
+        return { drama: d, cwItem: cw };
+      })
+      .filter((x): x is HeroItem => x !== null);
+
+    // 나머지 dramas에서 CW 드라마 제외, 최대 5개
+    const cwIds = new Set(cwHeroItems.map((x) => x.drama.id));
+    const rest: HeroItem[] = dramas
+      .filter((d) => !cwIds.has(d.id))
+      .slice(0, 5 - cwHeroItems.length)
+      .map((d) => ({ drama: d }));
+
+    return [...cwHeroItems, ...rest].slice(0, 5);
+  }, [dramas, continueWatchingItems]);
+
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [videoPreviewActive, setVideoPreviewActive] = useState(false);
@@ -95,10 +238,21 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
   const [videoReady, setVideoReady] = useState(false);
   const [inFavorites, setInFavorites] = useState(false);
   const [revealed, setRevealed] = useState(false);
+  // Parallax: track mouse on desktop
+  const [parallax, setParallax] = useState({ x: 0, y: 0 });
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Hero Reveal: IntersectionObserver — GPU only (opacity + translateY)
+  // Swipe state (hero main area)
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  // Reset favorites when slide changes
+  useEffect(() => {
+    setInFavorites(false);
+  }, [index]);
+
+  // Hero Reveal: IntersectionObserver
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -117,12 +271,12 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
 
   // Auto-slide (6s)
   useEffect(() => {
-    if (paused || dramas.length <= 1) return;
+    if (paused || heroItems.length <= 1) return;
     const timer = setInterval(() => {
-      setIndex((i) => (i + 1) % dramas.length);
+      setIndex((i) => (i + 1) % heroItems.length);
     }, SLIDE_MS);
     return () => clearInterval(timer);
-  }, [dramas.length, paused]);
+  }, [heroItems.length, paused]);
 
   // Video preview delay
   useEffect(() => {
@@ -133,38 +287,78 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
     return () => clearTimeout(t);
   }, [index, paused]);
 
+  // Parallax mouse tracking (desktop only)
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const el = containerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const nx = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 … 0.5
+      const ny = (e.clientY - rect.top) / rect.height - 0.5;
+      setParallax({ x: nx * 14, y: ny * 8 }); // subtle shift in px
+    },
+    []
+  );
+  const handleMouseLeave = useCallback(() => {
+    setParallax({ x: 0, y: 0 });
+    setPaused(false);
+  }, []);
+
+  // Mobile swipe handlers (hero main)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+    if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dy) > Math.abs(dx) * 1.2)
+      return;
+    if (dx < 0) {
+      setPaused(true);
+      setIndex((i) => (i + 1) % heroItems.length);
+    } else {
+      setPaused(true);
+      setIndex((i) => (i - 1 + heroItems.length) % heroItems.length);
+    }
+  };
+
   const handlePrev = useCallback(() => {
     setPaused(true);
-    setIndex((i) => (i - 1 + dramas.length) % dramas.length);
-  }, [dramas.length]);
+    setIndex((i) => (i - 1 + heroItems.length) % heroItems.length);
+  }, [heroItems.length]);
 
   const handleNext = useCallback(() => {
     setPaused(true);
-    setIndex((i) => (i + 1) % dramas.length);
-  }, [dramas.length]);
+    setIndex((i) => (i + 1) % heroItems.length);
+  }, [heroItems.length]);
 
-  const drama = dramas[index];
-  if (!drama) return null;
+  const handleSelect = useCallback((i: number) => {
+    setPaused(true);
+    setIndex(i);
+  }, []);
 
+  const current = heroItems[index];
+  if (!current) return null;
+
+  const { drama, cwItem } = current;
   const displayTitle = drama.bannerTitle?.trim() || drama.title;
   const displayDescription = drama.bannerDescription?.trim() || drama.synopsis;
-  const firstEpisode = drama.episodes?.[0];
-  const playRoute = firstEpisode ? `/watch/${drama.id}/${firstEpisode.id}` : null;
 
-  const handlePlay = () => { if (playRoute) navigate(playRoute); };
-  const handleDetail = () => navigate(`/drama/${drama.id}`);
+  // Play route: CW 이어보기 vs 첫 에피소드
+  const playRoute = cwItem
+    ? `/watch/${drama.id}/${cwItem.episodeId}`
+    : drama.episodes?.[0]
+    ? `/watch/${drama.id}/${drama.episodes[0].id}`
+    : null;
 
-  const handleScrollToCW = () => {
-    const el = document.getElementById("continue-watching-section");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else {
-      window.scrollTo({
-        top: (containerRef.current?.offsetHeight ?? 600) - 80,
-        behavior: "smooth",
-      });
-    }
+  const handlePlay = () => {
+    if (playRoute) navigate(playRoute);
   };
+  const handleDetail = () => navigate(`/drama/${drama.id}`);
 
   const isAiPick = drama.isOriginal || drama.isExclusive || index % 2 === 0;
 
@@ -173,58 +367,77 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
       ref={containerRef}
       className="hero-root"
       onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      onMouseLeave={handleMouseLeave}
+      onMouseMove={handleMouseMove}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
-      {/* ── Backdrop Layer ─────────────────────────────────────────────── */}
+      {/* ── Backdrop Layer ──────────────────────────────────────────────────── */}
       <div className="hero-backdrops">
-        {dramas.map((d, i) => (
-          <div
-            key={d.id}
-            className={`hero-backdrop-item${i === index ? " active" : ""}`}
-          >
-            <img
-              src={d.backdrop}
-              alt={d.title}
-              className={`hero-img-mobile${i === index ? " zooming" : ""}`}
-            />
-            <img
-              src={d.backdrop}
-              alt={d.title}
-              className={`hero-img-desktop${i === index ? " zooming-pc" : ""}`}
-            />
-            {i === index &&
-              videoPreviewActive &&
-              d.bannerVideoUrl &&
-              !videoErrorIds.has(d.id) && (
-                <video
-                  key={d.bannerVideoUrl}
-                  src={d.bannerVideoUrl}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
-                  className="hero-video"
-                  style={{ opacity: videoReady ? 1 : 0 }}
-                  onCanPlay={() => setVideoReady(true)}
-                  onError={() => {
-                    setVideoErrorIds((prev) => new Set(prev).add(d.id));
-                    setVideoReady(false);
-                  }}
-                />
-              )}
-          </div>
-        ))}
+        {heroItems.map((item, i) => {
+          const d = item.drama;
+          const isActive = i === index;
+          return (
+            <div
+              key={d.id}
+              className={`hero-backdrop-item${isActive ? " active" : ""}`}
+            >
+              {/* Ken Burns + Parallax on active image */}
+              <img
+                src={d.backdrop}
+                alt={d.title}
+                className={`hero-img-mobile${isActive ? " zooming" : ""}`}
+              />
+              <img
+                src={d.backdrop}
+                alt={d.title}
+                className={`hero-img-desktop${isActive ? " zooming-pc" : ""}`}
+                style={
+                  isActive
+                    ? {
+                        transform: `scale(1.04) translate3d(${parallax.x}px, ${parallax.y}px, 0)`,
+                        transition:
+                          "transform 0.12s cubic-bezier(0.25,0.46,0.45,0.94)",
+                        willChange: "transform",
+                      }
+                    : undefined
+                }
+              />
+              {/* Video preview */}
+              {isActive &&
+                videoPreviewActive &&
+                d.bannerVideoUrl &&
+                !videoErrorIds.has(d.id) && (
+                  <video
+                    key={d.bannerVideoUrl}
+                    src={d.bannerVideoUrl}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    className="hero-video"
+                    style={{ opacity: videoReady ? 1 : 0 }}
+                    onCanPlay={() => setVideoReady(true)}
+                    onError={() => {
+                      setVideoErrorIds((prev) => new Set(prev).add(d.id));
+                      setVideoReady(false);
+                    }}
+                  />
+                )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* ── Cinematic Gradients ─────────────────────────────────────────── */}
+      {/* ── Cinematic Gradients ─────────────────────────────────────────────── */}
       <div className="hero-gradient-bottom" />
       <div className="hero-gradient-left" />
       <div className="hero-gradient-top" />
       <div className="hero-gradient-right-desktop" />
       <div className="hero-gradient-base-fade" />
 
-      {/* ── Content Layout ──────────────────────────────────────────────── */}
+      {/* ── Content Layout ──────────────────────────────────────────────────── */}
       <div className="hero-content-layout">
 
         {/* LEFT: Content */}
@@ -234,20 +447,27 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
           style={{
             opacity: revealed ? 1 : 0,
             transform: revealed ? "translateY(0)" : "translateY(28px)",
-            transition: "opacity 680ms cubic-bezier(0.22,1,0.36,1), transform 680ms cubic-bezier(0.22,1,0.36,1)",
+            transition:
+              "opacity 680ms cubic-bezier(0.22,1,0.36,1), transform 680ms cubic-bezier(0.22,1,0.36,1)",
             willChange: "opacity, transform",
           }}
         >
-          {/* Badges row */}
+          {/* Badges */}
           <div className="hero-badges-row">
             {drama.isOriginal && <OriginalBadge />}
             {isAiPick && <AiPickBadge />}
+            {cwItem && (
+              <span className="hero-cw-badge">
+                <Clock size={10} />
+                이어보기
+              </span>
+            )}
           </div>
 
           {/* Title */}
           <h1 className="hero-title">{displayTitle}</h1>
 
-          {/* Metadata row: rating · year · age · episodes · views */}
+          {/* Metadata */}
           <div className="hero-meta-row">
             <span className="hero-meta-rating">
               <Star size={12} className="fill-current" />
@@ -260,7 +480,9 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             {drama.genres[0] && (
               <>
                 <span className="hero-meta-dot hidden sm:inline">·</span>
-                <span className="hero-meta-genre hidden sm:inline">{drama.genres[0]}</span>
+                <span className="hero-meta-genre hidden sm:inline">
+                  {drama.genres[0]}
+                </span>
               </>
             )}
             {drama.views > 0 && (
@@ -274,17 +496,35 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             )}
           </div>
 
-          {/* Synopsis (desktop) */}
+          {/* CW progress bar (이어보기 컨텍스트) */}
+          {cwItem && (
+            <div className="hero-cw-progress-wrap">
+              <div className="hero-cw-progress-track">
+                <div
+                  className="hero-cw-progress-fill"
+                  style={{ width: `${cwItem.progress}%` }}
+                />
+              </div>
+              <span className="hero-cw-progress-label">
+                {cwItem.episodeNumber}화 · {formatTime(cwItem.progressSeconds)} /{" "}
+                {formatTime(cwItem.durationSeconds)}
+              </span>
+            </div>
+          )}
+
+          {/* Synopsis */}
           <p className="hero-synopsis">{displayDescription}</p>
 
           {/* Genre tags */}
           <div className="hero-genres">
             {drama.genres.slice(0, 3).map((g) => (
-              <span key={g} className="hero-genre-tag">{g}</span>
+              <span key={g} className="hero-genre-tag">
+                {g}
+              </span>
             ))}
           </div>
 
-          {/* CTA — Desktop: row / Mobile: col */}
+          {/* CTA */}
           <div className="hero-cta-row">
             <button
               onClick={handlePlay}
@@ -292,7 +532,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
               className="hero-btn-play"
             >
               <Play size={18} className="fill-black shrink-0" />
-              <span>재생</span>
+              <span>{cwItem ? "이어보기" : "재생"}</span>
             </button>
 
             <button
@@ -320,35 +560,40 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
               <span>상세보기</span>
             </button>
           </div>
-
-          {/* Continue Watching shortcut */}
-          <button onClick={handleScrollToCW} className="hero-cw-link">
-            <span className="hero-cw-link-bar" />
-            이어보기 바로가기
-            <ChevronRight size={13} />
-          </button>
         </div>
 
         {/* RIGHT: Preview stack (desktop md+) */}
         <div className="hero-right">
           <div className="hero-preview-stack">
-            {dramas.slice(0, 4).map((d, i) => {
-              const offset = (i - index + dramas.length) % dramas.length;
+            {heroItems.slice(0, 4).map((item, i) => {
+              const offset = (i - index + heroItems.length) % heroItems.length;
               const isActive = offset === 0;
               const isNext = offset === 1;
-              const isPrev = offset === dramas.length - 1;
+              const isPrev = offset === heroItems.length - 1;
               if (!isActive && !isNext && !isPrev) return null;
               return (
                 <button
-                  key={d.id}
-                  onClick={() => { setPaused(true); setIndex(i); }}
-                  className={`hero-preview-card${isActive ? " hero-preview-active" : isNext ? " hero-preview-next" : " hero-preview-prev"}`}
-                  aria-label={d.title}
+                  key={item.drama.id}
+                  onClick={() => handleSelect(i)}
+                  className={`hero-preview-card${
+                    isActive
+                      ? " hero-preview-active"
+                      : isNext
+                      ? " hero-preview-next"
+                      : " hero-preview-prev"
+                  }`}
+                  aria-label={item.drama.title}
                 >
-                  <img src={d.poster} alt={d.title} className="hero-preview-img" />
+                  <img
+                    src={item.drama.poster}
+                    alt={item.drama.title}
+                    className="hero-preview-img"
+                  />
                   <div className="hero-preview-overlay">
-                    <p className="hero-preview-title">{d.title}</p>
-                    <p className="hero-preview-ep">{d.totalEpisodes}화</p>
+                    <p className="hero-preview-title">{item.drama.title}</p>
+                    <p className="hero-preview-ep">
+                      {item.cwItem ? "이어보기" : `${item.drama.totalEpisodes}화`}
+                    </p>
                   </div>
                 </button>
               );
@@ -357,24 +602,39 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
         </div>
       </div>
 
-      {/* ── Arrows (desktop) ─────────────────────────────────────────────── */}
-      {dramas.length > 1 && (
+      {/* ── Arrows (desktop) ───────────────────────────────────────────────── */}
+      {heroItems.length > 1 && (
         <>
-          <button onClick={handlePrev} className="hero-arrow hero-arrow-left" aria-label="이전 슬라이드">
+          <button
+            onClick={handlePrev}
+            className="hero-arrow hero-arrow-left"
+            aria-label="이전 슬라이드"
+          >
             <ChevronLeft size={22} />
           </button>
-          <button onClick={handleNext} className="hero-arrow hero-arrow-right" aria-label="다음 슬라이드">
+          <button
+            onClick={handleNext}
+            className="hero-arrow hero-arrow-right"
+            aria-label="다음 슬라이드"
+          >
             <ChevronRight size={22} />
           </button>
         </>
       )}
 
-      {/* ── Slide Indicators ─────────────────────────────────────────────── */}
+      {/* ── Progress Indicators ────────────────────────────────────────────── */}
       <SlideIndicators
-        dramas={dramas}
+        count={heroItems.length}
         index={index}
         paused={paused}
-        onSelect={(i) => { setPaused(true); setIndex(i); }}
+        onSelect={handleSelect}
+      />
+
+      {/* ── Preview Rail (하단 썸네일) ─────────────────────────────────────── */}
+      <PreviewRail
+        items={heroItems}
+        activeIndex={index}
+        onSelect={handleSelect}
       />
     </div>
   );
