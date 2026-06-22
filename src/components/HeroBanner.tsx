@@ -1,14 +1,11 @@
 /**
- * HeroBanner.tsx — FRAMIX Hero V2 Premium Experience
+ * HeroBanner.tsx — FRAMIX Hero V3
  *
- * Features:
- *  - Hero Preview Rail (하단 썸네일 5개, 클릭 시 Hero 변경)
- *  - Continue Watching Hero (최근 시청 작품 Hero 후보 포함 + 이어보기 버튼)
- *  - Hero Progress Indicator (Netflix 스타일 슬라이드 진행 표시)
- *  - Cinematic Motion: Ken Burns + Slow Zoom + Parallax (GPU transform only)
- *  - Mobile Swipe (Hero Rail 좌우 스와이프)
- *  - Layout Shift 금지 / 60fps 유지
- *  - 색상: White / Silver / Glass / Dark (Gold Glow / Neon 금지)
+ * V3 변경사항:
+ *  - 우측 플로팅 포스터 카드 / 스택 완전 제거
+ *  - 배경 풀스크린 + 좌측 컨텐츠 레이아웃 단순화 (Netflix 2024 style)
+ *  - Preview Rail 업그레이드: 가로 120~140px, hover 확대, 활성 glow, CW progress
+ *  - AI Pick 배지 / 재생 / 상세보기 / CW 배너 / 슬라이드 인디케이터 유지
  */
 
 import {
@@ -43,10 +40,9 @@ interface HeroBannerProps {
   continueWatchingItems?: ContinueWatchingItem[];
 }
 
-// "CW Hero" entry augments Drama with progress info
 interface HeroItem {
   drama: Drama;
-  cwItem?: ContinueWatchingItem; // 이어보기 컨텍스트
+  cwItem?: ContinueWatchingItem;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -83,7 +79,7 @@ function OriginalBadge() {
   );
 }
 
-// ── Progress Indicator (Netflix style) ────────────────────────────────────────
+// ── Slide Indicators ───────────────────────────────────────────────────────────
 function SlideIndicators({
   count,
   index,
@@ -116,7 +112,7 @@ function SlideIndicators({
   );
 }
 
-// ── Preview Rail (하단 썸네일 5개) ─────────────────────────────────────────────
+// ── Preview Rail V3 — 가로 120~140px, hover 확대, 활성 glow ──────────────────
 function PreviewRail({
   items,
   activeIndex,
@@ -126,10 +122,8 @@ function PreviewRail({
   activeIndex: number;
   onSelect: (i: number) => void;
 }) {
-  const railRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
 
-  // Mobile swipe on rail
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
   };
@@ -151,25 +145,25 @@ function PreviewRail({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <div className="hero-rail" ref={railRef}>
+      <div className="hero-rail">
         {items.map((item, i) => {
           const isActive = i === activeIndex;
           return (
             <button
               key={item.drama.id}
-              className={`hero-rail-card${isActive ? " active" : ""}`}
+              className={`hero-rail-card-v3${isActive ? " active" : ""}`}
               onClick={() => onSelect(i)}
               aria-label={item.drama.title}
             >
               {/* Thumbnail */}
-              <div className="hero-rail-thumb">
+              <div className="hero-rail-thumb-v3">
                 <img
                   src={item.drama.poster}
                   alt={item.drama.title}
                   className="hero-rail-img"
                   loading="lazy"
                 />
-                {/* CW progress bar on thumbnail */}
+                {/* CW progress bar */}
                 {item.cwItem && (
                   <div className="hero-rail-progress-bar">
                     <div
@@ -178,23 +172,22 @@ function PreviewRail({
                     />
                   </div>
                 )}
-                {/* Active ring */}
-                {isActive && <div className="hero-rail-active-ring" />}
+                {/* Active glow ring */}
+                {isActive && <div className="hero-rail-glow-ring" />}
               </div>
               {/* Label */}
-              <div className="hero-rail-label">
-                <p className="hero-rail-title">{item.drama.title}</p>
+              <div className="hero-rail-label-v3">
+                <p className="hero-rail-title-v3">{item.drama.title}</p>
                 {item.cwItem ? (
-                  <p className="hero-rail-sub cw">
+                  <p className="hero-rail-sub-v3 cw">
                     <Clock size={9} />
                     {formatTime(
-                      item.cwItem.durationSeconds -
-                        item.cwItem.progressSeconds
+                      item.cwItem.durationSeconds - item.cwItem.progressSeconds
                     )}{" "}
                     남음
                   </p>
                 ) : (
-                  <p className="hero-rail-sub">{item.drama.totalEpisodes}화</p>
+                  <p className="hero-rail-sub-v3">{item.drama.totalEpisodes}화</p>
                 )}
               </div>
             </button>
@@ -210,7 +203,6 @@ export default function HeroBanner({
   dramas,
   continueWatchingItems = [],
 }: HeroBannerProps) {
-  // Build hero item list: CW 항목 최대 1개를 맨 앞에 배치
   const heroItems = useMemo<HeroItem[]>(() => {
     const cwFirst = continueWatchingItems.slice(0, 1);
     const cwHeroItems: HeroItem[] = cwFirst
@@ -221,7 +213,6 @@ export default function HeroBanner({
       })
       .filter((x): x is HeroItem => x !== null);
 
-    // 나머지 dramas에서 CW 드라마 제외, 최대 5개
     const cwIds = new Set(cwHeroItems.map((x) => x.drama.id));
     const rest: HeroItem[] = dramas
       .filter((d) => !cwIds.has(d.id))
@@ -238,21 +229,16 @@ export default function HeroBanner({
   const [videoReady, setVideoReady] = useState(false);
   const [inFavorites, setInFavorites] = useState(false);
   const [revealed, setRevealed] = useState(false);
-  // Parallax: track mouse on desktop
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Swipe state (hero main area)
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
 
-  // Reset favorites when slide changes
   useEffect(() => {
     setInFavorites(false);
   }, [index]);
 
-  // Hero Reveal: IntersectionObserver
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -269,7 +255,6 @@ export default function HeroBanner({
     return () => obs.disconnect();
   }, []);
 
-  // Auto-slide (6s)
   useEffect(() => {
     if (paused || heroItems.length <= 1) return;
     const timer = setInterval(() => {
@@ -278,7 +263,6 @@ export default function HeroBanner({
     return () => clearInterval(timer);
   }, [heroItems.length, paused]);
 
-  // Video preview delay
   useEffect(() => {
     setVideoPreviewActive(false);
     setVideoReady(false);
@@ -287,15 +271,14 @@ export default function HeroBanner({
     return () => clearTimeout(t);
   }, [index, paused]);
 
-  // Parallax mouse tracking (desktop only)
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       const el = containerRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      const nx = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 … 0.5
+      const nx = (e.clientX - rect.left) / rect.width - 0.5;
       const ny = (e.clientY - rect.top) / rect.height - 0.5;
-      setParallax({ x: nx * 14, y: ny * 8 }); // subtle shift in px
+      setParallax({ x: nx * 14, y: ny * 8 });
     },
     []
   );
@@ -304,7 +287,6 @@ export default function HeroBanner({
     setPaused(false);
   }, []);
 
-  // Mobile swipe handlers (hero main)
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
@@ -348,7 +330,6 @@ export default function HeroBanner({
   const displayTitle = drama.bannerTitle?.trim() || drama.title;
   const displayDescription = drama.bannerDescription?.trim() || drama.synopsis;
 
-  // Play route: CW 이어보기 vs 첫 에피소드
   const playRoute = cwItem
     ? `/watch/${drama.id}/${cwItem.episodeId}`
     : drama.episodes?.[0]
@@ -382,7 +363,6 @@ export default function HeroBanner({
               key={d.id}
               className={`hero-backdrop-item${isActive ? " active" : ""}`}
             >
-              {/* Ken Burns + Parallax on active image */}
               <img
                 src={d.backdrop}
                 alt={d.title}
@@ -403,7 +383,6 @@ export default function HeroBanner({
                     : undefined
                 }
               />
-              {/* Video preview */}
               {isActive &&
                 videoPreviewActive &&
                 d.bannerVideoUrl &&
@@ -434,15 +413,12 @@ export default function HeroBanner({
       <div className="hero-gradient-bottom" />
       <div className="hero-gradient-left" />
       <div className="hero-gradient-top" />
-      <div className="hero-gradient-right-desktop" />
       <div className="hero-gradient-base-fade" />
 
-      {/* ── Content Layout ──────────────────────────────────────────────────── */}
-      <div className="hero-content-layout">
-
-        {/* LEFT: Content */}
+      {/* ── Content Layout V3 — 풀스크린 단일 컬럼 ─────────────────────────── */}
+      <div className="hero-content-layout-v3">
         <div
-          className="hero-left"
+          className="hero-left-v3"
           key={`${drama.id}-content`}
           style={{
             opacity: revealed ? 1 : 0,
@@ -496,7 +472,7 @@ export default function HeroBanner({
             )}
           </div>
 
-          {/* CW progress bar (이어보기 컨텍스트) */}
+          {/* CW progress */}
           {cwItem && (
             <div className="hero-cw-progress-wrap">
               <div className="hero-cw-progress-track">
@@ -561,45 +537,6 @@ export default function HeroBanner({
             </button>
           </div>
         </div>
-
-        {/* RIGHT: Preview stack (desktop md+) */}
-        <div className="hero-right">
-          <div className="hero-preview-stack">
-            {heroItems.slice(0, 4).map((item, i) => {
-              const offset = (i - index + heroItems.length) % heroItems.length;
-              const isActive = offset === 0;
-              const isNext = offset === 1;
-              const isPrev = offset === heroItems.length - 1;
-              if (!isActive && !isNext && !isPrev) return null;
-              return (
-                <button
-                  key={item.drama.id}
-                  onClick={() => handleSelect(i)}
-                  className={`hero-preview-card${
-                    isActive
-                      ? " hero-preview-active"
-                      : isNext
-                      ? " hero-preview-next"
-                      : " hero-preview-prev"
-                  }`}
-                  aria-label={item.drama.title}
-                >
-                  <img
-                    src={item.drama.poster}
-                    alt={item.drama.title}
-                    className="hero-preview-img"
-                  />
-                  <div className="hero-preview-overlay">
-                    <p className="hero-preview-title">{item.drama.title}</p>
-                    <p className="hero-preview-ep">
-                      {item.cwItem ? "이어보기" : `${item.drama.totalEpisodes}화`}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
       </div>
 
       {/* ── Arrows (desktop) ───────────────────────────────────────────────── */}
@@ -630,7 +567,7 @@ export default function HeroBanner({
         onSelect={handleSelect}
       />
 
-      {/* ── Preview Rail (하단 썸네일) ─────────────────────────────────────── */}
+      {/* ── Preview Rail V3 ────────────────────────────────────────────────── */}
       <PreviewRail
         items={heroItems}
         activeIndex={index}

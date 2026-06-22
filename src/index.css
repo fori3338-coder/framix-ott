@@ -2055,3 +2055,324 @@
     box-shadow: 0 0 6px rgba(255, 255, 255, 0.55);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   FRAMIX HOME V4 — Premium Additions
+   Preview Rail V3 / ShowcaseRow V4 / Footer V4 / Spacing Premium
+═══════════════════════════════════════════════════════════════════ */
+@layer utilities {
+
+  /* ── Hero Content Layout V3 (풀스크린, 우측 포스터 제거) ─────────── */
+  .hero-content-layout-v3 {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 1.25rem 5.5rem;
+  }
+  @media (min-width: 768px) {
+    .hero-content-layout-v3 {
+      padding: 0 3.5rem 6rem;
+      align-items: flex-end;
+    }
+  }
+  @media (min-width: 1280px) {
+    .hero-content-layout-v3 {
+      padding: 0 5rem 6.5rem;
+    }
+  }
+
+  /* Left content: wider now that right stack removed */
+  .hero-left-v3 {
+    flex: 1;
+    min-width: 0;
+    max-width: 100%;
+    animation: hero-title-in 700ms ease-out both;
+  }
+  @media (min-width: 768px) {
+    .hero-left-v3 {
+      max-width: 60%;
+    }
+  }
+  @media (min-width: 1280px) {
+    .hero-left-v3 {
+      max-width: 52%;
+    }
+  }
+
+  /* ── Preview Rail V3 — Netflix 스타일 (가로 120~140px) ───────────── */
+
+  /* Rail card V3 */
+  .hero-rail-card-v3 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
+    opacity: 0.52;
+    transform: scale(0.90) translateZ(0);
+    transition:
+      opacity 0.32s ease,
+      transform 0.32s cubic-bezier(0.22,1,0.36,1);
+    will-change: opacity, transform;
+  }
+  .hero-rail-card-v3.active {
+    opacity: 1;
+    transform: scale(1) translateZ(0);
+  }
+  .hero-rail-card-v3:hover:not(.active) {
+    opacity: 0.78;
+    transform: scale(0.96) translateZ(0);
+  }
+
+  /* Thumbnail V3 — 가로 120px mobile, 136px desktop */
+  .hero-rail-thumb-v3 {
+    position: relative;
+    width: 72px;
+    height: 104px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
+  @media (min-width: 768px) {
+    .hero-rail-thumb-v3 {
+      width: 92px;
+      height: 132px;
+      border-radius: 9px;
+    }
+  }
+  @media (min-width: 1280px) {
+    .hero-rail-thumb-v3 {
+      width: 104px;
+      height: 150px;
+      border-radius: 10px;
+    }
+  }
+
+  /* Active glow ring — subtle gold glow instead of plain white */
+  .hero-rail-glow-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 2px solid rgba(255,255,255,0.9);
+    box-shadow: 0 0 16px rgba(212,175,55,0.35), 0 0 0 1px rgba(212,175,55,0.2);
+    pointer-events: none;
+  }
+
+  /* Label V3 */
+  .hero-rail-label-v3 {
+    width: 72px;
+    text-align: center;
+  }
+  @media (min-width: 768px) {
+    .hero-rail-label-v3 { width: 92px; }
+  }
+  @media (min-width: 1280px) {
+    .hero-rail-label-v3 { width: 104px; }
+  }
+  .hero-rail-title-v3 {
+    color: rgba(255,255,255,0.84);
+    font-size: 0.62rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  @media (min-width: 768px) {
+    .hero-rail-title-v3 {
+      font-size: 0.68rem;
+    }
+  }
+  .hero-rail-sub-v3 {
+    color: rgba(255,255,255,0.42);
+    font-size: 0.56rem;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hero-rail-sub-v3.cw {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    color: rgba(255,255,255,0.55);
+  }
+  @media (min-width: 768px) {
+    .hero-rail-sub-v3 { font-size: 0.62rem; }
+  }
+
+  /* Rail wrap positioning — increased bottom padding for larger cards */
+  /* Override for V3 */
+  .hero-root {
+    padding-bottom: 140px !important;
+  }
+  @media (min-width: 768px) {
+    .hero-root {
+      padding-bottom: 0 !important;
+    }
+  }
+
+  /* Rail centered on desktop */
+  @media (min-width: 768px) {
+    .hero-rail {
+      justify-content: center;
+      gap: 14px !important;
+    }
+  }
+  .hero-rail {
+    gap: 10px;
+  }
+
+  /* ── ShowcaseRow V4 — 카드 폭 확대, 노출 수 감소 ─────────────────── */
+
+  /* Gap between cards */
+  .showcase-row-gap-v4 {
+    gap: 12px;
+  }
+  @media (min-width: 768px) {
+    .showcase-row-gap-v4 {
+      gap: 18px;
+    }
+  }
+  @media (min-width: 1280px) {
+    .showcase-row-gap-v4 {
+      gap: 22px;
+    }
+  }
+
+  /* Card slot — Mobile: 2개 노출(45vw), Tablet: 3개(~30vw), Desktop: 4~5개 */
+  .showcase-card-slot-v4 {
+    width: clamp(140px, 44vw, 190px);
+  }
+  @media (min-width: 640px) {
+    .showcase-card-slot-v4 {
+      width: clamp(160px, 31vw, 220px);
+    }
+  }
+  @media (min-width: 768px) {
+    .showcase-card-slot-v4 {
+      width: clamp(180px, 22vw, 250px);
+    }
+  }
+  @media (min-width: 1024px) {
+    .showcase-card-slot-v4 {
+      width: clamp(190px, 19vw, 240px);
+    }
+  }
+  @media (min-width: 1280px) {
+    .showcase-card-slot-v4 {
+      width: clamp(200px, 17vw, 240px);
+    }
+  }
+
+  /* ── Section Spacing Premium (+30~40%) ───────────────────────────── */
+  .home-section {
+    margin-bottom: 3.25rem;
+  }
+  @media (min-width: 768px) {
+    .home-section {
+      margin-bottom: 5.5rem;
+    }
+  }
+  @media (min-width: 1280px) {
+    .home-section {
+      margin-bottom: 7rem;
+    }
+  }
+
+  /* Home V4 content top margin */
+  .home-v4-content {
+    margin-top: 4rem;
+  }
+  @media (min-width: 768px) {
+    .home-v4-content {
+      margin-top: 5.5rem;
+    }
+  }
+
+  /* ── Footer V4 — 로고 + 메뉴 + 카피라이트 ─────────────────────────── */
+  .framix-footer-v4 {
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding: 4rem 2rem 6rem;
+    margin-top: 2rem;
+  }
+  @media (min-width: 768px) {
+    .framix-footer-v4 {
+      padding: 4.5rem 3.5rem 5rem;
+    }
+  }
+  @media (min-width: 1280px) {
+    .framix-footer-v4 {
+      padding: 5rem 5rem 5.5rem;
+    }
+  }
+
+  .framix-footer-v4-inner {
+    max-width: 960px;
+  }
+
+  .framix-footer-v4-logo {
+    font-size: 1.35rem;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.28) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    display: inline-block;
+  }
+  @media (min-width: 768px) {
+    .framix-footer-v4-logo {
+      font-size: 1.6rem;
+      margin-bottom: 1.75rem;
+    }
+  }
+
+  .framix-footer-v4-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin-bottom: 2rem;
+  }
+  @media (min-width: 768px) {
+    .framix-footer-v4-nav {
+      gap: 8px 28px;
+      margin-bottom: 2.25rem;
+    }
+  }
+
+  .framix-footer-v4-link {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.32);
+    cursor: pointer;
+    transition: color 150ms ease;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  .framix-footer-v4-link:hover {
+    color: rgba(255,255,255,0.62);
+  }
+
+  .framix-footer-v4-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+    margin-bottom: 1.5rem;
+  }
+
+  .framix-footer-v4-copy {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.20);
+    line-height: 1.7;
+    letter-spacing: 0.01em;
+  }
+}

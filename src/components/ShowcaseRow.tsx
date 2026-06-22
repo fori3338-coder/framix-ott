@@ -1,11 +1,8 @@
 /**
- * ShowcaseRow — Premium OTT Section Row
- * Netflix / Apple TV+ / Disney+ level
- * - Scroll Reveal (IntersectionObserver)
- * - Premium Typography
- * - Top10 Netflix-style rank overlay
- * - Dark theme optimized spacing
- * - rowVariant: "default" | "trending" | "aipick" | "binge"
+ * ShowcaseRow — Premium OTT Section Row V4
+ * - 카드 수 감소: Desktop 4~5개, Tablet 3개, Mobile 2개
+ * - 고급 OTT 여백 강화
+ * - Scroll Reveal, Premium Typography 유지
  */
 import { useRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Zap, Brain, Tv2 } from "lucide-react";
@@ -42,7 +39,7 @@ export default function ShowcaseRow({
   const [canNext, setCanNext] = useState(true);
   const [revealed, setRevealed] = useState(false);
 
-  // ── Scroll Reveal via IntersectionObserver ──────────────────────────────
+  // Scroll Reveal
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -84,23 +81,20 @@ export default function ShowcaseRow({
 
   if (dramas.length === 0) return null;
 
-  // ── Row variant derived styles ─────────────────────────────────────────
   const isTrending = rowVariant === "trending";
   const isAiPick = rowVariant === "aipick";
   const isBinge = rowVariant === "binge";
 
-  // Background strip for trending (Disney+ style)
   const sectionBg = isTrending
     ? "linear-gradient(135deg, rgba(16,10,42,0.9) 0%, rgba(8,8,20,0.95) 100%)"
     : isAiPick
     ? "linear-gradient(135deg, rgba(10,18,36,0.85) 0%, rgba(5,5,15,0.95) 100%)"
     : "transparent";
 
-  // Badge icon override
-  const BadgeIcon = isAiPick ? <Brain size={9} className="inline-block mr-0.5" />
-    : isTrending ? <Zap size={9} className="inline-block mr-0.5" />
-    : isBinge ? <Tv2 size={9} className="inline-block mr-0.5" />
-    : null;
+  const BadgeIcon =
+    isAiPick ? <Brain size={9} className="inline-block mr-0.5" /> :
+    isTrending ? <Zap size={9} className="inline-block mr-0.5" /> :
+    isBinge ? <Tv2 size={9} className="inline-block mr-0.5" /> : null;
 
   return (
     <section
@@ -110,7 +104,7 @@ export default function ShowcaseRow({
         revealed ? "is-visible" : "",
       ].join(" ")}
     >
-      {/* Background strip (trending/aipick variants) */}
+      {/* Background strip */}
       {(isTrending || isAiPick) && (
         <div
           className="absolute inset-0 rounded-2xl mx-5 md:mx-12 pointer-events-none"
@@ -122,21 +116,21 @@ export default function ShowcaseRow({
       {/* ── Section Header ─────────────────────────────────────────────── */}
       <div
         className={[
-          "relative z-[1] flex items-end justify-between mb-5 md:mb-7",
+          "relative z-[1] flex items-end justify-between mb-5 md:mb-8",
           isTrending || isAiPick ? "px-10 md:px-20 pt-6 md:pt-8" : "px-5 md:px-12",
         ].join(" ")}
       >
         <div className="flex items-center gap-3 min-w-0">
-          {/* Accent bar */}
           <div
             className="section-accent-bar"
             style={
-              isTrending ? { background: "linear-gradient(to bottom, #8b5cf6, #6d28d9)" }
-              : isAiPick ? { background: "linear-gradient(to bottom, #3b82f6, #1d4ed8)" }
-              : undefined
+              isTrending
+                ? { background: "linear-gradient(to bottom, #8b5cf6, #6d28d9)" }
+                : isAiPick
+                ? { background: "linear-gradient(to bottom, #3b82f6, #1d4ed8)" }
+                : undefined
             }
           />
-
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
               <h2 className="section-title-premium truncate">{title}</h2>
@@ -232,26 +226,27 @@ export default function ShowcaseRow({
           <ChevronRight size={18} className="text-white" />
         </button>
 
-        {/* Cards */}
+        {/* Cards — V4: 카드 사이즈 확대, 노출 수 감소 */}
         <div
           ref={scrollRef}
           className={[
-            "flex gap-3 md:gap-5",
+            "flex",
             "overflow-x-auto scrollbar-hide",
             isTrending || isAiPick ? "px-10 md:px-20" : "px-5 md:px-12",
             "pb-6 md:pb-8",
             "pt-1",
             "snap-x snap-mandatory md:snap-none",
+            "showcase-row-gap-v4",
           ].join(" ")}
         >
           {dramas.map((drama, i) => (
             <div
               key={`${drama.id}-${i}`}
-              className="snap-start flex-shrink-0"
+              className="snap-start flex-shrink-0 showcase-card-slot-v4"
               style={{
                 opacity: 0,
                 animation: revealed
-                  ? `fade-in-up 0.5s cubic-bezier(0.22,1,0.36,1) ${Math.min(i * 50, 400)}ms both`
+                  ? `fade-in-up 0.5s cubic-bezier(0.22,1,0.36,1) ${Math.min(i * 55, 440)}ms both`
                   : "none",
               }}
             >
