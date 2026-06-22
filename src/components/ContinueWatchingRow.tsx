@@ -168,7 +168,6 @@ function ContinueWatchingCard({
   onPlay: () => void;
   onRemove: (e: React.MouseEvent) => void;
 }) {
-  const [hovered, setHovered] = useState(false);
   const remainSec = Math.max(0, item.durationSeconds - item.progressSeconds);
 
   return (
@@ -180,19 +179,30 @@ function ContinueWatchingCard({
         animationDelay: `${idx * 40}ms`,
         animationFillMode: "backwards",
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       onClick={onPlay}
     >
-      {/* 썸네일 영역 (16:9) */}
+      {/* Thumbnail (16:9) */}
       <div
-        className="relative w-full rounded-xl overflow-hidden bg-zinc-900"
+        className={[
+          "relative w-full rounded-xl overflow-hidden bg-zinc-900",
+          "transition-[transform,box-shadow] duration-[350ms]",
+          "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
+          "md:group-hover:scale-[1.04]",
+          "md:group-hover:shadow-[0_24px_60px_rgba(0,0,0,0.45)]",
+          "will-change-[transform,opacity]",
+        ].join(" ")}
         style={{ aspectRatio: "16/9" }}
       >
         <img
           src={item.thumbnail}
           alt={item.seriesTitle}
-          className={`w-full h-full object-cover transition-transform duration-300 ${hovered ? "scale-105" : "scale-100"}`}
+          className={[
+            "w-full h-full object-cover",
+            "transition-transform duration-[350ms]",
+            "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
+            "md:group-hover:scale-[1.08]",
+            "will-change-transform",
+          ].join(" ")}
           onError={(e) => {
             const img = e.target as HTMLImageElement;
             if (!img.src.endsWith("/content/fallback-poster.svg"))
@@ -200,36 +210,51 @@ function ContinueWatchingCard({
           }}
         />
 
-        {/* 다크 그라데이션 오버레이 */}
+        {/* Dark Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-        {/* 재생 버튼 오버레이 (hover 시) */}
+        {/* Play Button Overlay (hover) */}
         <div
-          className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${hovered ? "opacity-100" : "opacity-0"}`}
+          className={[
+            "absolute inset-0 flex items-center justify-center",
+            "opacity-0 md:group-hover:opacity-100",
+            "transition-opacity duration-[350ms]",
+            "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
+          ].join(" ")}
         >
           <div
-            className="w-12 h-12 rounded-full flex items-center justify-center shadow-xl"
-            style={{ background: "#FFD54A" }}
+            className={[
+              "w-12 h-12 rounded-full flex items-center justify-center shadow-xl",
+              "translate-y-2 md:group-hover:translate-y-0",
+              "transition-transform duration-[250ms]",
+              "will-change-transform",
+            ].join(" ")}
+            style={{ background: "#FFD54A", transitionDelay: "60ms" }}
           >
             <Play size={20} className="text-black fill-black ml-1" />
           </div>
         </div>
 
-        {/* 삭제 버튼 */}
+        {/* Remove Button */}
         <button
           onClick={onRemove}
-          className={`absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 border border-white/20 flex items-center justify-center text-white/70 hover:text-white hover:bg-black transition-all z-10 ${hovered ? "opacity-100" : "opacity-0"}`}
+          className={[
+            "absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 border border-white/20",
+            "flex items-center justify-center text-white/70 hover:text-white hover:bg-black",
+            "transition-all z-10",
+            "opacity-0 md:group-hover:opacity-100",
+          ].join(" ")}
           aria-label="이어보기 목록에서 삭제"
         >
           <X size={13} />
         </button>
 
-        {/* 남은 시간 */}
+        {/* Remaining Time */}
         <div className="absolute bottom-2 right-2 text-[10px] font-semibold text-white/80 bg-black/60 rounded px-1.5 py-0.5 tabular-nums">
           {formatTime(remainSec)} 남음
         </div>
 
-        {/* 진행 바 */}
+        {/* Progress Bar */}
         <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/20">
           <div
             className="h-full rounded-full transition-all duration-300"
@@ -238,9 +263,9 @@ function ContinueWatchingCard({
         </div>
       </div>
 
-      {/* 텍스트 정보 */}
+      {/* Text Info */}
       <div className="mt-2 px-0.5">
-        <p className="text-white font-semibold text-sm truncate leading-tight">
+        <p className="text-white font-semibold text-sm truncate leading-tight transition-colors duration-200 md:group-hover:text-white">
           {item.seriesTitle}
         </p>
         <div className="flex items-center justify-between mt-0.5">
@@ -261,27 +286,41 @@ function ContinueWatchingCard({
           </p>
         )}
 
-        {/* 진행 텍스트 바 */}
-        <div className="mt-1.5 flex items-center gap-2">
-          <div className="flex-1 h-1 bg-white/15 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full"
-              style={{ width: `${item.progress}%`, background: "#FFD54A" }}
-            />
-          </div>
+        {/* Progress Bar (text area) */}
+        <div className="mt-1.5 flex-1 h-1 bg-white/15 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${item.progress}%`, background: "#FFD54A" }}
+          />
         </div>
 
-        {/* 이어보기 버튼 */}
+        {/* Resume Button */}
         <button
-          onClick={(e) => { e.stopPropagation(); onPlay(); }}
-          className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPlay();
+          }}
+          className={[
+            "mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold",
+            "transition-[background,color] duration-[250ms]",
+            "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
+          ].join(" ")}
           style={{
-            background: hovered ? "#FFD54A" : "rgba(255,213,74,0.12)",
-            color: hovered ? "#000" : "#FFD54A",
+            background: "rgba(255,213,74,0.12)",
+            color: "#FFD54A",
             border: "1px solid rgba(255,213,74,0.3)",
           }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = "#FFD54A";
+            (e.currentTarget as HTMLButtonElement).style.color = "#000";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background =
+              "rgba(255,213,74,0.12)";
+            (e.currentTarget as HTMLButtonElement).style.color = "#FFD54A";
+          }}
         >
-          <Play size={11} className={hovered ? "fill-black text-black" : "fill-yellow-400 text-yellow-400"} />
+          <Play size={11} className="fill-current" />
           이어보기
         </button>
       </div>
