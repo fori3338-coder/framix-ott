@@ -5,11 +5,14 @@
  * - Premium Typography
  * - Top10 Netflix-style rank overlay
  * - Dark theme optimized spacing
+ * - rowVariant: "default" | "trending" | "aipick" | "binge"
  */
 import { useRef, useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Zap, Brain, Tv2 } from "lucide-react";
 import type { Drama } from "../types";
 import ShowcaseCard, { type CardVariant } from "./ShowcaseCard";
+
+type RowVariant = "default" | "trending" | "aipick" | "binge";
 
 interface ShowcaseRowProps {
   title: string;
@@ -20,6 +23,7 @@ interface ShowcaseRowProps {
   cardSize?: "sm" | "md" | "lg";
   badge?: string;
   cardVariant?: CardVariant;
+  rowVariant?: RowVariant;
 }
 
 export default function ShowcaseRow({
@@ -30,6 +34,7 @@ export default function ShowcaseRow({
   cardSize = "md",
   badge,
   cardVariant,
+  rowVariant = "default",
 }: ShowcaseRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
@@ -79,6 +84,24 @@ export default function ShowcaseRow({
 
   if (dramas.length === 0) return null;
 
+  // ── Row variant derived styles ─────────────────────────────────────────
+  const isTrending = rowVariant === "trending";
+  const isAiPick = rowVariant === "aipick";
+  const isBinge = rowVariant === "binge";
+
+  // Background strip for trending (Disney+ style)
+  const sectionBg = isTrending
+    ? "linear-gradient(135deg, rgba(16,10,42,0.9) 0%, rgba(8,8,20,0.95) 100%)"
+    : isAiPick
+    ? "linear-gradient(135deg, rgba(10,18,36,0.85) 0%, rgba(5,5,15,0.95) 100%)"
+    : "transparent";
+
+  // Badge icon override
+  const BadgeIcon = isAiPick ? <Brain size={9} className="inline-block mr-0.5" />
+    : isTrending ? <Zap size={9} className="inline-block mr-0.5" />
+    : isBinge ? <Tv2 size={9} className="inline-block mr-0.5" />
+    : null;
+
   return (
     <section
       ref={sectionRef}
@@ -87,11 +110,32 @@ export default function ShowcaseRow({
         revealed ? "is-visible" : "",
       ].join(" ")}
     >
+      {/* Background strip (trending/aipick variants) */}
+      {(isTrending || isAiPick) && (
+        <div
+          className="absolute inset-0 rounded-2xl mx-5 md:mx-12 pointer-events-none"
+          style={{ background: sectionBg, zIndex: 0 }}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ── Section Header ─────────────────────────────────────────────── */}
-      <div className="flex items-end justify-between px-5 md:px-12 mb-5 md:mb-7">
+      <div
+        className={[
+          "relative z-[1] flex items-end justify-between mb-5 md:mb-7",
+          isTrending || isAiPick ? "px-10 md:px-20 pt-6 md:pt-8" : "px-5 md:px-12",
+        ].join(" ")}
+      >
         <div className="flex items-center gap-3 min-w-0">
           {/* Accent bar */}
-          <div className="section-accent-bar" />
+          <div
+            className="section-accent-bar"
+            style={
+              isTrending ? { background: "linear-gradient(to bottom, #8b5cf6, #6d28d9)" }
+              : isAiPick ? { background: "linear-gradient(to bottom, #3b82f6, #1d4ed8)" }
+              : undefined
+            }
+          />
 
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
@@ -100,16 +144,20 @@ export default function ShowcaseRow({
                 <span
                   className={[
                     "text-[9px] md:text-[10px] font-black px-2 py-[3px] rounded-full tracking-widest border",
-                    badge === "HOT"
-                      ? "bg-red-500/15 text-red-400 border-red-500/25"
+                    badge === "HOT" || isTrending
+                      ? "bg-violet-500/15 text-violet-400 border-violet-500/25"
                       : badge === "NEW"
                       ? "bg-emerald-500/12 text-emerald-400 border-emerald-500/22"
                       : badge === "ORIGINAL"
                       ? "bg-white/8 text-white/70 border-white/15"
+                      : isAiPick || badge === "AI Pick"
+                      ? "bg-blue-500/15 text-blue-400 border-blue-500/25"
+                      : isBinge || badge === "BINGE"
+                      ? "bg-amber-500/12 text-amber-400 border-amber-500/22"
                       : "bg-white/8 text-white/60 border-white/12",
                   ].join(" ")}
                 >
-                  {badge}
+                  {BadgeIcon}{badge}
                 </span>
               )}
             </div>
@@ -132,7 +180,12 @@ export default function ShowcaseRow({
       </div>
 
       {/* ── Scroll Area ────────────────────────────────────────────────── */}
-      <div className="relative group/row">
+      <div
+        className={[
+          "relative z-[1] group/row",
+          isTrending || isAiPick ? "pb-6 md:pb-8" : "",
+        ].join(" ")}
+      >
         {/* Edge fades */}
         <div className="pointer-events-none absolute top-0 bottom-0 left-0 w-6 md:w-12 bg-gradient-to-r from-[#050505] to-transparent z-[5]" />
         <div className="pointer-events-none absolute top-0 bottom-0 right-0 w-10 md:w-20 bg-gradient-to-l from-[#050505] to-transparent z-[5]" />
@@ -185,7 +238,7 @@ export default function ShowcaseRow({
           className={[
             "flex gap-3 md:gap-5",
             "overflow-x-auto scrollbar-hide",
-            "px-5 md:px-12",
+            isTrending || isAiPick ? "px-10 md:px-20" : "px-5 md:px-12",
             "pb-6 md:pb-8",
             "pt-1",
             "snap-x snap-mandatory md:snap-none",
