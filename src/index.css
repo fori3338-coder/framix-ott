@@ -500,3 +500,692 @@
     }
   }
 }
+
+/* ============================================================
+   HERO BANNER — Netflix/ReelShort Premium Redesign
+   ============================================================ */
+@layer utilities {
+
+  /* ── Root container ────────────────────────────────────────── */
+  .hero-root {
+    position: relative;
+    width: 100%;
+    /* Mobile: tall portrait (ReelShort style) */
+    height: 92svh;
+    min-height: 520px;
+    overflow: hidden;
+    background: var(--color-base);
+  }
+  @media (min-width: 768px) {
+    .hero-root {
+      /* Desktop: cinematic widescreen */
+      height: 90vh;
+      min-height: 620px;
+      max-height: 900px;
+    }
+  }
+
+  /* ── Backdrop layer ────────────────────────────────────────── */
+  .hero-backdrops {
+    position: absolute;
+    inset: 0;
+  }
+  .hero-backdrop-item {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 1.2s ease-out;
+  }
+  .hero-backdrop-item.active {
+    opacity: 1;
+  }
+
+  /* ── Backdrop images ───────────────────────────────────────── */
+  .hero-img-mobile {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 20%;
+    will-change: transform;
+  }
+  .hero-img-mobile.zooming {
+    animation: ken-burns 14s ease-out forwards;
+  }
+  @media (min-width: 768px) {
+    .hero-img-mobile {
+      display: none;
+    }
+  }
+  .hero-img-desktop {
+    display: none;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 20%;
+    will-change: transform;
+  }
+  .hero-img-desktop.zooming-pc {
+    animation: hero-zoom-pc 22s ease-in-out infinite;
+  }
+  @media (min-width: 768px) {
+    .hero-img-desktop {
+      display: block;
+    }
+  }
+
+  /* ── Video preview ─────────────────────────────────────────── */
+  .hero-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 650ms ease-out;
+  }
+
+  /* ── Multi-layer Cinematic Gradients ───────────────────────── */
+  /* Bottom: deep dark for text legibility */
+  .hero-gradient-bottom {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(5, 5, 5, 1) 0%,
+      rgba(5, 5, 5, 0.88) 14%,
+      rgba(5, 5, 5, 0.52) 36%,
+      rgba(5, 5, 5, 0.18) 58%,
+      transparent 78%
+    );
+    pointer-events: none;
+  }
+  /* Left: text column darkness */
+  .hero-gradient-left {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to right,
+      rgba(5, 5, 5, 0.90) 0%,
+      rgba(5, 5, 5, 0.60) 26%,
+      rgba(5, 5, 5, 0.22) 52%,
+      transparent 72%
+    );
+    pointer-events: none;
+  }
+  /* Top: subtle header vignette */
+  .hero-gradient-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 180px;
+    background: linear-gradient(
+      to bottom,
+      rgba(5, 5, 5, 0.72) 0%,
+      transparent 100%
+    );
+    pointer-events: none;
+  }
+  /* Right desktop: darkens right column for preview cards */
+  .hero-gradient-right-desktop {
+    display: none;
+    pointer-events: none;
+  }
+  @media (min-width: 768px) {
+    .hero-gradient-right-desktop {
+      display: block;
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 38%;
+      height: 100%;
+      background: linear-gradient(
+        to left,
+        rgba(5, 5, 5, 0.75) 0%,
+        transparent 100%
+      );
+    }
+  }
+  /* Base fade: merges into page background */
+  .hero-gradient-base-fade {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 120px;
+    background: linear-gradient(to bottom, transparent, var(--color-base));
+    pointer-events: none;
+  }
+
+  /* ── Content Layout (Desktop: flex row) ────────────────────── */
+  .hero-content-layout {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 1.25rem 5.5rem;
+    gap: 2rem;
+  }
+  @media (min-width: 768px) {
+    .hero-content-layout {
+      padding: 0 3.5rem 6rem;
+      align-items: center;
+      bottom: 0;
+      top: 0;
+    }
+  }
+
+  /* ── Left Content Area ─────────────────────────────────────── */
+  .hero-left {
+    flex: 1;
+    min-width: 0;
+    max-width: 100%;
+    animation: hero-title-in 700ms ease-out both;
+  }
+  @media (min-width: 768px) {
+    .hero-left {
+      max-width: 52%;
+    }
+  }
+
+  /* ── Original badge ────────────────────────────────────────── */
+  .hero-original-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    animation: hero-title-in 700ms ease-out both;
+  }
+  .hero-original-label {
+    background: linear-gradient(135deg, #f0d77b 0%, #D4AF37 50%, #9c7e23 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-weight: 900;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+  }
+  @media (min-width: 768px) {
+    .hero-original-label { font-size: 0.95rem; }
+  }
+  .hero-original-divider {
+    width: 1px;
+    height: 12px;
+    background: rgba(212,175,55,0.4);
+  }
+  .hero-original-sub {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+
+  /* ── AI Pick Badge ─────────────────────────────────────────── */
+  .hero-ai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 10px;
+    padding: 3px 10px 3px 7px;
+    border-radius: 9999px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #050505;
+    background: linear-gradient(135deg, #f0d77b 0%, #D4AF37 60%);
+    box-shadow: 0 0 12px rgba(212,175,55,0.45);
+    animation: hero-title-in 700ms ease-out both;
+  }
+  .hero-ai-badge-icon {
+    flex-shrink: 0;
+  }
+
+  /* ── Title ─────────────────────────────────────────────────── */
+  .hero-title {
+    font-size: clamp(1.9rem, 6vw, 4rem);
+    font-weight: 900;
+    line-height: 1.04;
+    color: #fff;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.65rem;
+    drop-shadow: 0 4px 24px rgba(0,0,0,0.6);
+    animation: hero-title-in 700ms ease-out 60ms both;
+    /* Mobile: tighter */
+    max-width: 88vw;
+  }
+  @media (min-width: 768px) {
+    .hero-title {
+      font-size: clamp(2.4rem, 4.5vw, 4.2rem);
+      max-width: 100%;
+      drop-shadow: 0 6px 32px rgba(0,0,0,0.75);
+    }
+  }
+
+  /* ── Metadata row ──────────────────────────────────────────── */
+  .hero-meta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    margin-bottom: 0.75rem;
+    animation: hero-title-in 700ms ease-out 130ms both;
+  }
+  .hero-meta-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    color: #D4AF37;
+    font-weight: 700;
+    font-size: 0.78rem;
+  }
+  @media (min-width: 768px) {
+    .hero-meta-rating { font-size: 0.88rem; }
+  }
+  .hero-meta-dot {
+    color: rgba(255,255,255,0.3);
+    font-size: 0.75rem;
+  }
+  .hero-meta-year {
+    color: rgba(255,255,255,0.65);
+    font-size: 0.78rem;
+  }
+  .hero-meta-age {
+    border: 1px solid rgba(255,255,255,0.35);
+    color: rgba(255,255,255,0.65);
+    font-size: 0.62rem;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+  .hero-meta-episodes {
+    color: rgba(255,255,255,0.65);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .hero-meta-length {
+    color: rgba(255,255,255,0.45);
+    font-size: 0.75rem;
+  }
+
+  /* ── Synopsis (desktop only) ────────────────────────────────── */
+  .hero-synopsis {
+    display: none;
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 1rem;
+    max-width: 480px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    animation: hero-title-in 700ms ease-out 220ms both;
+  }
+  @media (max-width: 767px) {
+    .hero-synopsis {
+      display: none !important;
+    }
+  }
+  @media (min-width: 768px) {
+    .hero-synopsis {
+      display: -webkit-box;
+      font-size: 0.93rem;
+    }
+  }
+
+  /* ── Genre tags ────────────────────────────────────────────── */
+  .hero-genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 1.1rem;
+    animation: hero-title-in 700ms ease-out 270ms both;
+  }
+  .hero-genre-tag {
+    font-size: 0.62rem;
+    padding: 2px 9px;
+    border-radius: 9999px;
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(6px);
+    font-weight: 500;
+  }
+  @media (min-width: 768px) {
+    .hero-genre-tag { font-size: 0.7rem; }
+  }
+
+  /* ── CTA Buttons row ───────────────────────────────────────── */
+  .hero-cta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 1.1rem;
+    animation: hero-title-in 700ms ease-out 340ms both;
+  }
+  @media (min-width: 768px) {
+    .hero-cta-row {
+      gap: 10px;
+      margin-bottom: 1.4rem;
+    }
+  }
+
+  /* Play button */
+  .hero-btn-play {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: #ffffff;
+    color: #050505;
+    font-weight: 800;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    transition: background 0.18s, transform 0.18s, box-shadow 0.18s;
+    will-change: transform;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    cursor: pointer;
+  }
+  .hero-btn-play:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .hero-btn-play:not(:disabled):hover {
+    background: #D4AF37;
+    transform: scale(1.03);
+    box-shadow: 0 10px 36px rgba(212,175,55,0.4);
+  }
+  .hero-btn-play:active {
+    transform: scale(0.97);
+  }
+  @media (min-width: 768px) {
+    .hero-btn-play {
+      padding: 12px 28px;
+      font-size: 0.96rem;
+    }
+  }
+
+  /* Save (내 보관함) button */
+  .hero-btn-save {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,213,74,0.10);
+    color: #D4AF37;
+    font-weight: 700;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    border: 1px solid rgba(212,175,55,0.35);
+    backdrop-filter: blur(8px);
+    transition: background 0.18s, transform 0.18s, border-color 0.18s;
+    cursor: pointer;
+  }
+  .hero-btn-save:hover {
+    background: rgba(255,213,74,0.2);
+    border-color: rgba(212,175,55,0.6);
+    transform: scale(1.03);
+  }
+  .hero-btn-save.saved {
+    background: rgba(212,175,55,0.22);
+    border-color: rgba(212,175,55,0.7);
+  }
+  .hero-btn-save:active {
+    transform: scale(0.97);
+  }
+  @media (min-width: 768px) {
+    .hero-btn-save { padding: 12px 20px; }
+  }
+
+  /* Info (상세보기) button */
+  .hero-btn-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.85);
+    font-weight: 700;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px);
+    transition: background 0.18s, transform 0.18s;
+    cursor: pointer;
+  }
+  .hero-btn-info:hover {
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.03);
+  }
+  .hero-btn-info:active {
+    transform: scale(0.97);
+  }
+  @media (min-width: 768px) {
+    .hero-btn-info { padding: 12px 20px; }
+  }
+
+  /* ── Continue Watching link ─────────────────────────────────── */
+  .hero-cw-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: rgba(255,255,255,0.38);
+    font-size: 0.7rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s;
+    animation: hero-title-in 700ms ease-out 420ms both;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+  .hero-cw-link:hover {
+    color: rgba(255,255,255,0.7);
+  }
+  .hero-cw-link-bar {
+    display: inline-block;
+    width: 14px;
+    height: 1.5px;
+    background: rgba(255,255,255,0.28);
+    border-radius: 9999px;
+    margin-right: 2px;
+  }
+
+  /* ── Right Preview Stack (desktop only) ────────────────────── */
+  .hero-right {
+    display: none;
+    flex-shrink: 0;
+  }
+  @media (min-width: 768px) {
+    .hero-right {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      width: 38%;
+      min-width: 240px;
+      max-width: 360px;
+    }
+  }
+
+  .hero-preview-stack {
+    position: relative;
+    width: 160px;
+    height: 240px;
+  }
+  @media (min-width: 1024px) {
+    .hero-preview-stack {
+      width: 190px;
+      height: 285px;
+    }
+  }
+  @media (min-width: 1280px) {
+    .hero-preview-stack {
+      width: 210px;
+      height: 315px;
+    }
+  }
+
+  .hero-preview-card {
+    position: absolute;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.45s ease,
+                box-shadow 0.45s ease;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+  /* Active card: front and center */
+  .hero-preview-card.hero-preview-active {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    z-index: 3;
+    border-color: rgba(212,175,55,0.4);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(212,175,55,0.3);
+  }
+  /* Next card: partially visible right */
+  .hero-preview-card.hero-preview-next {
+    top: 12%;
+    right: -24%;
+    width: 55%;
+    height: 76%;
+    opacity: 0.45;
+    transform: scale(0.88);
+    z-index: 2;
+    pointer-events: none;
+  }
+  /* Prev card: partially visible left-bottom */
+  .hero-preview-card.hero-preview-prev {
+    bottom: 0;
+    left: -18%;
+    width: 45%;
+    height: 60%;
+    opacity: 0.3;
+    transform: scale(0.8);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .hero-preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .hero-preview-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px 10px 10px;
+    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+  }
+  .hero-preview-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 2px;
+  }
+  .hero-preview-ep {
+    font-size: 0.62rem;
+    color: rgba(255,255,255,0.5);
+  }
+
+  /* ── Arrow buttons (desktop) ────────────────────────────────── */
+  .hero-arrow {
+    display: none;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #fff;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 20;
+    backdrop-filter: blur(8px);
+    transition: background 0.2s, transform 0.2s;
+  }
+  .hero-arrow:hover {
+    background: rgba(255,255,255,0.18);
+    transform: translateY(-50%) scale(1.08);
+  }
+  @media (min-width: 768px) {
+    .hero-arrow {
+      display: flex;
+    }
+  }
+  .hero-arrow-left {
+    left: 1.5rem;
+  }
+  .hero-arrow-right {
+    right: 1.5rem;
+  }
+
+  /* ── Slide Indicators ───────────────────────────────────────── */
+  .hero-indicators {
+    position: absolute;
+    bottom: 1.2rem;
+    right: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 20;
+  }
+  @media (min-width: 768px) {
+    .hero-indicators {
+      bottom: 1.8rem;
+      right: 3.5rem;
+    }
+  }
+
+  .hero-indicator-dot {
+    position: relative;
+    height: 3px;
+    border-radius: 9999px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.22);
+    transition: width 0.3s ease;
+    cursor: pointer;
+    width: 12px;
+  }
+  .hero-indicator-dot.active {
+    width: 40px;
+    background: rgba(255,255,255,0.18);
+  }
+  @media (min-width: 768px) {
+    .hero-indicator-dot.active {
+      width: 52px;
+    }
+  }
+  .hero-indicator-progress {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #f0d77b 0%, #D4AF37 55%, #9c7e23 100%);
+    transform-origin: left;
+    animation: hero-progress 15s linear forwards;
+  }
+  .hero-indicator-progress.paused {
+    animation: none;
+    transform: scaleX(1);
+  }
+}

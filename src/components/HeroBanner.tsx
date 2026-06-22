@@ -1,6 +1,22 @@
-import { useEffect, useState } from "react";
+/**
+ * HeroBanner.tsx — FRAMIX Premium Hero Slider
+ * Desktop: Netflix-style cinematic layout (full-width backdrop + left content + right preview)
+ * Mobile: ReelShort-style vertical full-bleed with bold CTA
+ *
+ * Features:
+ *  - 5+ content rotation with auto-slide (15s) + manual control
+ *  - Cinematic multi-layer gradient
+ *  - Metadata: rating / episodes / genre / year
+ *  - AI Pick badge
+ *  - Premium CTA: 재생 / 내 보관함 / 상세보기
+ *  - Hero bottom → Continue Watching anchor scroll
+ *  - Video preview (3s delay, muted, fade-in)
+ *  - Ken Burns on image fallback
+ */
+
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Play, Info, Plus } from "lucide-react";
+import { Play, Plus, Info, ChevronLeft, ChevronRight, Sparkles, Star } from "lucide-react";
 import type { Drama } from "../types";
 
 interface HeroBannerProps {
@@ -8,257 +24,352 @@ interface HeroBannerProps {
 }
 
 const SLIDE_MS = 15000;
-// 홈 진입(또는 슬라이드 전환) 후 이미지 → 영상 프리뷰로 전환되기까지 대기 시간.
-const VIDEO_PREVIEW_DELAY_MS = 3000;
+const VIDEO_DELAY_MS = 3000;
 
+// ── AI Pick Badge ──────────────────────────────────────────────────────────────
+function AiPickBadge() {
+  return (
+    <span className="hero-ai-badge">
+      <Sparkles size={11} className="hero-ai-badge-icon" />
+      AI Pick
+    </span>
+  );
+}
+
+// ── Star Rating ────────────────────────────────────────────────────────────────
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <span className="hero-meta-rating">
+      <Star size={12} className="fill-current" />
+      {rating.toFixed(1)}
+    </span>
+  );
+}
+
+// ── Slide Dot Indicators ───────────────────────────────────────────────────────
+function SlideIndicators({
+  dramas,
+  index,
+  paused,
+  onSelect,
+}: {
+  dramas: Drama[];
+  index: number;
+  paused: boolean;
+  onSelect: (i: number) => void;
+}) {
+  return (
+    <div className="hero-indicators">
+      {dramas.map((d, i) => (
+        <button
+          key={d.id}
+          onClick={() => onSelect(i)}
+          aria-label={`슬라이드 ${i + 1}`}
+          className={`hero-indicator-dot${i === index ? " active" : ""}`}
+        >
+          {i === index && !paused && (
+            <span className="hero-indicator-progress" />
+          )}
+          {i === index && paused && (
+            <span className="hero-indicator-progress paused" />
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── Main HeroBanner ────────────────────────────────────────────────────────────
 export default function HeroBanner({ dramas }: HeroBannerProps) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  // 현재 슬라이드의 banner_video_url 프리뷰가 재생 중인지 (3초 지연 후 true)
   const [videoPreviewActive, setVideoPreviewActive] = useState(false);
-  // 영상 로드/재생 실패한 작품 id 집합 — 한 번 실패하면 해당 슬라이드는 계속 이미지로 폴백.
   const [videoErrorIds, setVideoErrorIds] = useState<Set<string>>(new Set());
-  // 현재 재생 중인 영상이 실제로 재생 가능한 상태가 되었는지 (canplay 이후 true) → opacity fade-in 트리거
   const [videoReady, setVideoReady] = useState(false);
+  const [inFavorites, setInFavorites] = useState(false);
   const navigate = useNavigate();
+  const containerRef = useRef<HTMLDivElement>(null);
 
+  // Auto-slide
   useEffect(() => {
-    if (paused) return;
+    if (paused || dramas.length <= 1) return;
     const timer = setInterval(() => {
       setIndex((i) => (i + 1) % dramas.length);
     }, SLIDE_MS);
     return () => clearInterval(timer);
-  }, [dramas.length, paused, index]);
+  }, [dramas.length, paused]);
 
-  // 슬라이드(또는 일시정지 상태)가 바뀔 때마다 영상 프리뷰 상태를 초기화하고,
-  // 3초 후 다시 영상 프리뷰를 활성화한다. (이미지 → 3초 → 음소거 영상 자동재생)
+  // Video preview delay
   useEffect(() => {
     setVideoPreviewActive(false);
     setVideoReady(false);
     if (paused) return;
-    const t = setTimeout(() => setVideoPreviewActive(true), VIDEO_PREVIEW_DELAY_MS);
+    const t = setTimeout(() => setVideoPreviewActive(true), VIDEO_DELAY_MS);
     return () => clearTimeout(t);
   }, [index, paused]);
 
   const drama = dramas[index];
   if (!drama) return null;
 
-  // ── 디버그 로그 (요청에 따라 추가) ────────────────────────────────────
-  // 운영 중에는 콘솔에 노출되므로 문제가 재발하지 않는 게 확인되면 제거해도 됨.
-  console.log("FEATURED_CONTENT", drama);
-
-  const firstEpisode = drama.episodes?.[0];
-  const playRoute = firstEpisode ? `/watch/${drama.id}/${firstEpisode.id}` : null;
-  console.log("PLAY_ROUTE", playRoute, {
-    seriesId: drama.id,
-    usingEpisodeId: firstEpisode?.id, // series.id가 아니라 episode.id를 쓰고 있는지 확인용
-  });
-
-  const handlePlay = () => {
-    if (!playRoute) {
-      // episodes가 비어있으면 절대 "/watch/{id}/undefined" 로 이동하지 않는다.
-      console.warn("[HeroBanner] 재생 가능한 에피소드가 없어 이동을 막았습니다:", drama.id);
-      return;
-    }
-    navigate(playRoute);
-  };
-
-  // 배너 CMS override: banner_title/description이 지정되어 있으면 우선 사용,
-  // 없으면 기존 작품 정보(title/synopsis)로 폴백한다.
-  // 배경 이미지는 항상 backdrop(=series.backdrop_url, 없으면 thumbnail_url) 사용 —
-  // banner_image_url 컬럼은 존재하지 않으므로 별도 override가 없다.
   const displayTitle = drama.bannerTitle?.trim() || drama.title;
   const displayDescription = drama.bannerDescription?.trim() || drama.synopsis;
 
+  const firstEpisode = drama.episodes?.[0];
+  const playRoute = firstEpisode ? `/watch/${drama.id}/${firstEpisode.id}` : null;
+
+  const handlePlay = () => {
+    if (!playRoute) return;
+    navigate(playRoute);
+  };
+
+  const handleDetail = () => navigate(`/drama/${drama.id}`);
+
+  const handlePrev = () => {
+    setPaused(true);
+    setIndex((i) => (i - 1 + dramas.length) % dramas.length);
+  };
+  const handleNext = () => {
+    setPaused(true);
+    setIndex((i) => (i + 1) % dramas.length);
+  };
+
+  // Scroll to ContinueWatchingRow
+  const handleScrollToCW = () => {
+    const el = document.getElementById("continue-watching-section");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      // fallback: scroll past hero
+      window.scrollTo({
+        top: (containerRef.current?.offsetHeight ?? 600) - 80,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  // is AI pick: isOriginal or even index
+  const isAiPick = drama.isOriginal || drama.isExclusive || index % 2 === 0;
+
   return (
     <div
-      className="relative w-full h-[68vh] md:h-[88vh] min-h-[460px] overflow-hidden bg-base"
+      ref={containerRef}
+      className="hero-root"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Backdrops with Ken Burns */}
-      {dramas.map((d, i) => (
-        <div
-          key={d.id}
-          className={`absolute inset-0 transition-opacity duration-[1200ms] ease-out ${
-            i === index ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          <img
-            src={d.backdrop}
-            alt={d.title}
-            className={`w-full h-full object-cover md:hidden ${i === index ? "animate-ken-burns" : ""}`}
-            style={{ willChange: "transform" }}
-          />
-          {/* PC 전용: 기존 모바일 Ken Burns(animate-ken-burns)는 그대로 두고,
-              데스크톱에서는 더 미세하고 느린 시네마틱 줌(scale 1.00→1.04, 20s 무한 반복)을 별도 적용 */}
-          <img
-            src={d.backdrop}
-            alt={d.title}
-            className={`hidden w-full h-full object-cover md:block ${i === index ? "animate-hero-zoom-pc" : ""}`}
-            style={{ willChange: "transform" }}
-          />
-          {/* Video Preview: banner_video_url이 등록되어 있고 아직 에러난 적 없는 경우,
-              3초 후 음소거 자동재생. 영상이 실제로 재생 가능해지는 순간(canPlay)에만
-              opacity 0→1로 부드럽게(600ms) 전환 — 그 전까지는 이미지가 계속 보인다.
-              영상 로드/재생 실패 시 onError에서 조용히(콘솔 에러 없이) 이미지로 영구 폴백. */}
-          {i === index && videoPreviewActive && d.bannerVideoUrl && !videoErrorIds.has(d.id) && (
-            <video
-              key={d.bannerVideoUrl}
-              src={d.bannerVideoUrl}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              className="absolute inset-0 w-full h-full object-cover transition-opacity ease-out"
-              style={{ opacity: videoReady ? 1 : 0, transitionDuration: "650ms" }}
-              onCanPlay={() => setVideoReady(true)}
-              onError={() => {
-                // 404, 코덱 미지원, 네트워크 오류 등 — 화면을 깨뜨리지 않고 이미지로 폴백.
-                setVideoErrorIds((prev) => new Set(prev).add(d.id));
-                setVideoReady(false);
-              }}
+      {/* ── Backdrop Layer ─────────────────────────────────────────────── */}
+      <div className="hero-backdrops">
+        {dramas.map((d, i) => (
+          <div
+            key={d.id}
+            className={`hero-backdrop-item${i === index ? " active" : ""}`}
+          >
+            {/* Mobile image */}
+            <img
+              src={d.backdrop}
+              alt={d.title}
+              className={`hero-img-mobile${i === index ? " zooming" : ""}`}
             />
-          )}
-        </div>
-      ))}
+            {/* Desktop image */}
+            <img
+              src={d.backdrop}
+              alt={d.title}
+              className={`hero-img-desktop${i === index ? " zooming-pc" : ""}`}
+            />
+            {/* Video preview */}
+            {i === index &&
+              videoPreviewActive &&
+              d.bannerVideoUrl &&
+              !videoErrorIds.has(d.id) && (
+                <video
+                  key={d.bannerVideoUrl}
+                  src={d.bannerVideoUrl}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  className="hero-video"
+                  style={{ opacity: videoReady ? 1 : 0 }}
+                  onCanPlay={() => setVideoReady(true)}
+                  onError={() => {
+                    setVideoErrorIds((prev) => new Set(prev).add(d.id));
+                    setVideoReady(false);
+                  }}
+                />
+              )}
+          </div>
+        ))}
+      </div>
 
-      {/* PC 전용: Floating Dark Gradient Overlay — 텍스트 가독성 강화를 위한 은은한 그라데이션
-          (모바일은 기존 Premium scrim만 사용, 변경 없음) */}
-      <div className="hidden md:block absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/10 pointer-events-none" />
-      <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/55 via-transparent to-transparent pointer-events-none" />
+      {/* ── Cinematic Multi-Layer Gradient ─────────────────────────────── */}
+      {/* Layer 1: bottom-to-top dark (content area) */}
+      <div className="hero-gradient-bottom" />
+      {/* Layer 2: left-to-right (text area) */}
+      <div className="hero-gradient-left" />
+      {/* Layer 3: top vignette */}
+      <div className="hero-gradient-top" />
+      {/* Layer 4: right side dark for desktop split */}
+      <div className="hero-gradient-right-desktop" />
+      {/* Layer 5: base fade at bottom */}
+      <div className="hero-gradient-base-fade" />
 
-      {/* Premium scrim */}
-      <div className="absolute inset-0 bg-hero-scrim pointer-events-none" />
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-base pointer-events-none" />
+      {/* ── Desktop Split Layout ────────────────────────────────────────── */}
+      <div className="hero-content-layout">
 
-      {/* Content */}
-      <div className="absolute bottom-0 left-0 right-0 px-5 md:px-12 pb-10 md:pb-20 safe-bottom">
-        <div className="max-w-2xl" key={drama.id}>
+        {/* LEFT: Content Area */}
+        <div className="hero-left" key={`${drama.id}-content`}>
+
+          {/* Original / Exclusive badge */}
           {drama.isOriginal && (
-            <div className="flex items-center gap-2 mb-3 animate-fade-in-up">
-              <span className="text-gradient-gold font-black text-sm md:text-base tracking-[0.2em]">
-                FRAMIX
-              </span>
-              <span className="h-3 w-px bg-gold/40" />
-              <span className="text-text-dim text-[10px] md:text-xs font-semibold uppercase tracking-[0.3em]">
-                Original Series
-              </span>
+            <div className="hero-original-badge">
+              <span className="hero-original-label">FRAMIX</span>
+              <span className="hero-original-divider" />
+              <span className="hero-original-sub">Original Series</span>
             </div>
           )}
 
-          <h1
-            className="text-3xl md:text-6xl font-black text-white leading-[1.05] mb-3 drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)] md:drop-shadow-[0_6px_32px_rgba(0,0,0,0.75)] animate-fade-in-up md:animate-hero-title-in"
-            style={{ animationFillMode: "backwards" }}
-          >
+          {/* AI Pick */}
+          {isAiPick && <AiPickBadge />}
+
+          {/* Title */}
+          <h1 className="hero-title">
             {displayTitle}
           </h1>
 
-          <div
-            className="flex items-center gap-2.5 text-xs md:text-sm text-text-dim mb-4 flex-wrap animate-fade-in-up md:animate-hero-meta-in"
-            style={{ animationFillMode: "backwards" }}
-          >
-            <span className="text-gold font-bold">★ {drama.rating.toFixed(1)}</span>
-            <span className="text-text-muted">•</span>
-            <span>{drama.year}</span>
-            <span className="border border-text-muted/60 px-1.5 rounded text-[10px] md:text-xs">
-              {drama.ageRating}
-            </span>
-            <span>{drama.totalEpisodes}부작</span>
-            <span className="hidden sm:inline text-text-muted">•</span>
-            <span className="hidden sm:inline">{drama.episodeLength}</span>
+          {/* Metadata row */}
+          <div className="hero-meta-row">
+            <StarRating rating={drama.rating} />
+            <span className="hero-meta-dot">·</span>
+            <span className="hero-meta-year">{drama.year}</span>
+            <span className="hero-meta-age">{drama.ageRating}</span>
+            <span className="hero-meta-episodes">{drama.totalEpisodes}화</span>
+            <span className="hero-meta-dot hidden sm:inline">·</span>
+            <span className="hero-meta-length hidden sm:inline">{drama.episodeLength}</span>
           </div>
 
-          <p
-            className="hidden md:block text-[15px] text-text-dim/90 leading-relaxed line-clamp-2 mb-5 max-w-xl drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)] animate-hero-desc-in"
-            style={{ animationFillMode: "backwards" }}
-          >
+          {/* Synopsis (desktop only) */}
+          <p className="hero-synopsis">
             {displayDescription}
           </p>
 
-          <div
-            className="flex flex-wrap gap-1.5 mb-5 md:mb-7 animate-fade-in-up"
-            style={{ animationDelay: "220ms", animationFillMode: "backwards" }}
-          >
-            {drama.genres.map((g) => (
-              <span
-                key={g}
-                className="text-[10px] md:text-xs px-2.5 py-0.5 rounded-full bg-white/5 text-text-dim border border-white/10 backdrop-blur-sm"
-              >
+          {/* Genres */}
+          <div className="hero-genres">
+            {drama.genres.slice(0, 3).map((g) => (
+              <span key={g} className="hero-genre-tag">
                 {g}
               </span>
             ))}
           </div>
 
-          <div
-            className="flex items-center gap-2.5 md:gap-3 animate-fade-in-up md:animate-hero-actions-in"
-            style={{ animationFillMode: "backwards" }}
-          >
+          {/* CTA Buttons */}
+          <div className="hero-cta-row">
+            {/* 재생 */}
             <button
               onClick={handlePlay}
               disabled={!playRoute}
-              className="flex items-center gap-2 bg-white text-black font-bold px-5 md:px-8 py-3 md:py-3.5 rounded-md text-sm md:text-base transition-all duration-200 active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gold md:hover:scale-[1.03] md:hover:shadow-[0_12px_40px_rgba(255,213,74,0.35)]"
-              style={{ willChange: "transform" }}
+              className="hero-btn-play"
             >
-              <Play size={18} className="fill-black" />
-              재생
+              <Play size={18} className="fill-black shrink-0" />
+              <span>재생</span>
             </button>
+
+            {/* 내 보관함 */}
             <button
-              onClick={() => navigate(`/drama/${drama.id}`)}
-              className="flex items-center gap-2 backdrop-blur-md font-bold px-5 md:px-8 py-3 md:py-3.5 rounded-md text-sm md:text-base transition-all duration-200 active:scale-95 border md:hover:scale-[1.03]"
-              style={{
-                background: "rgba(255,213,74,0.12)",
-                borderColor: "rgba(255,213,74,0.35)",
-                color: "#FFD54A",
-                willChange: "transform",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(255,213,74,0.18)";
-                if (window.matchMedia("(min-width: 768px)").matches) {
-                  e.currentTarget.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,0.25), 0 8px 28px rgba(255,213,74,0.2)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(255,213,74,0.12)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
+              onClick={() => setInFavorites((f) => !f)}
+              className={`hero-btn-save${inFavorites ? " saved" : ""}`}
+              aria-label="내 보관함"
             >
-              <Info size={18} />
-              <span className="hidden sm:inline">상세정보</span>
-              <span className="sm:hidden">정보</span>
+              <Plus
+                size={18}
+                className="shrink-0"
+                style={{
+                  transform: inFavorites ? "rotate(45deg)" : "rotate(0deg)",
+                  transition: "transform 0.25s ease",
+                }}
+              />
+              <span className="hidden sm:inline">
+                {inFavorites ? "저장됨" : "내 보관함"}
+              </span>
             </button>
+
+            {/* 상세보기 */}
             <button
-              aria-label="찜하기"
-              className="hidden sm:flex w-11 h-11 rounded-full border border-white/25 items-center justify-center text-white hover:border-gold hover:text-gold transition-colors active:scale-95"
+              onClick={handleDetail}
+              className="hero-btn-info"
+              aria-label="상세보기"
             >
-              <Plus size={18} />
+              <Info size={18} className="shrink-0" />
+              <span className="hidden sm:inline">상세보기</span>
             </button>
+          </div>
+
+          {/* Continue Watching shortcut */}
+          <button
+            onClick={handleScrollToCW}
+            className="hero-cw-link"
+          >
+            <span className="hero-cw-link-bar" />
+            이어보기 바로가기
+            <ChevronRight size={13} />
+          </button>
+        </div>
+
+        {/* RIGHT: Preview Card (desktop md+) */}
+        <div className="hero-right">
+          <div className="hero-preview-stack">
+            {dramas.slice(0, 4).map((d, i) => {
+              const offset = (i - index + dramas.length) % dramas.length;
+              const isActive = offset === 0;
+              const isNext = offset === 1;
+              const isPrev = offset === dramas.length - 1;
+              if (!isActive && !isNext && !isPrev) return null;
+              return (
+                <button
+                  key={d.id}
+                  onClick={() => { setPaused(true); setIndex(i); }}
+                  className={`hero-preview-card${isActive ? " hero-preview-active" : isNext ? " hero-preview-next" : " hero-preview-prev"}`}
+                  aria-label={d.title}
+                >
+                  <img src={d.poster} alt={d.title} className="hero-preview-img" />
+                  <div className="hero-preview-overlay">
+                    <p className="hero-preview-title">{d.title}</p>
+                    <p className="hero-preview-ep">{d.totalEpisodes}화</p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Slide indicators with progress */}
-      <div className="absolute bottom-3 md:bottom-6 right-5 md:right-12 flex items-center gap-2">
-        {dramas.map((d, i) => (
+      {/* ── Prev/Next Arrow (desktop) ────────────────────────────────────── */}
+      {dramas.length > 1 && (
+        <>
           <button
-            key={d.id}
-            onClick={() => setIndex(i)}
-            aria-label={`슬라이드 ${i + 1}`}
-            className={`relative h-[3px] rounded-full overflow-hidden transition-all duration-300 ${
-              i === index ? "w-10 md:w-14 bg-white/20" : "w-3 md:w-4 bg-white/25 hover:bg-white/40"
-            }`}
+            onClick={handlePrev}
+            className="hero-arrow hero-arrow-left"
+            aria-label="이전 슬라이드"
           >
-            {i === index && !paused && (
-              <span
-                key={`${drama.id}-${i}`}
-                className="absolute inset-0 bg-gradient-gold origin-left animate-[hero-progress_6s_linear_forwards]"
-              />
-            )}
-            {i === index && paused && <span className="absolute inset-0 bg-gradient-gold" />}
+            <ChevronLeft size={22} />
           </button>
-        ))}
-      </div>
+          <button
+            onClick={handleNext}
+            className="hero-arrow hero-arrow-right"
+            aria-label="다음 슬라이드"
+          >
+            <ChevronRight size={22} />
+          </button>
+        </>
+      )}
+
+      {/* ── Slide Indicators ─────────────────────────────────────────────── */}
+      <SlideIndicators
+        dramas={dramas}
+        index={index}
+        paused={paused}
+        onSelect={(i) => { setPaused(true); setIndex(i); }}
+      />
     </div>
   );
 }

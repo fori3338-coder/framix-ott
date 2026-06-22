@@ -160,12 +160,14 @@ export default function Home() {
       <div className="mt-6 md:mt-10">
 
         {/* ── 2. Continue Watching — 최상단, 가장 큰 카드 ────────────────── */}
-        {isLoggedIn && visibleCWItems.length > 0 && (
-          <ContinueWatchingRow
-            items={visibleCWItems}
-            onRemove={handleRemoveCW}
-          />
-        )}
+        <div id="continue-watching-section">
+          {isLoggedIn && visibleCWItems.length > 0 && (
+            <ContinueWatchingRow
+              items={visibleCWItems}
+              onRemove={handleRemoveCW}
+            />
+          )}
+        </div>
 
         {/* ── 3. My List ─────────────────────────────────────────────────── */}
         {favLoggedIn && favoritedList.length > 0 && (
