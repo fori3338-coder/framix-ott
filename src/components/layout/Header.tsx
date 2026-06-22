@@ -143,15 +143,15 @@ export default function Header() {
   /* ── Inline styles for dynamic glass effect ── */
   const headerStyle: React.CSSProperties = {
     transform: hidden ? "translate3d(0,-100%,0)" : "translate3d(0,0,0)",
-    transition: "transform 380ms cubic-bezier(0.4,0,0.2,1), background 300ms ease, backdrop-filter 300ms ease, box-shadow 300ms ease",
+    transition: "transform 360ms cubic-bezier(0.4,0,0.2,1), background 280ms ease, backdrop-filter 280ms ease, box-shadow 280ms ease",
     willChange: "transform, opacity",
     background: progress > 0
-      ? `rgba(8,8,10,${0.72 + progress * 0.18})`
+      ? `rgba(6,6,8,${0.78 + progress * 0.16})`
       : "transparent",
-    backdropFilter: progress > 0 ? `blur(${progress * 20}px) saturate(${140 + progress * 40}%)` : "none",
-    WebkitBackdropFilter: progress > 0 ? `blur(${progress * 20}px) saturate(${140 + progress * 40}%)` : "none",
-    boxShadow: progress > 0.5
-      ? `0 1px 0 rgba(255,255,255,${0.06 * progress}), 0 4px 24px rgba(0,0,0,${0.3 * progress})`
+    backdropFilter: progress > 0 ? `blur(${progress * 24}px) saturate(${160 + progress * 50}%)` : "none",
+    WebkitBackdropFilter: progress > 0 ? `blur(${progress * 24}px) saturate(${160 + progress * 50}%)` : "none",
+    boxShadow: progress > 0.4
+      ? `0 1px 0 rgba(255,255,255,${0.07 * progress}), 0 4px 32px rgba(0,0,0,${0.38 * progress})`
       : "none",
   };
 

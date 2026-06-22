@@ -284,46 +284,72 @@ function ContinueWatchingCard({
           </span>
         </div>
 
-        {/* ── Progress Bar ──────────────────────────────────────────────── */}
-        <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/15">
+        {/* ── Progress Bar — Premium with dot ──────────────────────── */}
+        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/12 rounded-b">
           <div
-            className="h-full transition-[width] duration-500"
-            style={{ width: `${progressPct}%`, background: progressColor }}
-          />
+            className="h-full rounded-b transition-[width] duration-500 relative"
+            style={{
+              width: `${progressPct}%`,
+              background: progressPct >= 85
+                ? "linear-gradient(to right, #c0392b, #e74c3c)"
+                : "linear-gradient(to right, rgba(255,255,255,0.65), rgba(255,255,255,0.9))",
+            }}
+          >
+            <span
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-[7px] h-[7px] rounded-full"
+              style={{
+                background: progressPct >= 85 ? "#e74c3c" : "#ffffff",
+                boxShadow: progressPct >= 85
+                  ? "0 0 6px rgba(231,76,60,0.7)"
+                  : "0 0 5px rgba(255,255,255,0.55)",
+              }}
+            />
+          </div>
         </div>
       </div>
 
       {/* ── Info Section (Title, Progress, Time, Button) ────────────── */}
       <div className="mt-3 h-2/5 flex flex-col justify-between">
-        {/* Series Title */}
-        <p className="text-white font-semibold text-[13px] md:text-sm truncate leading-tight">
-          {item.seriesTitle}
-        </p>
-
-        {/* Progress & Last Watched */}
-        <div className="flex items-center justify-between mt-1">
-          <span className="text-white/50 text-[11px] font-medium">
-            {item.lastWatched ? formatLastWatched(item.lastWatched) : `${item.episodeNumber}화`}
-          </span>
-          <span className="text-white/60 text-[11px] font-bold tabular-nums">
-            {progressPct}%
-          </span>
+        {/* Series Title + Episode */}
+        <div>
+          <p className="text-white font-bold text-[13px] md:text-[14px] truncate leading-tight">
+            {item.seriesTitle}
+          </p>
+          <p className="text-white/45 text-[10px] font-medium mt-0.5 truncate">
+            {item.episodeNumber}화{item.episodeTitle ? ` · ${item.episodeTitle}` : ""}
+          </p>
         </div>
 
-        {/* Remaining Time */}
-        <div className="text-white/50 text-[10px] font-medium">
-          {formatTime(remainSec)} 남음
+        {/* Progress info row */}
+        <div className="flex items-center justify-between">
+          <span className="text-white/48 text-[10px] font-medium">
+            {item.lastWatched ? formatLastWatched(item.lastWatched) : ""}
+          </span>
+          <div className="flex items-center gap-1.5">
+            {/* Remaining time badge */}
+            <span
+              className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded"
+              style={{
+                color: remainSec < 120 ? "rgba(231,76,60,0.9)" : "rgba(255,255,255,0.65)",
+                background: remainSec < 120 ? "rgba(231,76,60,0.1)" : "rgba(255,255,255,0.07)",
+                border: `1px solid ${remainSec < 120 ? "rgba(231,76,60,0.2)" : "rgba(255,255,255,0.1)"}`,
+              }}
+            >
+              {formatTime(remainSec)} 남음
+            </span>
+            <span className="text-white/50 text-[10px] font-bold tabular-nums">{progressPct}%</span>
+          </div>
         </div>
 
-        {/* ── Resume Button (Always visible) ────────────────────────────── */}
+        {/* ── Resume Button ────────────────────────────────────────── */}
         <button
           onClick={(e) => { e.stopPropagation(); onPlay(); }}
           className={[
             "w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg",
             "text-[11px] font-bold tracking-wide",
             "bg-white text-black",
-            "hover:bg-white/95",
-            "transition-all duration-200 active:scale-[0.98] shadow-md",
+            "hover:bg-white/92 active:scale-[0.97]",
+            "transition-all duration-180 shadow-[0_4px_16px_rgba(0,0,0,0.35)]",
           ].join(" ")}
         >
           <Play size={12} className="fill-black text-black" />
