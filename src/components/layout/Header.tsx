@@ -1,27 +1,82 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, Bell, ChevronDown, LogOut, Crown } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Search, X, User, LogOut, Crown, Settings, ChevronDown } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useAuthContext } from "../../contexts/AuthContext";
 import AuthModal from "../AuthModal";
 import Portal from "../Portal";
 
+/* ─────────────────────────────────────────────────────────
+   Nav items
+───────────────────────────────────────────────────────── */
+const NAV_ITEMS = [
+  { key: "home",         label: "홈",       to: "/" },
+  { key: "trending",    label: "인기",     to: "/search?cat=trending" },
+  { key: "new",         label: "신작",     to: "/search?cat=new" },
+  { key: "my-list",     label: "내 목록",   to: "/my-list" },
+  { key: "subscription",label: "구독",     to: "/subscription" },
+  { key: "admin",       label: "관리센터", to: "/admin" },
+];
+
+/* ─────────────────────────────────────────────────────────
+   Hook — scroll state (opacity/blur/hide-on-scroll-down)
+───────────────────────────────────────────────────────── */
+function useHeaderScroll() {
+  const [scrollY, setScrollY] = useState(0);
+  const [hidden, setHidden] = useState(false);
+  const lastY = useRef(0);
+
+  useEffect(() => {
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        // hide on scroll-down past 80px, reveal on scroll-up
+        setHidden(y > 80 && y > lastY.current + 4);
+        lastY.current = y;
+        setScrollY(y);
+        ticking = false;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // 0 → transparent, 60+ → fully glass
+  const progress = Math.min(scrollY / 60, 1);
+
+  return { scrollY, hidden, progress };
+}
+
+/* ─────────────────────────────────────────────────────────
+   Main component
+───────────────────────────────────────────────────────── */
 export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [scrolled, setScrolled] = useState(false);
-  const [scrolledDesktop, setScrolledDesktop] = useState(false);
   const { user, signOut } = useAuthContext();
+
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
-  const openAuthModal = (mode: "login" | "signup") => {
-    setAuthMode(mode);
-    setAuthModalOpen(true);
-  };
+  // Desktop search expand
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // 상단 메뉴 active 판별: 트렌딩/신작은 같은 /search 경로를 cat 쿼리로 구분하므로
-  // 단순 pathname 매칭(NavLink 기본 동작)으로는 정확히 구분할 수 없어 직접 계산한다.
+  // Mobile full-screen search overlay
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+
+  // Profile dropdown (desktop) / bottom-sheet (mobile)
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  const { hidden, progress } = useHeaderScroll();
+
+  /* ── Active nav key ── */
   const activeKey = useMemo(() => {
     const { pathname, search } = location;
     if (pathname === "/") return "home";
@@ -37,121 +92,326 @@ export default function Header() {
     return "";
   }, [location]);
 
-  const navLinkClass = (key: string) =>
-    `transition-colors max-md:hover:text-gold-hot header-nav-link-desktop ${
-      activeKey === key
-        ? "text-gold-hot font-bold is-active"
-        : "text-gold-bright font-medium"
-    }`;
-
+  /* ── ESC closes search / profile ── */
   useEffect(() => {
-    const onScroll = () => {
-      setScrolled(window.scrollY > 8);
-      setScrolledDesktop(window.scrollY > 50);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSearchOpen(false);
+        setMobileSearchOpen(false);
+        setProfileOpen(false);
+      }
     };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  /* ── Close profile on outside click ── */
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    if (profileOpen) document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [profileOpen]);
+
+  /* ── Auto-focus search input ── */
+  useEffect(() => {
+    if (searchOpen) setTimeout(() => searchInputRef.current?.focus(), 50);
+  }, [searchOpen]);
+  useEffect(() => {
+    if (mobileSearchOpen) setTimeout(() => mobileSearchInputRef.current?.focus(), 50);
+  }, [mobileSearchOpen]);
+
+  /* ── Submit search ── */
+  const submitSearch = useCallback((q: string) => {
+    const trimmed = q.trim();
+    if (trimmed) {
+      navigate(`/search?q=${encodeURIComponent(trimmed)}`);
+      setSearchOpen(false);
+      setMobileSearchOpen(false);
+      setSearchValue("");
+    }
+  }, [navigate]);
+
+  const openAuth = (mode: "login" | "signup") => {
+    setAuthMode(mode);
+    setAuthModalOpen(true);
+  };
+
+  /* ── Inline styles for dynamic glass effect ── */
+  const headerStyle: React.CSSProperties = {
+    transform: hidden ? "translate3d(0,-100%,0)" : "translate3d(0,0,0)",
+    transition: "transform 380ms cubic-bezier(0.4,0,0.2,1), background 300ms ease, backdrop-filter 300ms ease, box-shadow 300ms ease",
+    willChange: "transform, opacity",
+    background: progress > 0
+      ? `rgba(8,8,10,${0.72 + progress * 0.18})`
+      : "transparent",
+    backdropFilter: progress > 0 ? `blur(${progress * 20}px) saturate(${140 + progress * 40}%)` : "none",
+    WebkitBackdropFilter: progress > 0 ? `blur(${progress * 20}px) saturate(${140 + progress * 40}%)` : "none",
+    boxShadow: progress > 0.5
+      ? `0 1px 0 rgba(255,255,255,${0.06 * progress}), 0 4px 24px rgba(0,0,0,${0.3 * progress})`
+      : "none",
+  };
+
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-40 safe-top transition-colors duration-300 header-glass-desktop ${
-        scrolledDesktop ? "is-scrolled" : ""
-      } ${
-        scrolled
-          ? "max-md:bg-base/95 max-md:backdrop-blur-md max-md:border-b max-md:border-border"
-          : "max-md:bg-gradient-to-b max-md:from-black/70 max-md:to-transparent"
-      }`}
-    >
-      <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-2.5 md:py-3 md:px-8 safe-x gap-2">
+    <>
+      {/* ═══════════════════════════════════════════════
+          HEADER ELEMENT
+      ═══════════════════════════════════════════════ */}
+      <header
+        className="framix-header"
+        style={headerStyle}
+        role="banner"
+      >
+        <div className="framix-header-inner">
 
-        <Link to="/" className="flex items-center gap-1.5 shrink-0">
-          <span className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-gold-bright header-logo-desktop">FRAMIX</span>
-        </Link>
+          {/* ── Logo ── */}
+          <Link to="/" className="framix-logo" aria-label="FRAMIX 홈">
+            FRAMIX
+          </Link>
 
-        <nav className="flex flex-1 md:flex-none items-center gap-4 md:gap-9 text-sm md:ml-10 overflow-x-auto whitespace-nowrap scrollbar-hide">
-          <Link to="/" className={navLinkClass("home")}>홈</Link>
-          <Link to="/search?cat=trending" className={navLinkClass("trending")}>트렌딩</Link>
-          <Link to="/search?cat=new" className={navLinkClass("new")}>신작</Link>
-          <Link to="/my-list" className={navLinkClass("my-list")}>내 보관함</Link>
-          <Link to="/subscription" className={navLinkClass("subscription")}>구독</Link>
-          <Link to="/admin" className={navLinkClass("admin")}>관리센터</Link>
-        </nav>
-
-        <div className="hidden sm:flex items-center gap-3 md:gap-4 shrink-0">
-          <button
-            aria-label="검색"
-            onClick={() => navigate("/search")}
-            className="p-1.5 text-text hover:text-gold transition-colors"
-          >
-            <Search size={22} />
-          </button>
-          <button aria-label="알림" className="p-1.5 text-text hover:text-gold transition-colors relative">
-            <Bell size={22} />
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-gold" />
-          </button>
-          {user ? (
-            <div className="relative">
-              <button
-                onClick={() => setProfileMenuOpen((p) => !p)}
-                className="hidden sm:flex items-center gap-1.5 rounded-md overflow-hidden border border-border hover:border-gold/60 transition-colors p-0.5"
-                aria-label="프로필"
+          {/* ── Desktop Nav ── */}
+          <nav className="framix-nav" aria-label="주요 메뉴">
+            {NAV_ITEMS.map(({ key, label, to }) => (
+              <Link
+                key={key}
+                to={to}
+                className={`framix-nav-link${activeKey === key ? " is-active" : ""}`}
               >
-                <img
-                  src="https://picsum.photos/seed/framix-profile/64/64"
-                  alt="profile"
-                  className="w-7 h-7 rounded-sm object-cover"
-                />
-                <ChevronDown size={14} className="text-text-dim mr-1" />
-              </button>
-              {profileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-44 rounded-md border border-border bg-base/95 backdrop-blur-md shadow-lg overflow-hidden z-50">
+                {label}
+                <span className="framix-nav-indicator" aria-hidden="true" />
+              </Link>
+            ))}
+          </nav>
+
+          {/* ── Right Controls ── */}
+          <div className="framix-header-right">
+
+            {/* Desktop Search — expand on click */}
+            <div className={`framix-search-wrap${searchOpen ? " is-open" : ""}`}>
+              {searchOpen ? (
+                <>
+                  <input
+                    ref={searchInputRef}
+                    className="framix-search-input"
+                    placeholder="제목, 장르 검색..."
+                    value={searchValue}
+                    onChange={e => setSearchValue(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") submitSearch(searchValue); }}
+                    aria-label="검색어 입력"
+                  />
                   <button
-                    onClick={() => { setProfileMenuOpen(false); navigate("/admin"); }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-text hover:bg-white/5 transition-colors"
+                    className="framix-icon-btn"
+                    onClick={() => { setSearchOpen(false); setSearchValue(""); }}
+                    aria-label="검색 닫기"
                   >
-                    프로필
+                    <X size={18} />
                   </button>
-                  <button
-                    onClick={() => { setProfileMenuOpen(false); navigate("/my/subscription"); }}
-                    className="w-full flex items-center gap-2 text-left px-4 py-2.5 text-sm text-text hover:bg-white/5 transition-colors"
-                  >
-                    <Crown size={14} /> 내 구독
-                  </button>
-                  <button
-                    onClick={async () => { setProfileMenuOpen(false); await signOut(); }}
-                    className="w-full flex items-center gap-2 text-left px-4 py-2.5 text-sm text-text hover:bg-white/5 transition-colors"
-                  >
-                    <LogOut size={14} /> 로그아웃
-                  </button>
-                </div>
+                </>
+              ) : (
+                <button
+                  className="framix-icon-btn"
+                  onClick={() => setSearchOpen(true)}
+                  aria-label="검색"
+                >
+                  <Search size={20} />
+                </button>
               )}
             </div>
-          ) : (
-            <div className="hidden sm:flex items-center gap-2">
-              <button
-                onClick={() => openAuthModal("login")}
-                className="px-3 py-1.5 text-sm font-medium text-text hover:text-gold transition-colors"
-              >
-                로그인
+
+            {/* Mobile search icon */}
+            <button
+              className="framix-icon-btn framix-mobile-only"
+              onClick={() => setMobileSearchOpen(true)}
+              aria-label="검색"
+            >
+              <Search size={20} />
+            </button>
+
+            {/* Auth / Profile */}
+            {user ? (
+              <div className="framix-profile-wrap" ref={profileRef}>
+                <button
+                  className="framix-profile-btn"
+                  onClick={() => setProfileOpen(p => !p)}
+                  aria-label="프로필 메뉴"
+                  aria-expanded={profileOpen}
+                >
+                  <img
+                    src="https://picsum.photos/seed/framix-profile/64/64"
+                    alt="프로필"
+                    className="framix-avatar"
+                  />
+                  <ChevronDown
+                    size={13}
+                    className="framix-chevron"
+                    style={{ transform: profileOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 200ms ease" }}
+                  />
+                </button>
+
+                {/* Desktop dropdown */}
+                {profileOpen && (
+                  <div className="framix-dropdown framix-desktop-only" role="menu">
+                    <div className="framix-dropdown-header">
+                      <img
+                        src="https://picsum.photos/seed/framix-profile/64/64"
+                        alt="프로필"
+                        className="framix-dropdown-avatar"
+                      />
+                      <div>
+                        <p className="framix-dropdown-email">{user.email}</p>
+                        <p className="framix-dropdown-plan">FRAMIX 멤버</p>
+                      </div>
+                    </div>
+                    <div className="framix-dropdown-divider" />
+                    <button
+                      className="framix-dropdown-item"
+                      role="menuitem"
+                      onClick={() => { setProfileOpen(false); navigate("/my-info"); }}
+                    >
+                      <User size={15} />
+                      내 정보
+                    </button>
+                    <button
+                      className="framix-dropdown-item"
+                      role="menuitem"
+                      onClick={() => { setProfileOpen(false); navigate("/my/subscription"); }}
+                    >
+                      <Crown size={15} />
+                      내 구독
+                    </button>
+                    <button
+                      className="framix-dropdown-item"
+                      role="menuitem"
+                      onClick={() => { setProfileOpen(false); navigate("/admin"); }}
+                    >
+                      <Settings size={15} />
+                      관리센터
+                    </button>
+                    <div className="framix-dropdown-divider" />
+                    <button
+                      className="framix-dropdown-item framix-dropdown-item--danger"
+                      role="menuitem"
+                      onClick={async () => { setProfileOpen(false); await signOut(); }}
+                    >
+                      <LogOut size={15} />
+                      로그아웃
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="framix-auth-btns">
+                <button
+                  className="framix-btn-ghost"
+                  onClick={() => openAuth("login")}
+                >
+                  로그인
+                </button>
+                <button
+                  className="framix-btn-primary"
+                  onClick={() => openAuth("signup")}
+                >
+                  시작하기
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* ═══════════════════════════════════════════════
+          MOBILE — Profile bottom-sheet (logged in)
+      ═══════════════════════════════════════════════ */}
+      {user && profileOpen && (
+        <Portal>
+          <div
+            className="framix-bottom-sheet-backdrop framix-mobile-only"
+            onClick={() => setProfileOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="framix-bottom-sheet framix-mobile-only" role="dialog" aria-modal="true">
+            <div className="framix-bottom-sheet-handle" />
+            <div className="framix-dropdown-header">
+              <img
+                src="https://picsum.photos/seed/framix-profile/64/64"
+                alt="프로필"
+                className="framix-dropdown-avatar"
+              />
+              <div>
+                <p className="framix-dropdown-email">{user.email}</p>
+                <p className="framix-dropdown-plan">FRAMIX 멤버</p>
+              </div>
+            </div>
+            <div className="framix-bottom-sheet-nav">
+              <button className="framix-bottom-sheet-item" onClick={() => { setProfileOpen(false); navigate("/my-info"); }}>
+                <User size={18} /> 내 정보
+              </button>
+              <button className="framix-bottom-sheet-item" onClick={() => { setProfileOpen(false); navigate("/my/subscription"); }}>
+                <Crown size={18} /> 내 구독
+              </button>
+              <button className="framix-bottom-sheet-item" onClick={() => { setProfileOpen(false); navigate("/admin"); }}>
+                <Settings size={18} /> 관리센터
               </button>
               <button
-                onClick={() => openAuthModal("signup")}
-                className="px-3 py-1.5 rounded-md bg-gold text-black text-sm font-semibold hover:brightness-110 transition-all"
+                className="framix-bottom-sheet-item framix-bottom-sheet-item--danger"
+                onClick={async () => { setProfileOpen(false); await signOut(); }}
               >
-                회원가입
+                <LogOut size={18} /> 로그아웃
               </button>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        </Portal>
+      )}
 
+      {/* ═══════════════════════════════════════════════
+          MOBILE — Full-screen search overlay
+      ═══════════════════════════════════════════════ */}
+      {mobileSearchOpen && (
+        <Portal>
+          <div className="framix-mobile-search framix-mobile-only" role="dialog" aria-modal="true" aria-label="검색">
+            <div className="framix-mobile-search-bar">
+              <Search size={20} className="framix-mobile-search-icon" />
+              <input
+                ref={mobileSearchInputRef}
+                className="framix-mobile-search-input"
+                placeholder="제목, 장르 검색..."
+                value={searchValue}
+                onChange={e => setSearchValue(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") submitSearch(searchValue); }}
+                aria-label="검색어 입력"
+              />
+              <button
+                className="framix-mobile-search-close"
+                onClick={() => { setMobileSearchOpen(false); setSearchValue(""); }}
+                aria-label="검색 닫기"
+              >
+                취소
+              </button>
+            </div>
+            {searchValue && (
+              <div className="framix-mobile-search-hint">
+                <button
+                  className="framix-mobile-search-hint-btn"
+                  onClick={() => submitSearch(searchValue)}
+                >
+                  <Search size={14} />
+                  <span>"{searchValue}" 검색</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </Portal>
+      )}
+
+      {/* AuthModal */}
       {authModalOpen && (
         <Portal>
           <AuthModal onClose={() => setAuthModalOpen(false)} defaultMode={authMode} />
         </Portal>
       )}
-    </header>
+    </>
   );
 }

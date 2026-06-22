@@ -9,7 +9,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-base text-text overflow-x-hidden">
       {!isPlayer && <Header />}
-      <main className={isPlayer ? "" : "pb-24 md:pb-12"}>
+      <main className={isPlayer ? "" : "pb-24 md:pb-12 pt-14 md:pt-16"}>
         <Outlet />
       </main>
       {!isPlayer && <BottomNav />}
