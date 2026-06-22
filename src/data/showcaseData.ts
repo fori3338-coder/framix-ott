@@ -69,7 +69,7 @@ function drama(
 
 // ── TOP 10 ────────────────────────────────────────────────────────────────────
 export const showcaseTop10: Drama[] = [
-  drama(0, "재벌집 그녀의 계약", "Her Chaebol Contract", ["재벌", "로맨스", "계약결혼"]),
+  drama(0, "재벌집 그녀의 계약", "Her Chaebol Contract", ["재벌", "로맨스", "계약결혼"], { views: 9800000, isOriginal: true }),
   drama(1, "복수의 여신", "Goddess of Revenge", ["복수", "스릴러", "서스펜스"]),
   drama(2, "황제의 신부", "The Emperor's Bride", ["황실", "로맨스", "운명"]),
   drama(3, "다시 만난 운명", "Fated Reunion", ["회귀", "로맨스", "운명"]),

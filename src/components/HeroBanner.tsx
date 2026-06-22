@@ -39,7 +39,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
 
   return (
     <div
-      className="relative w-full h-[100vh] min-h-[920px] overflow-hidden bg-black"
+      className="hero-v11-root relative w-full overflow-hidden bg-black"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >

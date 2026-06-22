@@ -126,10 +126,16 @@ export function useRecommendations({
     const seed = Math.floor(Date.now() / (1000 * 60 * 10)); // 10분마다 갱신
     const usedIds = new Set<string>();
 
-    // ── 1. TOP 10 (조회수 기준) ──────────────────────────────────────────────
-    const top10 = [...allDramas]
+    // ── 1. TOP 10 (조회수 기준, "인생 2회차 복수" 1위 고정) ─────────────────────
+    // DB에 실제 콘텐츠(인생 2회차 복수)가 있으면 1위 강제
+    const ijungcha = allDramas.find((d) =>
+      d.title.includes("인생 2회차") || d.title.includes("2회차 복수")
+    );
+    const restByViews = [...allDramas]
+      .filter((d) => d.id !== ijungcha?.id)
       .sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
-      .slice(0, 10);
+      .slice(0, ijungcha ? 9 : 10);
+    const top10 = ijungcha ? [ijungcha, ...restByViews] : restByViews;
     top10.forEach((d) => usedIds.add(d.id));
 
     // ── 2. 신작 (isNew 우선, 없으면 최신 등록순) ───────────────────────────

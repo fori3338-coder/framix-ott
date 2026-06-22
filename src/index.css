@@ -2695,6 +2695,18 @@
      Right: Full cinematic artwork with Ken Burns
      ════════════════════════════════════════════════════════════════════════ */
 
+  /* ── Hero V11 Root: responsive height ─────────────────────────────── */
+  .hero-v11-root {
+    /* Mobile: max 70vh, min 480px to avoid too small */
+    height: clamp(480px, 70vh, 700px);
+  }
+  @media (min-width: 768px) {
+    .hero-v11-root {
+      /* Tablet/Desktop: full cinematic height */
+      height: clamp(600px, 88vh, 980px);
+    }
+  }
+
   /* Main Hero Container */
   .hero-v10-container {
     padding: 0 2rem;
