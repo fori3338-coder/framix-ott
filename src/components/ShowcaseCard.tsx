@@ -246,7 +246,7 @@ function DefaultCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" 
           "relative aspect-[9/16] rounded-xl overflow-hidden bg-[#1a1a1c]",
           "ring-1 ring-white/8",
           "transition-[transform,box-shadow] duration-[350ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
-          "md:group-hover:scale-[1.06] md:group-hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] md:group-hover:ring-white/18",
+          "md:group-hover:scale-[1.06] md:group-hover:shadow-[0_30px_80px_rgba(0,0,0,0.55)] md:group-hover:ring-white/18",
           "group-active:scale-[0.97] will-change-[transform]",
         ].join(" ")}
       >
@@ -276,15 +276,16 @@ function DefaultCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" 
           )}
         </div>
 
-        {/* Desktop hover overlay */}
+        {/* Desktop hover overlay — spec gradient */}
         <div
           className={[
-            "absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent",
+            "absolute inset-0",
             "opacity-0 md:group-hover:opacity-100 transition-opacity duration-[350ms]",
             "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
             "flex flex-col items-center justify-end pb-3 gap-2",
             "pointer-events-none md:group-hover:pointer-events-auto",
           ].join(" ")}
+          style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.20), transparent)" }}
         >
           <div
             className="w-full px-2.5 opacity-0 md:group-hover:opacity-100 translate-y-3 md:group-hover:translate-y-0 transition-[opacity,transform] duration-[250ms] will-change-[opacity,transform]"
