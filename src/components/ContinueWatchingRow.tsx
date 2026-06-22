@@ -193,7 +193,6 @@ function ContinueWatchingCard({
   const progressPct = Math.min(100, Math.max(0, item.progress));
 
   // Progress color: red-ish for near-done (≥85%), white otherwise
-  const progressColor = progressPct >= 85 ? "#e50914" : "rgba(255,255,255,0.88)";
 
   return (
     <div
