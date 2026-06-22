@@ -397,3 +397,106 @@
     }
   }
 }
+
+/* ===== PREMIUM HOME REDESIGN: Scroll Reveal + Section Typography ===== */
+
+@layer utilities {
+  /* Scroll Reveal — opacity 0→1, translateY 24→0 */
+  .section-reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .section-reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Section Title — Premium Typography */
+  .section-title-premium {
+    font-size: clamp(1rem, 2.2vw, 1.5rem);
+    font-weight: 900;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    color: #fff;
+  }
+  .section-subtitle-premium {
+    font-size: clamp(0.68rem, 1.1vw, 0.8rem);
+    color: rgba(255,255,255,0.42);
+    margin-top: 3px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+
+  /* Accent bar — left border indicator */
+  .section-accent-bar {
+    display: none;
+    width: 3px;
+    height: 28px;
+    border-radius: 9999px;
+    background: linear-gradient(to bottom, #ffffff 0%, rgba(255,255,255,0.3) 100%);
+    flex-shrink: 0;
+  }
+  @media (min-width: 768px) {
+    .section-accent-bar { display: block; }
+  }
+
+  /* Section spacing — Netflix/Apple TV+ standard */
+  .home-section {
+    margin-bottom: 2.5rem;
+  }
+  @media (min-width: 768px) {
+    .home-section {
+      margin-bottom: 4rem;
+    }
+  }
+  @media (min-width: 1280px) {
+    .home-section {
+      margin-bottom: 5rem;
+    }
+  }
+
+  /* Section divider — ultra-subtle */
+  .section-separator {
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.05) 20%, rgba(255,255,255,0.05) 80%, transparent);
+    margin: 0 3rem 3rem;
+  }
+
+  /* CW bigger card override */
+  .cw-card-lg {
+    width: clamp(240px, 32vw, 340px);
+  }
+
+  /* TOP10 rank number — Netflix style */
+  .top10-rank {
+    font-size: clamp(4.5rem, 9vw, 7rem);
+    font-weight: 900;
+    font-style: italic;
+    line-height: 0.82;
+    color: transparent;
+    -webkit-text-stroke: 2.5px rgba(255,255,255,0.85);
+    filter: drop-shadow(0 2px 10px rgba(0,0,0,0.95));
+    user-select: none;
+    pointer-events: none;
+  }
+  .top10-rank.rank-1 {
+    -webkit-text-stroke: 3px #ffffff;
+    filter: drop-shadow(0 2px 16px rgba(0,0,0,1));
+  }
+
+  /* Footer */
+  .framix-footer {
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 3rem 3rem 5rem;
+    color: rgba(255,255,255,0.28);
+    font-size: 0.72rem;
+    line-height: 1.8;
+  }
+  @media (max-width: 767px) {
+    .framix-footer {
+      padding: 2rem 1.25rem 6rem;
+    }
+  }
+}

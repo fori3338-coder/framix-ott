@@ -158,20 +158,13 @@ export default function ShowcaseCard({ drama, rank, size = "md" }: ShowcaseCardP
           )}
         </div>
 
-        {/* Rank Number (TOP 10) */}
+        {/* Rank Number (TOP 10) — Netflix style white stroke */}
         {rank !== undefined && (
           <div className="absolute -left-5 md:-left-7 bottom-0 leading-none pointer-events-none select-none z-10">
             <span
-              className="font-black italic"
+              className={rank === 1 ? "top10-rank rank-1" : "top10-rank"}
               style={{
-                fontSize: rank <= 9 ? "5rem" : "4rem",
-                lineHeight: "0.82",
-                color: "transparent",
-                WebkitTextStroke:
-                  rank === 1
-                    ? "2.5px #D4AF37"
-                    : "2px rgba(212,175,55,0.7)",
-                filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.9))",
+                fontSize: rank >= 10 ? "clamp(3.5rem,7vw,5.5rem)" : undefined,
               }}
             >
               {rank}
