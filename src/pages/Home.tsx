@@ -1,28 +1,33 @@
 /**
- * Home.tsx — FRAMIX Premium OTT Home V4
+ * Home.tsx — FRAMIX Home V9 FINAL
  *
- * 섹션 구조 (V4):
+ * 섹션 구조:
  *   Hero
- *   → S1: Continue Watching
- *   → S2: 실시간 TOP10
- *   → S3: 당신만을 위한 추천 (AI Pick)
- *   → S4: 지금 급상승 중
- *   → separator
- *   → S5: FRAMIX ORIGINAL
- *   → S6: Editor's Choice
- *   → S7: 장르 허브
- *   → S8: 오늘의 발견
- *   → My List
- *   → Footer V4
+ *   → S1: Continue Watching (기존 유지)
+ *   → S2: TOP 10 — Netflix 번호 2열 구조 [신규]
+ *   → S3: FRAMIX ORIGINAL — Apple TV+ 와이드 배너 (기존 FramixOriginalStrip 유지)
+ *   → S4: 추천 컬렉션 — Disney+ 대형 3카드 [신규]
+ *   → S5: AI Pick — ShowcaseRow (기존 유지, 구조 다름)
+ *   → S6: 장르 허브 — 버튼 클릭 필터 [신규]
+ *   → S7: 오늘의 발견 — Apple TV+ Center Carousel [신규]
+ *   → S8: 내 보관함 — 탭 구조 [신규]
+ *   → Footer
  */
 import { Link } from "react-router-dom";
 import { useState, useCallback, useEffect, useMemo } from "react";
 
 import HeroBanner from "../components/HeroBanner";
-import ShowcaseRow from "../components/ShowcaseRow";
 import ContinueWatchingRow from "../components/ContinueWatchingRow";
 import FramixOriginalStrip from "../components/FramixOriginalStrip";
-import GenreHub from "../components/GenreHub";
+import ShowcaseRow from "../components/ShowcaseRow";
+
+// ── 신규 Home 전용 컴포넌트 ──────────────────────────────────────────────
+import Top10Section from "../components/home/Top10Section";
+import CollectionSection from "../components/home/CollectionSection";
+import GenreHubSection from "../components/home/GenreHubSection";
+import DiscoverCarousel from "../components/home/DiscoverCarousel";
+import MyListSection from "../components/home/MyListSection";
+
 import { useDramas } from "../hooks/useDramas";
 import { useContinueWatching } from "../hooks/useContinueWatching";
 import { useFavorites } from "../hooks/useFavorites";
@@ -42,28 +47,19 @@ function merge(dbDramas: Drama[], showcase: Drama[]): Drama[] {
   return [...dbDramas, ...showcase.filter((s) => !dbIds.has(s.id))];
 }
 
-// ── Footer V4 ────────────────────────────────────────────────────────────────
+// ── Footer ────────────────────────────────────────────────────────────────
 function HomeFooter() {
   const serviceLinks = ["이용약관", "개인정보처리방침", "고객센터", "공지사항", "1:1 문의", "콘텐츠 파트너십"];
   return (
     <footer className="framix-footer-v4">
       <div className="framix-footer-v4-inner">
-        {/* Logo */}
         <div className="framix-footer-v4-logo">FRAMIX</div>
-
-        {/* Nav links */}
         <nav className="framix-footer-v4-nav">
           {serviceLinks.map((item) => (
-            <span key={item} className="framix-footer-v4-link">
-              {item}
-            </span>
+            <span key={item} className="framix-footer-v4-link">{item}</span>
           ))}
         </nav>
-
-        {/* Divider */}
         <div className="framix-footer-v4-divider" />
-
-        {/* Copyright */}
         <p className="framix-footer-v4-copy">
           © 2025 FRAMIX. All rights reserved. · 본 서비스의 콘텐츠는 저작권법에 의해 보호됩니다.
         </p>
@@ -72,7 +68,7 @@ function HomeFooter() {
   );
 }
 
-// ── Loading Skeleton ─────────────────────────────────────────────────────────
+// ── Loading Skeleton ─────────────────────────────────────────────────────
 function HomeSkeleton() {
   return (
     <div className="pb-16 animate-pulse">
@@ -83,11 +79,8 @@ function HomeSkeleton() {
             <div className="h-6 bg-surface-2 rounded-md w-48 mb-2" />
             <div className="h-3 bg-surface-2 rounded w-64 mb-5" />
             <div className="flex gap-4">
-              {[1, 2, 3, 4, 5].map((j) => (
-                <div
-                  key={j}
-                  className="w-[120px] sm:w-[150px] md:w-[170px] aspect-[2/3] rounded-xl bg-surface-2 shrink-0"
-                />
+              {[1, 2, 3, 4].map((j) => (
+                <div key={j} className="w-[120px] sm:w-[150px] md:w-[170px] aspect-[2/3] rounded-xl bg-surface-2 shrink-0" />
               ))}
             </div>
           </div>
@@ -97,7 +90,7 @@ function HomeSkeleton() {
   );
 }
 
-// ── Main Home Component ───────────────────────────────────────────────────────
+// ── Main Home Component ───────────────────────────────────────────────────
 export default function Home() {
   const { dramas, loading, trending } = useDramas();
   const { items: continueWatchingItems, isLoggedIn, reload: reloadCW } = useContinueWatching();
@@ -167,7 +160,7 @@ export default function Home() {
       {/* ── Main Content ──────────────────────────────────────────────── */}
       <div className="home-v4-content">
 
-        {/* ── S1. Continue Watching ──────────────────────────────────── */}
+        {/* ── S1. Continue Watching (기존 구조 유지) ─────────────────── */}
         <div id="continue-watching-section">
           {isLoggedIn && visibleCWItems.length > 0 && (
             <ContinueWatchingRow
@@ -177,16 +170,20 @@ export default function Home() {
           )}
         </div>
 
-        {/* ── S2. 실시간 TOP 10 ──────────────────────────────────────── */}
-        <ShowcaseRow
-          title="실시간 TOP 10"
-          subtitle="지금 가장 많이 보는 작품"
-          dramas={sections.top10}
-          showRank
-          badge="HOT"
+        {/* ── S2. TOP 10 — Netflix 번호 2열 구조 [신규] ─────────────── */}
+        <Top10Section dramas={sections.top10} />
+
+        {/* ── S3. FRAMIX ORIGINAL — 기존 와이드 배너 구조 유지 ────────── */}
+        <FramixOriginalStrip dramas={sections.originals} />
+
+        {/* ── S4. 추천 컬렉션 — Disney+ 대형 3카드 [신규] ────────────── */}
+        <CollectionSection
+          romance={sections.romance}
+          chaebol={sections.chaebol}
+          timeloop={sections.timeloop}
         />
 
-        {/* ── S3. AI 추천 ────────────────────────────────────────────── */}
+        {/* ── S5. AI Pick — ShowcaseRow (기존 카드 Row, 다른 섹션과 차별화) */}
         <ShowcaseRow
           title="당신만을 위한 추천"
           subtitle="FRAMIX AI가 오늘 엄선한 맞춤 픽"
@@ -196,33 +193,11 @@ export default function Home() {
           cardVariant="featured"
         />
 
-        {/* ── S4. 급상승 ─────────────────────────────────────────────── */}
-        <ShowcaseRow
-          title="지금 급상승 중"
-          subtitle="빠르게 치고 올라오는 화제작"
-          dramas={sections.risingNow}
-          badge="TRENDING"
-          rowVariant="trending"
-          cardVariant="featured"
-        />
-
         {/* Separator */}
         <div className="section-separator" />
 
-        {/* ── S5. FRAMIX ORIGINAL ────────────────────────────────────── */}
-        <FramixOriginalStrip dramas={sections.originals} />
-
-        {/* ── S6. Editor's Choice ────────────────────────────────────── */}
-        <ShowcaseRow
-          title="Editor's Choice"
-          subtitle="이 작품만큼은 꼭 보세요 — 에디터 픽"
-          dramas={sections.editorChoice}
-          badge="PICK"
-          cardVariant="editor"
-        />
-
-        {/* ── S7. 장르 허브 ──────────────────────────────────────────── */}
-        <GenreHub
+        {/* ── S6. 장르 허브 — 버튼 클릭 필터 그리드 [신규] ─────────── */}
+        <GenreHubSection
           romance={sections.romance}
           revenge={sections.revenge}
           chaebol={sections.chaebol}
@@ -230,26 +205,16 @@ export default function Home() {
           timeloop={sections.timeloop}
         />
 
-        {/* ── S8. 오늘의 발견 ────────────────────────────────────────── */}
-        <ShowcaseRow
-          title="오늘의 발견"
-          subtitle="아직 모르는 사람이 더 많은 숨은 명작"
-          dramas={sections.todayDiscover}
-          badge="HIDDEN GEM"
-        />
+        {/* ── S7. 오늘의 발견 — Apple TV+ Center Carousel [신규] ─────── */}
+        <DiscoverCarousel dramas={sections.todayDiscover} />
 
-        {/* ── My List ────────────────────────────────────────────────── */}
-        {favLoggedIn && favoritedList.length > 0 && (
-          <>
-            <div className="section-separator" />
-            <ShowcaseRow
-              title="내 보관함"
-              subtitle="찜한 콘텐츠 모음"
-              dramas={favoritedList}
-              badge="MY LIST"
-            />
-          </>
-        )}
+        {/* ── S8. 내 보관함 — 탭 구조 [신규] ──────────────────────────── */}
+        <MyListSection
+          favoritedList={favoritedList}
+          continueWatchingItems={continueWatchingItems}
+          allDramas={allDramas}
+          isLoggedIn={favLoggedIn}
+        />
 
         {dramas.length === 0 && (
           <div className="px-5 md:px-12 pb-8 text-center">
@@ -266,7 +231,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* ── Footer V4 ───────────────────────────────────────────────────── */}
+      {/* ── Footer ──────────────────────────────────────────────────────── */}
       <HomeFooter />
     </div>
   );
