@@ -1,12 +1,19 @@
 /**
  * Home.tsx — FRAMIX Premium OTT Home
- * Structure: Hero → Continue Watching → Top10 → New → Recommended
- *            → Genre: Romance → Genre: Revenge → Editor's Pick (Originals) → Footer
+ * v2 — Search + Recommendation System Upgrade
  *
- * Netflix / Apple TV+ / Disney+ level layout & spacing
+ * 섹션 구조:
+ *   Hero → Continue Watching → My List → 실시간 TOP10 → 신작
+ *   → 급상승 → AI Pick → 당신을 위한 추천 → 로맨스 → 복수
+ *   → 재벌 → 계약결혼 → 타임루프 → FRAMIX ORIGINAL → Footer
+ *
+ * 핵심 변경:
+ *  - useRecommendations 훅으로 섹션 데이터 생성 (중복 제거 보장)
+ *  - 매 홈 진입마다 AI Pick / 추천 후보 변경
+ *  - showcaseData와 DB 데이터 병합 로직 유지 (기존 호환)
  */
 import { Link } from "react-router-dom";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 
 import HeroBanner from "../components/HeroBanner";
 import ShowcaseRow from "../components/ShowcaseRow";
@@ -14,12 +21,12 @@ import ContinueWatchingRow from "../components/ContinueWatchingRow";
 import { useDramas } from "../hooks/useDramas";
 import { useContinueWatching } from "../hooks/useContinueWatching";
 import { useFavorites } from "../hooks/useFavorites";
+import { useRecommendations } from "../hooks/useRecommendations";
 import type { Drama } from "../types";
 
 import {
   showcaseTop10,
   showcaseNewEpisodes,
-  showcaseRecommended,
   showcaseRomance,
   showcaseRevenge,
   showcaseOriginals,
@@ -35,7 +42,6 @@ function HomeFooter() {
   return (
     <footer className="framix-footer mt-8 md:mt-16">
       <div className="max-w-5xl mx-auto">
-        {/* Logo */}
         <p
           className="text-sm font-black tracking-[0.18em] mb-5"
           style={{
@@ -46,17 +52,8 @@ function HomeFooter() {
         >
           FRAMIX
         </p>
-
-        {/* Links */}
         <div className="flex flex-wrap gap-x-5 gap-y-2 mb-6 text-[11px]">
-          {[
-            "이용약관",
-            "개인정보처리방침",
-            "고객센터",
-            "공지사항",
-            "1:1 문의",
-            "콘텐츠 파트너십",
-          ].map((item) => (
+          {["이용약관", "개인정보처리방침", "고객센터", "공지사항", "1:1 문의", "콘텐츠 파트너십"].map((item) => (
             <span
               key={item}
               className="text-white/28 hover:text-white/55 cursor-pointer transition-colors duration-150"
@@ -65,8 +62,6 @@ function HomeFooter() {
             </span>
           ))}
         </div>
-
-        {/* Copyright */}
         <p className="text-[11px] text-white/20 leading-relaxed">
           © 2025 FRAMIX. All rights reserved.
           <br className="sm:hidden" />
@@ -84,7 +79,7 @@ function HomeSkeleton() {
     <div className="pb-16 animate-pulse">
       <div className="w-full h-[68vh] md:h-[88vh] min-h-[460px] bg-surface-2" />
       <div className="mt-10 space-y-14 px-5 md:px-12">
-        {[1, 2, 3, 4].map((i) => (
+        {[1, 2, 3, 4, 5].map((i) => (
           <div key={i}>
             <div className="h-6 bg-surface-2 rounded-md w-48 mb-2" />
             <div className="h-3 bg-surface-2 rounded w-64 mb-5" />
@@ -129,26 +124,45 @@ export default function Home() {
     (item) => !removedEpisodeIds.has(item.episodeId)
   );
 
+  // ── 전체 드라마 풀 (DB + showcase 병합) ───────────────────────────────
+  const allDramas = useMemo(() => {
+    const base = merge(dramas, [
+      ...showcaseTop10,
+      ...showcaseNewEpisodes,
+      ...showcaseRomance,
+      ...showcaseRevenge,
+      ...showcaseOriginals,
+    ]);
+    // 중복 id 제거 (showcaseData 간 중복 있음)
+    const seen = new Set<string>();
+    return base.filter((d) => {
+      if (seen.has(d.id)) return false;
+      seen.add(d.id);
+      return true;
+    });
+  }, [dramas]);
+
+  // ── AI 추천 엔진 ─────────────────────────────────────────────────────
+  const sections = useRecommendations({
+    allDramas,
+    continueWatchingItems,
+    favoriteIds,
+  });
+
   if (loading) return <HomeSkeleton />;
 
-  // ── Section Data ──────────────────────────────────────────────────────────
+  // ── Hero Banner 데이터 ─────────────────────────────────────────────────
   const bannerPicks = [...dramas]
     .filter((d) => d.isBanner)
     .sort((a, b) => (a.bannerOrder ?? 0) - (b.bannerOrder ?? 0));
   const heroList =
     bannerPicks.length > 0
       ? bannerPicks
-      : merge(dramas, showcaseTop10).slice(0, 5);
+      : merge(trending, showcaseTop10).slice(0, 5);
 
-  const top10List = merge(trending, showcaseTop10);
-  const newList = merge(dramas, showcaseNewEpisodes);
-  const recommendedList = merge(dramas, showcaseRecommended);
-  const romanceList = merge(dramas, showcaseRomance);
-  const revengeList = merge(dramas, showcaseRevenge);
-  const originalsList = merge(dramas, showcaseOriginals);
-
+  // ── 찜 목록 ────────────────────────────────────────────────────────────
   const favoritedList = favoriteIds
-    .map((fid) => dramas.find((d) => d.id === fid))
+    .map((fid) => allDramas.find((d) => d.id === fid))
     .filter((d): d is Drama => Boolean(d));
 
   return (
@@ -159,7 +173,7 @@ export default function Home() {
       {/* ── Main Content ─────────────────────────────────────────────────── */}
       <div className="mt-6 md:mt-10">
 
-        {/* ── 2. Continue Watching — 최상단, 가장 큰 카드 ────────────────── */}
+        {/* ── 2. Continue Watching ─────────────────────────────────────── */}
         <div id="continue-watching-section">
           {isLoggedIn && visibleCWItems.length > 0 && (
             <ContinueWatchingRow
@@ -179,11 +193,11 @@ export default function Home() {
           />
         )}
 
-        {/* ── 4. TOP 10 Trending — Netflix rank number overlay ───────────── */}
+        {/* ── 4. 실시간 TOP 10 (조회수 정렬) ───────────────────────────── */}
         <ShowcaseRow
           title="실시간 TOP 10"
           subtitle="지금 가장 많이 보는 작품"
-          dramas={top10List}
+          dramas={sections.top10}
           showRank
           accent
           badge="HOT"
@@ -193,45 +207,84 @@ export default function Home() {
         <ShowcaseRow
           title="새로운 에피소드"
           subtitle="이번 주 업데이트된 최신 콘텐츠"
-          dramas={newList}
+          dramas={sections.newEpisodes}
           badge="NEW"
         />
 
-        {/* ── 6. 추천 콘텐츠 ─────────────────────────────────────────────── */}
+        {/* ── 6. 급상승 ──────────────────────────────────────────────────── */}
+        <ShowcaseRow
+          title="지금 급상승 중"
+          subtitle="빠르게 인기를 얻고 있는 작품"
+          dramas={sections.risingNow}
+          badge="RISING"
+          accent
+        />
+
+        {/* ── 7. AI Pick ─────────────────────────────────────────────────── */}
+        <ShowcaseRow
+          title="AI PICK"
+          subtitle="FRAMIX AI가 엄선한 오늘의 추천"
+          dramas={sections.aiPick}
+          badge="AI Pick"
+          cardVariant="featured"
+        />
+
+        {/* ── 8. 당신을 위한 추천 (최근 시청 기반) ──────────────────────── */}
         <ShowcaseRow
           title="당신을 위한 추천"
-          subtitle="AI가 분석한 나만의 맞춤 픽"
-          dramas={recommendedList}
-          badge="AI Pick"
+          subtitle="최근 시청 기록 기반 맞춤 픽"
+          dramas={sections.forYou}
+          badge="FOR YOU"
           cardVariant="featured"
         />
 
         {/* Section separator */}
         <div className="section-separator" />
 
-        {/* ── 7. 장르별 추천: 로맨스 ────────────────────────────────────── */}
+        {/* ── 9. 로맨스 판타지 ───────────────────────────────────────────── */}
         <ShowcaseRow
           title="로맨스 판타지"
           subtitle="설레고 빠져드는 로맨스 모음"
-          dramas={romanceList}
+          dramas={sections.romance}
         />
 
-        {/* ── 8. 장르별 추천: 재벌 & 복수 ──────────────────────────────── */}
+        {/* ── 10. 복수 & 반전 ────────────────────────────────────────────── */}
         <ShowcaseRow
-          title="재벌 & 복수"
+          title="복수 & 반전"
           subtitle="통쾌한 사이다 반전 드라마"
-          dramas={revengeList}
+          dramas={sections.revenge}
           badge="HOT"
+        />
+
+        {/* ── 11. 재벌 ──────────────────────────────────────────────────── */}
+        <ShowcaseRow
+          title="재벌 드라마"
+          subtitle="화려한 재벌가의 세계로 초대"
+          dramas={sections.chaebol}
+        />
+
+        {/* ── 12. 계약결혼 ──────────────────────────────────────────────── */}
+        <ShowcaseRow
+          title="계약결혼 로맨스"
+          subtitle="계약으로 시작된 달콤한 위험"
+          dramas={sections.contract}
+        />
+
+        {/* ── 13. 타임루프 & 회귀 ───────────────────────────────────────── */}
+        <ShowcaseRow
+          title="타임루프 & 회귀"
+          subtitle="다시 돌아간 그날의 두 번째 기회"
+          dramas={sections.timeloop}
         />
 
         {/* Section separator */}
         <div className="section-separator" />
 
-        {/* ── 9. 에디터 추천: FRAMIX 오리지널 ──────────────────────────── */}
+        {/* ── 14. FRAMIX ORIGINAL ───────────────────────────────────────── */}
         <ShowcaseRow
-          title="에디터 추천"
+          title="FRAMIX ORIGINAL"
           subtitle="오직 FRAMIX에서만 볼 수 있는 독점 작품"
-          dramas={originalsList}
+          dramas={sections.originals}
           accent
           badge="ORIGINAL"
           cardVariant="editor"
@@ -252,7 +305,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* ── 10. Footer ──────────────────────────────────────────────────── */}
+      {/* ── 15. Footer ──────────────────────────────────────────────────── */}
       <HomeFooter />
     </div>
   );
