@@ -299,6 +299,9 @@ function ContinueWatchingCard({
                 background: isNearDone
                   ? "linear-gradient(to right, #c0392b, #ff5252)"
                   : "linear-gradient(to right, rgba(255,255,255,0.7), #ffffff)",
+                boxShadow: isNearDone
+                  ? "0 0 10px 2px rgba(255,82,82,0.6)"
+                  : "0 0 8px 2px rgba(255,255,255,0.45)",
               }}
             >
               {/* Progress dot */}
@@ -307,8 +310,8 @@ function ContinueWatchingCard({
                 style={{
                   background: isNearDone ? "#ff5252" : "#ffffff",
                   boxShadow: isNearDone
-                    ? "0 0 8px rgba(255,82,82,0.8)"
-                    : "0 0 6px rgba(255,255,255,0.7)",
+                    ? "0 0 10px rgba(255,82,82,0.9)"
+                    : "0 0 8px rgba(255,255,255,0.9)",
                 }}
               />
             </div>

@@ -107,7 +107,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             {/* ── Cinematic Metadata Row ─────────────────────────────── */}
             <div
               className="hero-v10-metadata hero-fade-in"
-              style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
+              style={{ animationDelay: "120ms", animationFillMode: "backwards" }}
             >
               {/* Rating box */}
               <div className="hero-v10-meta-item">
@@ -149,15 +149,15 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             {/* ── Description ───────────────────────────────────────── */}
             <p
               className="hero-v10-description hero-fade-in"
-              style={{ animationDelay: "120ms", animationFillMode: "backwards" }}
+              style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
             >
               {drama.synopsis}
             </p>
 
             {/* ── Genre Tags ────────────────────────────────────────── */}
             <div
-              className="hero-v10-genre-tags hero-fade-in"
-              style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
+              className="hero-v10-genre-tags hero-fade-in hero-genre-tags-mobile-hide"
+              style={{ animationDelay: "300ms", animationFillMode: "backwards" }}
             >
               {drama.genres.slice(0, 3).map((g) => (
                 <span key={g} className="hero-v10-genre-tag">{g}</span>

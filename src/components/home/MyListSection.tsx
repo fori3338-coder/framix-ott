@@ -156,10 +156,10 @@ function MyListCard({ drama, tab, cwItem }: { drama: Drama; index: number; tab: 
         className="relative rounded-xl overflow-hidden"
         style={{
           aspectRatio: "2/3",
-          transform: hovered ? "scale(1.08) translateY(-8px)" : "scale(1) translateY(0)",
+          transform: hovered ? "scale(1.06) translateY(-8px)" : "scale(1) translateY(0)",
           transition: "transform 0.32s cubic-bezier(0.22,1,0.36,1), box-shadow 0.32s cubic-bezier(0.22,1,0.36,1)",
           boxShadow: hovered
-            ? "0 20px 56px -10px rgba(0,0,0,0.80), 0 0 0 1.5px rgba(212,175,55,0.35)"
+            ? "0 24px 60px -10px rgba(0,0,0,0.85), 0 0 0 1.5px rgba(212,175,55,0.45)"
             : "0 4px 16px -4px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06)",
           willChange: "transform, box-shadow",
         }}

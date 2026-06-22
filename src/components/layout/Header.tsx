@@ -73,6 +73,7 @@ export default function Header() {
   // Profile dropdown (desktop) / bottom-sheet (mobile)
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const [avatarErr, setAvatarErr] = useState(false);
 
   const { hidden, progress } = useHeaderScroll();
 
@@ -239,11 +240,18 @@ export default function Header() {
                   aria-label="프로필 메뉴"
                   aria-expanded={profileOpen}
                 >
-                  <img
-                    src="https://picsum.photos/seed/framix-profile/64/64"
-                    alt="프로필"
-                    className="framix-avatar"
-                  />
+                  {avatarErr ? (
+                    <div className="framix-avatar flex items-center justify-center bg-white/10 border border-white/20">
+                      <User size={16} className="text-white/70" />
+                    </div>
+                  ) : (
+                    <img
+                      src={user.user_metadata?.avatar_url || "https://picsum.photos/seed/framix-profile/64/64"}
+                      alt="프로필"
+                      className="framix-avatar"
+                      onError={() => setAvatarErr(true)}
+                    />
+                  )}
                   <ChevronDown
                     size={13}
                     className="framix-chevron"
@@ -255,11 +263,18 @@ export default function Header() {
                 {profileOpen && (
                   <div className="framix-dropdown framix-desktop-only" role="menu">
                     <div className="framix-dropdown-header">
-                      <img
-                        src="https://picsum.photos/seed/framix-profile/64/64"
-                        alt="프로필"
-                        className="framix-dropdown-avatar"
-                      />
+                      {avatarErr ? (
+                        <div className="framix-dropdown-avatar flex items-center justify-center bg-white/10 border border-white/20 rounded-full">
+                          <User size={18} className="text-white/70" />
+                        </div>
+                      ) : (
+                        <img
+                          src={user.user_metadata?.avatar_url || "https://picsum.photos/seed/framix-profile/64/64"}
+                          alt="프로필"
+                          className="framix-dropdown-avatar"
+                          onError={() => setAvatarErr(true)}
+                        />
+                      )}
                       <div>
                         <p className="framix-dropdown-email">{user.email}</p>
                         <p className="framix-dropdown-plan">FRAMIX 멤버</p>
@@ -346,11 +361,18 @@ export default function Header() {
           <div className="framix-bottom-sheet framix-mobile-only" role="dialog" aria-modal="true">
             <div className="framix-bottom-sheet-handle" />
             <div className="framix-dropdown-header">
-              <img
-                src="https://picsum.photos/seed/framix-profile/64/64"
-                alt="프로필"
-                className="framix-dropdown-avatar"
-              />
+              {avatarErr ? (
+                <div className="framix-dropdown-avatar flex items-center justify-center bg-white/10 border border-white/20 rounded-full">
+                  <User size={18} className="text-white/70" />
+                </div>
+              ) : (
+                <img
+                  src={user.user_metadata?.avatar_url || "https://picsum.photos/seed/framix-profile/64/64"}
+                  alt="프로필"
+                  className="framix-dropdown-avatar"
+                  onError={() => setAvatarErr(true)}
+                />
+              )}
               <div>
                 <p className="framix-dropdown-email">{user.email}</p>
                 <p className="framix-dropdown-plan">FRAMIX 멤버</p>
