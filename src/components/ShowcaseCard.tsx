@@ -121,7 +121,7 @@ function QuickActions({
 interface MobileOverlayProps {
   drama: Drama;
   firstEpisodeId?: string;
-  onClose: () => void;
+  onClose: (e: React.TouchEvent) => void;
   favorited: boolean;
   toggleFavorite: (id: string) => void;
   landscape?: boolean;
