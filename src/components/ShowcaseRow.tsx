@@ -9,7 +9,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Drama } from "../types";
-import ShowcaseCard from "./ShowcaseCard";
+import ShowcaseCard, { type CardVariant } from "./ShowcaseCard";
 
 interface ShowcaseRowProps {
   title: string;
@@ -19,6 +19,7 @@ interface ShowcaseRowProps {
   accent?: boolean;
   cardSize?: "sm" | "md" | "lg";
   badge?: string;
+  cardVariant?: CardVariant;
 }
 
 export default function ShowcaseRow({
@@ -28,6 +29,7 @@ export default function ShowcaseRow({
   showRank,
   cardSize = "md",
   badge,
+  cardVariant,
 }: ShowcaseRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
@@ -204,6 +206,7 @@ export default function ShowcaseRow({
                 drama={drama}
                 rank={showRank ? i + 1 : undefined}
                 size={cardSize}
+                variant={cardVariant ?? (showRank ? "top10" : "default")}
               />
             </div>
           ))}

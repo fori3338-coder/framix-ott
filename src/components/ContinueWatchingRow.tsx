@@ -190,12 +190,15 @@ function ContinueWatchingCard({
   onRemove: (e: React.MouseEvent) => void;
 }) {
   const remainSec = Math.max(0, item.durationSeconds - item.progressSeconds);
+  const progressPct = Math.min(100, Math.max(0, item.progress));
+
+  // Progress color: red-ish for near-done (≥85%), white otherwise
+  const progressColor = progressPct >= 85 ? "#e50914" : "rgba(255,255,255,0.88)";
 
   return (
     <div
       className="relative shrink-0 cursor-pointer group"
       style={{
-        // 30% larger than before (was clamp(200px,28vw,280px))
         width: "clamp(260px, 36vw, 360px)",
         scrollSnapAlign: "start",
         opacity: 0,
@@ -205,14 +208,14 @@ function ContinueWatchingCard({
       }}
       onClick={onPlay}
     >
-      {/* Thumbnail 16:9 */}
+      {/* ── Thumbnail 16:9 ────────────────────────────────────────────────── */}
       <div
         className={[
           "relative w-full rounded-xl overflow-hidden bg-zinc-900",
           "transition-[transform,box-shadow] duration-[350ms]",
           "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
           "md:group-hover:scale-[1.03]",
-          "md:group-hover:shadow-[0_20px_52px_rgba(0,0,0,0.55)]",
+          "md:group-hover:shadow-[0_20px_52px_rgba(0,0,0,0.6)]",
           "will-change-[transform]",
         ].join(" ")}
         style={{ aspectRatio: "16/9" }}
@@ -224,7 +227,7 @@ function ContinueWatchingCard({
             "w-full h-full object-cover",
             "transition-transform duration-[350ms]",
             "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
-            "md:group-hover:scale-[1.06]",
+            "md:group-hover:scale-[1.07]",
             "will-change-transform",
           ].join(" ")}
           onError={(e) => {
@@ -235,98 +238,110 @@ function ContinueWatchingCard({
         />
 
         {/* Dark Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
 
-        {/* Play Button Overlay */}
-        <div
-          className={[
-            "absolute inset-0 flex items-center justify-center",
-            "opacity-0 md:group-hover:opacity-100",
-            "transition-opacity duration-300",
-          ].join(" ")}
-        >
+        {/* ── Play Button — always visible, emphasis on hover ──────────── */}
+        <div className="absolute inset-0 flex items-center justify-center">
           <div
             className={[
-              "w-14 h-14 rounded-full flex items-center justify-center shadow-2xl",
-              "translate-y-2 md:group-hover:translate-y-0",
-              "transition-transform duration-[280ms]",
-              "bg-white/90 backdrop-blur-sm",
+              "w-13 h-13 rounded-full flex items-center justify-center shadow-2xl",
+              "transition-[transform,opacity,background] duration-[280ms]",
+              // Resting: semi-visible
+              "opacity-55 md:group-hover:opacity-100",
+              "scale-90 md:group-hover:scale-100",
+              "bg-white/80 md:group-hover:bg-white",
             ].join(" ")}
-            style={{ transitionDelay: "50ms" }}
+            style={{ width: 52, height: 52 }}
           >
             <Play size={22} className="text-black fill-black ml-1" />
           </div>
         </div>
 
-        {/* Remove Button */}
+        {/* ── Remove Button ─────────────────────────────────────────────── */}
         <button
           onClick={onRemove}
           className={[
-            "absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-black/70 border border-white/18",
-            "flex items-center justify-center text-white/65 hover:text-white hover:bg-black",
+            "absolute top-2.5 right-2.5 w-7 h-7 rounded-full",
+            "bg-black/70 border border-white/15",
+            "flex items-center justify-center text-white/55",
+            "hover:text-white hover:bg-black/90 hover:border-white/30",
             "transition-all z-10",
             "opacity-0 md:group-hover:opacity-100",
+            "active:scale-90",
           ].join(" ")}
           aria-label="이어보기 목록에서 삭제"
         >
-          <X size={13} />
+          <X size={12} />
         </button>
 
-        {/* Remaining Time badge */}
-        <div className="absolute bottom-3 right-3 text-[10px] font-semibold text-white/80 bg-black/65 rounded px-1.5 py-0.5 tabular-nums">
+        {/* ── Episode Info badge — top left ─────────────────────────────── */}
+        <div className="absolute top-2.5 left-2.5 z-10">
+          <span
+            className="text-[9px] font-bold text-white/70 px-1.5 py-0.5 rounded border border-white/12"
+            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+          >
+            {item.episodeNumber}화
+            {item.episodeTitle ? ` · ${item.episodeTitle}` : ""}
+          </span>
+        </div>
+
+        {/* ── Remaining Time — bottom right ────────────────────────────── */}
+        <div className="absolute bottom-4 right-3 text-[10px] font-semibold text-white/70 tabular-nums">
           {formatTime(remainSec)} 남음
         </div>
 
-        {/* Progress Bar — bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/15">
+        {/* ── Progress Bar — thick, at very bottom ─────────────────────── */}
+        <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-white/12">
           <div
-            className="h-full rounded-full"
-            style={{ width: `${item.progress}%`, background: "rgba(255,255,255,0.9)" }}
+            className="h-full rounded-full transition-[width] duration-500"
+            style={{ width: `${progressPct}%`, background: progressColor }}
           />
         </div>
       </div>
 
-      {/* Text Info */}
+      {/* ── Text Info ─────────────────────────────────────────────────────── */}
       <div className="mt-3 px-0.5">
+        {/* Series title */}
         <p className="text-white font-semibold text-[13px] md:text-sm truncate leading-tight">
           {item.seriesTitle}
         </p>
-        <div className="flex items-center justify-between mt-1">
-          <span className="text-white/42 text-[11px]">
-            {item.episodeNumber}화{item.episodeTitle ? ` · ${item.episodeTitle}` : ""}
-          </span>
-          <span className="text-[11px] font-bold tabular-nums text-white/60">
-            {item.progress}%
-          </span>
-        </div>
-        {item.lastWatched && (
-          <p className="text-[10px] text-white/30 mt-0.5">{formatLastWatched(item.lastWatched)}</p>
-        )}
 
-        {/* Progress Bar */}
-        <div className="mt-2 h-[2px] bg-white/10 rounded-full overflow-hidden">
-          <div
-            className="h-full rounded-full"
-            style={{ width: `${item.progress}%`, background: "rgba(255,255,255,0.75)" }}
-          />
+        {/* Progress row */}
+        <div className="flex items-center justify-between mt-1.5">
+          <span className="text-white/40 text-[11px]">
+            {item.lastWatched ? formatLastWatched(item.lastWatched) : `${item.episodeNumber}화`}
+          </span>
+          {/* Progress percentage — bold, right */}
+          <div className="flex items-center gap-1">
+            <div
+              className="w-[52px] h-[3px] rounded-full bg-white/10 overflow-hidden"
+            >
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${progressPct}%`, background: progressColor }}
+              />
+            </div>
+            <span
+              className="text-[11px] font-bold tabular-nums"
+              style={{ color: progressPct >= 85 ? "#e50914" : "rgba(255,255,255,0.65)" }}
+            >
+              {progressPct}%
+            </span>
+          </div>
         </div>
 
-        {/* Resume Button */}
+        {/* ── Resume Button ────────────────────────────────────────────── */}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onPlay();
-          }}
+          onClick={(e) => { e.stopPropagation(); onPlay(); }}
           className={[
             "mt-2.5 w-full flex items-center justify-center gap-1.5 py-2 rounded-lg",
             "text-[11px] font-bold tracking-wide",
-            "bg-white/8 text-white/75 border border-white/12",
-            "hover:bg-white/15 hover:text-white hover:border-white/25",
-            "transition-all duration-200",
-            "active:scale-[0.98]",
+            "bg-white text-black",
+            "hover:bg-white/90",
+            "transition-all duration-200 active:scale-[0.98] shadow-sm",
           ].join(" ")}
         >
-          <Play size={11} className="fill-current" />
+          <Play size={11} className="fill-black text-black" />
           이어보기
         </button>
       </div>

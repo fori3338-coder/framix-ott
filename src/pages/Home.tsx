@@ -203,6 +203,7 @@ export default function Home() {
           subtitle="AI가 분석한 나만의 맞춤 픽"
           dramas={recommendedList}
           badge="AI Pick"
+          cardVariant="featured"
         />
 
         {/* Section separator */}
@@ -233,6 +234,7 @@ export default function Home() {
           dramas={originalsList}
           accent
           badge="ORIGINAL"
+          cardVariant="editor"
         />
 
         {dramas.length === 0 && (
