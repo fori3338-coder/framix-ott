@@ -54,8 +54,8 @@ export default function BottomNav() {
             >
               <span className={`fbnav-icon-wrap${isActive ? " is-active" : ""}`}>
                 <Icon
-                  size={isActive ? 23 : 21}
-                  strokeWidth={isActive ? 2.3 : 1.7}
+                  size={22}
+                  strokeWidth={isActive ? 2.2 : 1.6}
                   aria-hidden="true"
                 />
               </span>

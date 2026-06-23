@@ -118,34 +118,14 @@ export default function FramixOriginalStrip({ dramas }: FramixOriginalStripProps
           <>
             <button
               onClick={() => setActiveIdx((i) => (i - 1 + items.length) % items.length)}
-              className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full items-center justify-center active:scale-95"
-              style={{
-                background: "rgba(0,0,0,0.55)",
-                backdropFilter: "blur(20px) saturate(180%)",
-                WebkitBackdropFilter: "blur(20px) saturate(180%)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)",
-                transition: "all 0.2s cubic-bezier(0.22,1,0.36,1)",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.80)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.55)")}
+              className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 border border-white/15 items-center justify-center hover:bg-black/85 hover:border-white/35 transition-all duration-200 active:scale-95"
               aria-label="이전"
             >
               <ChevronLeft size={18} className="text-white" />
             </button>
             <button
               onClick={() => setActiveIdx((i) => (i + 1) % items.length)}
-              className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full items-center justify-center active:scale-95"
-              style={{
-                background: "rgba(0,0,0,0.55)",
-                backdropFilter: "blur(20px) saturate(180%)",
-                WebkitBackdropFilter: "blur(20px) saturate(180%)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)",
-                transition: "all 0.2s cubic-bezier(0.22,1,0.36,1)",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.80)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.55)")}
+              className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 border border-white/15 items-center justify-center hover:bg-black/85 hover:border-white/35 transition-all duration-200 active:scale-95"
               aria-label="다음"
             >
               <ChevronRight size={18} className="text-white" />
@@ -178,11 +158,7 @@ export default function FramixOriginalStrip({ dramas }: FramixOriginalStripProps
           gap: 1px;
         }
         .original-strip-card {
-          box-shadow: 0 48px 120px -20px rgba(0,0,0,0.98), 0 0 0 1px rgba(212,175,55,0.18), 0 0 60px -8px rgba(212,175,55,0.12), inset 0 1px 0 rgba(255,255,255,0.05);
-          transition: box-shadow 0.4s ease;
-        }
-        .original-strip-card:hover {
-          box-shadow: 0 56px 140px -20px rgba(0,0,0,1), 0 0 0 1.5px rgba(212,175,55,0.32), 0 0 80px -8px rgba(212,175,55,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+          box-shadow: 0 32px 80px -16px rgba(0,0,0,0.85), 0 0 0 1px rgba(212,175,55,0.08);
         }
       `}</style>
     </section>
@@ -300,17 +276,15 @@ function OriginalThumb({
   return (
     <button
       onClick={onClick}
-      className="relative flex-shrink-0 rounded-xl overflow-hidden focus:outline-none"
+      className="relative flex-shrink-0 rounded-xl overflow-hidden transition-all duration-300 focus:outline-none"
       style={{
         width: "clamp(90px, 16vw, 140px)",
         aspectRatio: "16/9",
         opacity: 0,
         animation: revealed ? `fade-in-up 0.5s cubic-bezier(0.22,1,0.36,1) ${index * 80}ms both` : "none",
         boxShadow: active
-          ? "0 0 0 2.5px #D4AF37, 0 0 0 4px rgba(212,175,55,0.25), 0 10px 40px -8px rgba(212,175,55,0.7), 0 0 28px -2px rgba(212,175,55,0.45)"
-          : "0 0 0 1px rgba(255,255,255,0.08), 0 4px 16px -4px rgba(0,0,0,0.4)",
-        transition: "all 0.32s cubic-bezier(0.22,1,0.36,1)",
-        transform: active ? "scale(1.04)" : "scale(1)",
+          ? "0 0 0 2px #D4AF37, 0 8px 24px -8px rgba(212,175,55,0.4)"
+          : "0 0 0 1px rgba(255,255,255,0.1)",
       }}
       aria-label={drama.title}
     >

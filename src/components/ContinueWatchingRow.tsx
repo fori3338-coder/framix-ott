@@ -191,19 +191,16 @@ function ContinueWatchingCard({
 }) {
   const remainSec = Math.max(0, item.durationSeconds - item.progressSeconds);
   const progressPct = Math.min(100, Math.max(0, item.progress));
-  const isNearDone = progressPct >= 85;
-  const isAlmostDone = remainSec < 120;
 
-  // 남은 화수 계산 (totalEpisodes가 있을 경우)
-  const remainingEps = item.totalEpisodes && item.episodeNumber
-    ? Math.max(0, item.totalEpisodes - item.episodeNumber)
-    : null;
+  // Progress color: red-ish for near-done (≥85%), white otherwise
+  const progressColor = progressPct >= 85 ? "#e50914" : "rgba(255,255,255,0.88)";
 
   return (
     <div
       className="relative shrink-0 cursor-pointer group"
       style={{
         width: "clamp(280px, 42vw, 380px)",
+        height: "clamp(280px, 38vw, 340px)",
         scrollSnapAlign: "start",
         opacity: 0,
         animation: revealed
@@ -212,25 +209,23 @@ function ContinueWatchingCard({
       }}
       onClick={onPlay}
     >
-      {/* ── Thumbnail 16:9 ─────────────────────────────────────────── */}
+      {/* ── Thumbnail 16:9 with Netflix-style enhancement ─────────────── */}
       <div
         className={[
-          "relative w-full rounded-xl overflow-hidden bg-zinc-900",
-          "transition-[transform,box-shadow] duration-[320ms]",
+          "relative w-full h-3/5 rounded-lg overflow-hidden bg-zinc-900",
+          "transition-[transform,box-shadow] duration-[300ms]",
           "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
-          "md:group-hover:scale-[1.04]",
-          "md:group-hover:shadow-[0_28px_64px_rgba(0,0,0,0.70)]",
+          "md:group-hover:scale-[1.06]",
+          "md:group-hover:shadow-[0_24px_60px_rgba(0,0,0,0.65)]",
           "will-change-[transform]",
-          "ring-1 ring-white/8 md:group-hover:ring-white/20",
         ].join(" ")}
-        style={{ aspectRatio: "16/9" }}
       >
         <img
           src={item.thumbnail}
           alt={item.seriesTitle}
           className={[
             "w-full h-full object-cover",
-            "transition-transform duration-[320ms]",
+            "transition-transform duration-[300ms]",
             "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
             "md:group-hover:scale-[1.08]",
             "will-change-transform",
@@ -242,159 +237,96 @@ function ContinueWatchingCard({
           }}
         />
 
-        {/* Cinematic gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
+        {/* Dark Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-        {/* ── Play Button ──────────────────────────────────────────── */}
+        {/* ── Play Button: Large, always visible, emphasized on hover ──── */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div
             className={[
-              "w-14 h-14 rounded-full flex items-center justify-center",
-              "transition-[transform,opacity,background,box-shadow] duration-[280ms]",
-              "opacity-60 md:group-hover:opacity-100",
+              "w-14 h-14 rounded-full flex items-center justify-center shadow-lg",
+              "transition-[transform,opacity,background] duration-[280ms]",
+              // Resting: semi-visible
+              "opacity-50 md:group-hover:opacity-100",
               "scale-90 md:group-hover:scale-110",
-              "bg-white/80 md:group-hover:bg-white",
-              "shadow-[0_4px_20px_rgba(0,0,0,0.45)] md:group-hover:shadow-[0_8px_32px_rgba(0,0,0,0.6)]",
+              "bg-white/85 md:group-hover:bg-white",
             ].join(" ")}
           >
             <Play size={24} className="text-black fill-black ml-1" />
           </div>
         </div>
 
-        {/* ── Remove Button ──────────────────────────────────────── */}
+        {/* ── Remove Button ─────────────────────────────────────────────── */}
         <button
           onClick={onRemove}
           className={[
-            "absolute top-2.5 right-2.5 w-7 h-7 rounded-full",
-            "bg-black/70 border border-white/18",
-            "flex items-center justify-center text-white/55",
-            "hover:text-white hover:bg-black/90 hover:border-white/38",
+            "absolute top-3 right-3 w-8 h-8 rounded-full",
+            "bg-black/75 border border-white/20",
+            "flex items-center justify-center text-white/60",
+            "hover:text-white hover:bg-black/95 hover:border-white/40",
             "transition-all z-10",
             "opacity-0 md:group-hover:opacity-100",
             "active:scale-90",
           ].join(" ")}
           aria-label="이어보기 목록에서 삭제"
         >
-          <X size={12} />
+          <X size={14} />
         </button>
 
-        {/* ── Episode badge (top-left) ──────────────────────────── */}
-        <div className="absolute top-2.5 left-2.5 z-10">
+        {/* ── Episode Info badge ────────────────────────────────────────── */}
+        <div className="absolute top-3 left-3 z-10">
           <span
-            className="text-[9px] font-bold text-white/80 px-2 py-0.5 rounded-md border border-white/12"
-            style={{ background: "rgba(0,0,0,0.60)", backdropFilter: "blur(6px)" }}
+            className="text-[9px] font-bold text-white/75 px-2 py-1 rounded border border-white/15"
+            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
           >
-            {item.episodeNumber}화{item.episodeTitle ? ` · ${item.episodeTitle}` : ""}
+            {item.episodeNumber}화
+            {item.episodeTitle ? ` · ${item.episodeTitle}` : ""}
           </span>
         </div>
 
-        {/* ── Progress bar — bottom of thumbnail, thicker & more readable ── */}
-        <div className="absolute bottom-0 left-0 right-0">
-          {/* Track */}
-          <div className="h-[4px] bg-white/15 w-full">
-            <div
-              className="h-full transition-[width] duration-500 relative"
-              style={{
-                width: `${progressPct}%`,
-                background: isNearDone
-                  ? "linear-gradient(to right, #c0392b, #ff5252)"
-                  : "linear-gradient(to right, rgba(255,255,255,0.7), #ffffff)",
-                boxShadow: isNearDone
-                  ? "0 0 10px 2px rgba(255,82,82,0.6)"
-                  : "0 0 8px 2px rgba(255,255,255,0.45)",
-              }}
-            >
-              {/* Progress dot */}
-              <span
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-[8px] h-[8px] rounded-full"
-                style={{
-                  background: isNearDone ? "#ff5252" : "#ffffff",
-                  boxShadow: isNearDone
-                    ? "0 0 10px rgba(255,82,82,0.9)"
-                    : "0 0 8px rgba(255,255,255,0.9)",
-                }}
-              />
-            </div>
-          </div>
+        {/* ── Progress Bar ──────────────────────────────────────────────── */}
+        <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/15">
+          <div
+            className="h-full transition-[width] duration-500"
+            style={{ width: `${progressPct}%`, background: progressColor }}
+          />
         </div>
       </div>
 
-      {/* ── Info Section ──────────────────────────────────────────── */}
-      <div className="mt-3 flex flex-col gap-2">
+      {/* ── Info Section (Title, Progress, Time, Button) ────────────── */}
+      <div className="mt-3 h-2/5 flex flex-col justify-between">
+        {/* Series Title */}
+        <p className="text-white font-semibold text-[13px] md:text-sm truncate leading-tight">
+          {item.seriesTitle}
+        </p>
 
-        {/* Row 1: 제목 + 에피소드 */}
-        <div>
-          <p className="text-white font-bold text-[13px] md:text-[14px] truncate leading-tight">
-            {item.seriesTitle}
-          </p>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-white/45 text-[10px] font-medium truncate">
-              {item.episodeNumber}화{item.episodeTitle ? ` · ${item.episodeTitle}` : ""}
-            </span>
-            {/* 남은 화수 badge */}
-            {remainingEps !== null && remainingEps > 0 && (
-              <>
-                <span className="text-white/25 text-[9px]">·</span>
-                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded"
-                  style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)" }}>
-                  {remainingEps}화 남음
-                </span>
-              </>
-            )}
-          </div>
+        {/* Progress & Last Watched */}
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-white/50 text-[11px] font-medium">
+            {item.lastWatched ? formatLastWatched(item.lastWatched) : `${item.episodeNumber}화`}
+          </span>
+          <span className="text-white/60 text-[11px] font-bold tabular-nums">
+            {progressPct}%
+          </span>
         </div>
 
-        {/* Row 2: 진행률 시각적 바 + 퍼센트 + 시간 */}
-        <div className="flex flex-col gap-1.5">
-          {/* 진행률 텍스트 바 */}
-          <div className="flex items-center justify-between">
-            <span className="text-white/38 text-[10px] font-medium">
-              {item.lastWatched ? formatLastWatched(item.lastWatched) : ""}
-            </span>
-            <div className="flex items-center gap-2">
-              <span
-                className="text-[10px] font-bold tabular-nums"
-                style={{ color: isAlmostDone ? "rgba(255,82,82,0.9)" : "rgba(255,255,255,0.55)" }}
-              >
-                {formatTime(remainSec)} 남음
-              </span>
-              <span
-                className="text-[10px] font-black tabular-nums px-1.5 py-0.5 rounded"
-                style={{
-                  color: isNearDone ? "rgba(255,82,82,0.9)" : "rgba(255,255,255,0.75)",
-                  background: isNearDone ? "rgba(255,82,82,0.12)" : "rgba(255,255,255,0.09)",
-                }}
-              >
-                {progressPct}%
-              </span>
-            </div>
-          </div>
-          {/* 미니 Progress bar (info 영역에도 반복) */}
-          <div className="h-[2px] w-full bg-white/10 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-[width] duration-500"
-              style={{
-                width: `${progressPct}%`,
-                background: isNearDone
-                  ? "linear-gradient(to right, #c0392b, #ff5252)"
-                  : "rgba(255,255,255,0.55)",
-              }}
-            />
-          </div>
+        {/* Remaining Time */}
+        <div className="text-white/50 text-[10px] font-medium">
+          {formatTime(remainSec)} 남음
         </div>
 
-        {/* ── Resume Button ─────────────────────────────────── */}
+        {/* ── Resume Button (Always visible) ────────────────────────────── */}
         <button
           onClick={(e) => { e.stopPropagation(); onPlay(); }}
           className={[
             "w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg",
             "text-[11px] font-bold tracking-wide",
             "bg-white text-black",
-            "hover:bg-white/90 active:scale-[0.97]",
-            "transition-all duration-200 shadow-[0_4px_16px_rgba(0,0,0,0.3)]",
+            "hover:bg-white/95",
+            "transition-all duration-200 active:scale-[0.98] shadow-md",
           ].join(" ")}
         >
-          <Play size={11} className="fill-black text-black" />
+          <Play size={12} className="fill-black text-black" />
           이어보기
         </button>
       </div>

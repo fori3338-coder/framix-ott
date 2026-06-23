@@ -54,7 +54,6 @@ export interface ContinueWatchingItem {
   seriesTitle: string;
   poster: string;
   thumbnail: string;
-  totalEpisodes?: number;   // 남은 화수 표시용 (optional)
 }
 
 export interface HistoryItem {
