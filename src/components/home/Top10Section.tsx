@@ -104,19 +104,23 @@ function Top10Row({ drama, rank, revealed, index }: { drama: Drama; rank: number
             fontSize: "clamp(52px, 7.5vw, 88px)",
             display: "block",
             background: rank === 1
-              ? "linear-gradient(135deg, #FFD700 0%, #FFA500 30%, #FFD700 60%, #B8860B 100%)"
+              ? "linear-gradient(135deg, #FFD700 0%, #FFA500 25%, #FFE55C 50%, #FFD700 75%, #B8860B 100%)"
               : rank <= 3
-              ? "linear-gradient(135deg, #E8E8E8 0%, #C0C0C0 30%, #F0F0F0 60%, #A8A8A8 100%)"
-              : "linear-gradient(135deg, #888 0%, #bbb 40%, #888 100%)",
+              ? "linear-gradient(135deg, #F0F0F0 0%, #C8C8C8 25%, #FFFFFF 50%, #C0C0C0 75%, #A0A0A0 100%)"
+              : rank <= 5
+              ? "linear-gradient(135deg, #999 0%, #ccc 40%, #999 100%)"
+              : "linear-gradient(135deg, #777 0%, #aaa 40%, #777 100%)",
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
             WebkitTextFillColor: "transparent",
             textShadow: "none",
             filter: rank === 1
-              ? "drop-shadow(0 0 16px rgba(255,215,0,0.75)) drop-shadow(0 0 8px rgba(255,165,0,0.5)) drop-shadow(0 3px 6px rgba(0,0,0,0.8))"
+              ? "drop-shadow(0 0 18px rgba(255,215,0,0.85)) drop-shadow(0 0 8px rgba(255,180,0,0.6)) drop-shadow(0 3px 6px rgba(0,0,0,0.8))"
               : rank <= 3
-              ? "drop-shadow(0 0 8px rgba(224,224,224,0.6)) drop-shadow(0 0 4px rgba(192,192,192,0.5)) drop-shadow(0 3px 6px rgba(0,0,0,0.7))"
-              : "drop-shadow(0 3px 6px rgba(0,0,0,0.6))",
+              ? "drop-shadow(0 0 10px rgba(220,220,220,0.55)) drop-shadow(0 0 4px rgba(255,255,255,0.35)) drop-shadow(0 3px 6px rgba(0,0,0,0.75))"
+              : rank <= 5
+              ? "drop-shadow(0 0 5px rgba(180,180,180,0.3)) drop-shadow(0 2px 5px rgba(0,0,0,0.65))"
+              : "drop-shadow(0 2px 5px rgba(0,0,0,0.6))",
           }}
         >
           {rank}
@@ -131,7 +135,7 @@ function Top10Row({ drama, rank, revealed, index }: { drama: Drama; rank: number
           aspectRatio: "2/3",
           transform: hovered ? "scale(1.07)" : "scale(1)",
           transition: "transform 0.3s cubic-bezier(0.22,1,0.36,1)",
-          boxShadow: hovered ? "0 12px 40px -8px rgba(0,0,0,0.7)" : "0 4px 16px -4px rgba(0,0,0,0.5)",
+          boxShadow: hovered ? "0 16px 48px -8px rgba(0,0,0,0.85), 0 0 0 1.5px rgba(255,255,255,0.12)" : "0 4px 16px -4px rgba(0,0,0,0.5)",
         }}
       >
         {!imgErr ? (
@@ -213,16 +217,18 @@ function Top10MobileCard({ drama, rank, revealed, index }: { drama: Drama; rank:
             fontSize: "clamp(40px, 12vw, 56px)",
             display: "block",
             background: rank === 1
-              ? "linear-gradient(135deg, #FFD700 0%, #FFA500 30%, #FFD700 60%, #B8860B 100%)"
+              ? "linear-gradient(135deg, #FFD700 0%, #FFA500 25%, #FFE55C 50%, #FFD700 75%, #B8860B 100%)"
               : rank <= 3
-              ? "linear-gradient(135deg, #E8E8E8 0%, #C0C0C0 30%, #F0F0F0 60%, #A8A8A8 100%)"
+              ? "linear-gradient(135deg, #F0F0F0 0%, #C8C8C8 25%, #FFFFFF 50%, #C0C0C0 75%, #A0A0A0 100%)"
               : "linear-gradient(135deg, #777 0%, #aaa 40%, #777 100%)",
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
             WebkitTextFillColor: "transparent",
             filter: rank === 1
-              ? "drop-shadow(0 0 12px rgba(255,215,0,0.65)) drop-shadow(0 0 6px rgba(255,165,0,0.4)) drop-shadow(0 2px 4px rgba(0,0,0,0.7))"
-              : "drop-shadow(0 2px 4px rgba(0,0,0,0.6))",
+              ? "drop-shadow(0 0 14px rgba(255,215,0,0.8)) drop-shadow(0 0 6px rgba(255,180,0,0.55)) drop-shadow(0 3px 5px rgba(0,0,0,0.7))"
+              : rank <= 3
+              ? "drop-shadow(0 0 8px rgba(220,220,220,0.5)) drop-shadow(0 0 3px rgba(255,255,255,0.3)) drop-shadow(0 2px 5px rgba(0,0,0,0.65))"
+              : "drop-shadow(0 2px 4px rgba(0,0,0,0.55))",
           }}
         >
           {rank}

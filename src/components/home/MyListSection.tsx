@@ -157,9 +157,9 @@ function MyListCard({ drama, tab, cwItem }: { drama: Drama; index: number; tab: 
         style={{
           aspectRatio: "2/3",
           transform: hovered ? "scale(1.05) translateY(-6px)" : "scale(1) translateY(0)",
-          transition: "transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s cubic-bezier(0.22,1,0.36,1)",
+          transition: "transform 0.32s cubic-bezier(0.22,1,0.36,1), box-shadow 0.32s cubic-bezier(0.22,1,0.36,1)",
           boxShadow: hovered
-            ? "0 20px 56px -8px rgba(0,0,0,0.9), 0 0 0 1.5px rgba(212,175,55,0.5)"
+            ? "0 28px 72px -10px rgba(0,0,0,0.9), 0 0 0 2px rgba(212,175,55,0.5), 0 0 24px -4px rgba(212,175,55,0.25)"
             : "0 4px 16px -4px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06)",
           willChange: "transform, box-shadow",
         }}
@@ -171,8 +171,8 @@ function MyListCard({ drama, tab, cwItem }: { drama: Drama; index: number; tab: 
             loading="lazy"
             className="w-full h-full object-cover"
             style={{
-              transform: hovered ? "scale(1.12)" : "scale(1)",
-              transition: "transform 0.3s cubic-bezier(0.22,1,0.36,1)",
+              transform: hovered ? "scale(1.08)" : "scale(1)",
+              transition: "transform 0.38s cubic-bezier(0.22,1,0.36,1)",
             }}
             onError={() => setImgErr(true)}
           />

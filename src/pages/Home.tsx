@@ -39,7 +39,7 @@ function merge(dbDramas: Drama[], showcase: Drama[]): Drama[] {
 
 // ── Footer ────────────────────────────────────────────────────────────────
 function HomeFooter() {
-  const serviceLinks = ["이용약관", "개인정보처리방침", "고객센터", "공지사항", "1:1 문의", "콘텐츠 제휴", "광고 문의"];
+  const serviceLinks = ["이용약관", "개인정보처리방침", "고객센터", "공지사항", "1:1 문의", "콘텐츠 파트너십"];
   return (
     <footer className="framix-footer-v4">
       <div className="framix-footer-v4-inner">
@@ -50,8 +50,24 @@ function HomeFooter() {
           ))}
         </nav>
         <div className="framix-footer-v4-divider" />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 24px", marginBottom: "1.25rem" }}>
+          <span style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.38)", fontWeight: 500 }}>
+            콘텐츠 제휴 문의:{" "}
+            <a href="mailto:support@framix.co.kr" style={{ color: "rgba(212,175,55,0.7)", textDecoration: "underline", textUnderlineOffset: "2px", transition: "color 150ms ease" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(212,175,55,1)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(212,175,55,0.7)")}
+            >support@framix.co.kr</a>
+          </span>
+          <span style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.38)", fontWeight: 500 }}>
+            광고 문의:{" "}
+            <a href="mailto:support@framix.co.kr" style={{ color: "rgba(212,175,55,0.7)", textDecoration: "underline", textUnderlineOffset: "2px", transition: "color 150ms ease" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(212,175,55,1)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(212,175,55,0.7)")}
+            >support@framix.co.kr</a>
+          </span>
+        </div>
         <p className="framix-footer-v4-copy">
-          © 2025 FRAMIX. All rights reserved. · 본 서비스의 콘텐츠는 저작권법에 의해 보호됩니다. · support@framix.co.kr
+          © 2025 FRAMIX. All rights reserved. · 본 서비스의 콘텐츠는 저작권법에 의해 보호됩니다.
         </p>
       </div>
     </footer>

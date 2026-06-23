@@ -178,11 +178,11 @@ export default function FramixOriginalStrip({ dramas }: FramixOriginalStripProps
           gap: 1px;
         }
         .original-strip-card {
-          box-shadow: 0 40px 100px -20px rgba(0,0,0,0.95), 0 0 0 1px rgba(212,175,55,0.12), 0 0 40px -10px rgba(212,175,55,0.08);
+          box-shadow: 0 48px 120px -20px rgba(0,0,0,0.98), 0 0 0 1px rgba(212,175,55,0.18), 0 0 60px -8px rgba(212,175,55,0.12), inset 0 1px 0 rgba(255,255,255,0.05);
           transition: box-shadow 0.4s ease;
         }
         .original-strip-card:hover {
-          box-shadow: 0 48px 120px -20px rgba(0,0,0,0.98), 0 0 0 1px rgba(212,175,55,0.22), 0 0 60px -10px rgba(212,175,55,0.14);
+          box-shadow: 0 56px 140px -20px rgba(0,0,0,1), 0 0 0 1.5px rgba(212,175,55,0.32), 0 0 80px -8px rgba(212,175,55,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
         }
       `}</style>
     </section>
@@ -307,8 +307,8 @@ function OriginalThumb({
         opacity: 0,
         animation: revealed ? `fade-in-up 0.5s cubic-bezier(0.22,1,0.36,1) ${index * 80}ms both` : "none",
         boxShadow: active
-          ? "0 0 0 2px #D4AF37, 0 8px 32px -8px rgba(212,175,55,0.55), 0 0 20px -4px rgba(212,175,55,0.35)"
-          : "0 0 0 1px rgba(255,255,255,0.08)",
+          ? "0 0 0 2.5px #D4AF37, 0 0 0 4px rgba(212,175,55,0.25), 0 10px 40px -8px rgba(212,175,55,0.7), 0 0 28px -2px rgba(212,175,55,0.45)"
+          : "0 0 0 1px rgba(255,255,255,0.08), 0 4px 16px -4px rgba(0,0,0,0.4)",
         transition: "all 0.32s cubic-bezier(0.22,1,0.36,1)",
         transform: active ? "scale(1.04)" : "scale(1)",
       }}

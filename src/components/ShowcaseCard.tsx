@@ -244,15 +244,13 @@ function DefaultCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" 
       <div
         className={[
           "relative w-full aspect-[9/16] rounded-xl overflow-hidden bg-[#0f0f10]",
-          "ring-1",
-          drama.isOriginal ? "ring-yellow-500/40 md:group-hover:ring-yellow-400/60" : "ring-white/10 md:group-hover:ring-white/24",
+          "ring-1 ring-white/10",
           "shadow-[0_2px_8px_rgba(0,0,0,0.3),0_8px_24px_rgba(0,0,0,0.45),0_16px_48px_rgba(0,0,0,0.6)]",
           "transition-[transform,box-shadow,ring-color] duration-[320ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
-          drama.isOriginal ? "md:group-hover:scale-[1.04]" : "md:group-hover:scale-[1.08]",
+          "md:group-hover:scale-[1.08]",
           "md:group-hover:-translate-y-[8px]",
-          drama.isOriginal 
-            ? "md:group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.4),0_20px_48px_rgba(0,0,0,0.6),0_32px_80px_rgba(0,0,0,0.75),0_0_20px_rgba(255,215,0,0.2)]"
-            : "md:group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.4),0_20px_48px_rgba(0,0,0,0.6),0_32px_80px_rgba(0,0,0,0.75)]",
+          "md:group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.4),0_20px_48px_rgba(0,0,0,0.6),0_32px_80px_rgba(0,0,0,0.75)]",
+          "md:group-hover:ring-white/24",
           "group-active:scale-[0.97]",
           "will-change-[transform,box-shadow]",
         ].join(" ")}
