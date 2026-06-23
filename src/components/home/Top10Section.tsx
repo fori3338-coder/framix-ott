@@ -150,7 +150,7 @@ function Top10Row({ drama, rank, revealed, index }: { drama: Drama; rank: number
       <div className="flex-1 min-w-0 px-3">
         <p className="font-bold text-[13px] text-white/90 truncate">{drama.title}</p>
         <div className="flex items-center gap-1.5 mt-0.5">
-          <svg width="9" height="9" viewBox="0 0 10 10" fill="#D4AF37"><path d="M5 0.5l1.3 2.6 2.9.4-2.1 2 .5 2.9L5 6.9l-2.6 1.5.5-2.9-2.1-2 2.9-.4z" /></svg>
+          <svg width="9" height="9" viewBox="0 0 10 10" fill="#ff3e6c"><path d="M5 0.5l1.3 2.6 2.9.4-2.1 2 .5 2.9L5 6.9l-2.6 1.5.5-2.9-2.1-2 2.9-.4z" /></svg>
           <span className="text-[11px] text-white/55">{drama.rating.toFixed(1)}</span>
           <span className="text-[10px] text-white/25">·</span>
           <span className="text-[11px] text-white/40">{drama.totalEpisodes}부작</span>

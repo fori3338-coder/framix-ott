@@ -57,7 +57,7 @@ function RevealSection({
 // ─── Skeleton ─────────────────────────────────────────────────────────────
 function DetailSkeleton() {
   return (
-    <div className="animate-pulse min-h-screen bg-[#050505]">
+    <div className="animate-pulse min-h-screen bg-[#07080b]">
       <div className="w-full h-[60vh] md:h-[75vh] bg-[#141416]" />
       <div className="px-5 md:px-12 mt-6 relative z-10 space-y-4">
         <div className="flex gap-6">
@@ -81,7 +81,7 @@ function EpisodeProgress({ progress }: { progress: number }) {
   return (
     <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 rounded-b-xl overflow-hidden">
       <div
-        className="h-full bg-[#D4AF37] rounded-full"
+        className="h-full bg-[#ff3e6c] rounded-full"
         style={{ width: `${Math.min(progress, 100)}%` }}
       />
     </div>
@@ -111,10 +111,10 @@ export default function DramaDetail() {
   if (loading) return <DetailSkeleton />;
   if (error || !drama) {
     return (
-      <div className="px-4 py-24 text-center min-h-screen bg-[#050505] flex flex-col items-center justify-center">
+      <div className="px-4 py-24 text-center min-h-screen bg-[#07080b] flex flex-col items-center justify-center">
         <p className="text-white/50 text-lg">작품을 찾을 수 없습니다.</p>
         {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
-        <Link to="/" className="text-[#D4AF37] underline mt-4 inline-block font-medium">
+        <Link to="/" className="text-[#ff3e6c] underline mt-4 inline-block font-medium">
           홈으로 돌아가기
         </Link>
       </div>
@@ -141,7 +141,7 @@ export default function DramaDetail() {
     : "1화 재생";
 
   return (
-    <div className="min-h-screen bg-[#050505] overflow-x-hidden">
+    <div className="min-h-screen bg-[#07080b] overflow-x-hidden">
 
       {/* ═══════════════════════════════════════════════════
           CINEMATIC BACKDROP
@@ -158,7 +158,7 @@ export default function DramaDetail() {
         {/* Multi-layer cinematic gradients */}
         {/* Bottom — deep bleed */}
         <div className="absolute inset-0 pointer-events-none" style={{
-          background: "linear-gradient(to top, #050505 0%, rgba(5,5,5,0.95) 10%, rgba(5,5,5,0.7) 28%, rgba(5,5,5,0.2) 55%, transparent 78%)"
+          background: "linear-gradient(to top, #07080b 0%, rgba(5,5,5,0.95) 10%, rgba(5,5,5,0.7) 28%, rgba(5,5,5,0.2) 55%, transparent 78%)"
         }} />
         {/* Left vignette — desktop */}
         <div className="absolute inset-0 pointer-events-none hidden md:block" style={{
@@ -190,7 +190,7 @@ export default function DramaDetail() {
         {drama.isExclusive && (
           <div className="absolute top-4 right-4 z-20">
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black
-              tracking-widest uppercase bg-[#D4AF37] text-black shadow-[0_4px_16px_rgba(212,175,55,0.4)]">
+              tracking-widest uppercase bg-[#ff3e6c] text-black shadow-[0_4px_16px_rgba(212,175,55,0.4)]">
               FRAMIX 독점
             </span>
           </div>
@@ -236,8 +236,8 @@ export default function DramaDetail() {
             {/* Meta chips */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
-                bg-[#D4AF37]/12 border border-[#D4AF37]/25 text-[#D4AF37] text-xs font-bold">
-                <Star size={11} className="fill-[#D4AF37]" />
+                bg-[#ff3e6c]/12 border border-[#ff3e6c]/25 text-[#ff3e6c] text-xs font-bold">
+                <Star size={11} className="fill-[#ff3e6c]" />
                 {drama.rating.toFixed(1)}
               </span>
               <span className="text-white/40 text-xs font-medium">{drama.year}</span>
@@ -279,8 +279,8 @@ export default function DramaDetail() {
         )}
         {/* Meta row */}
         <div className="flex flex-wrap items-center gap-2 mb-1">
-          <span className="inline-flex items-center gap-1 text-[#D4AF37] text-xs font-bold">
-            <Star size={11} className="fill-[#D4AF37]" />
+          <span className="inline-flex items-center gap-1 text-[#ff3e6c] text-xs font-bold">
+            <Star size={11} className="fill-[#ff3e6c]" />
             {drama.rating.toFixed(1)}
           </span>
           <span className="text-white/40 text-xs">{drama.year}</span>
@@ -311,20 +311,20 @@ export default function DramaDetail() {
             {cwForDrama && (
               <RevealSection delay={0}>
                 <div className="flex items-center gap-3 mb-5 px-4 py-3 rounded-2xl
-                  bg-[#D4AF37]/8 border border-[#D4AF37]/18 backdrop-blur-sm">
-                  <TvMinimalPlay size={16} className="text-[#D4AF37] shrink-0" />
+                  bg-[#ff3e6c]/8 border border-[#ff3e6c]/18 backdrop-blur-sm">
+                  <TvMinimalPlay size={16} className="text-[#ff3e6c] shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-[#D4AF37] font-semibold mb-1">
+                    <p className="text-xs text-[#ff3e6c] font-semibold mb-1">
                       {cwForDrama.episodeNumber}화 · {cwForDrama.episodeTitle || `${cwForDrama.episodeNumber}화`}
                     </p>
                     <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-[#D4AF37] rounded-full transition-all"
+                        className="h-full bg-[#ff3e6c] rounded-full transition-all"
                         style={{ width: `${cwForDrama.progress}%` }}
                       />
                     </div>
                   </div>
-                  <span className="text-[11px] text-[#D4AF37]/60 shrink-0">{cwForDrama.progress}%</span>
+                  <span className="text-[11px] text-[#ff3e6c]/60 shrink-0">{cwForDrama.progress}%</span>
                 </div>
               </RevealSection>
             )}
@@ -398,8 +398,8 @@ export default function DramaDetail() {
 
                 {/* Rating */}
                 <div className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-xl bg-[#D4AF37]/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <Star size={13} className="text-[#D4AF37] fill-[#D4AF37]" />
+                  <div className="w-7 h-7 rounded-xl bg-[#ff3e6c]/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <Star size={13} className="text-[#ff3e6c] fill-[#ff3e6c]" />
                   </div>
                   <div>
                     <p className="text-[10px] text-white/28 font-semibold uppercase tracking-widest mb-1">평점</p>
@@ -508,8 +508,8 @@ export default function DramaDetail() {
                 ))}
                 {drama.tags.map((t) => (
                   <span key={t} className="text-xs px-3.5 py-1.5 rounded-full
-                    bg-[#D4AF37]/8 text-[#D4AF37]/70 border border-[#D4AF37]/15
-                    hover:bg-[#D4AF37]/14 transition-colors cursor-default">
+                    bg-[#ff3e6c]/8 text-[#ff3e6c]/70 border border-[#ff3e6c]/15
+                    hover:bg-[#ff3e6c]/14 transition-colors cursor-default">
                     #{t}
                   </span>
                 ))}
@@ -555,14 +555,14 @@ export default function DramaDetail() {
                       "group flex items-center gap-3 md:gap-4 p-3.5 rounded-2xl",
                       "transition-all duration-200 active:scale-[0.99]",
                       isCurrent
-                        ? "border border-[#D4AF37]/22 bg-[#D4AF37]/[0.045] hover:bg-[#D4AF37]/[0.07]"
+                        ? "border border-[#ff3e6c]/22 bg-[#ff3e6c]/[0.045] hover:bg-[#ff3e6c]/[0.07]"
                         : "border border-white/[0.055] bg-white/[0.025] hover:bg-white/[0.06] hover:border-white/[0.11]",
                     ].join(" ")}
                     style={{ animationDelay: `${idx * 22}ms` }}
                   >
                     {/* Thumbnail */}
                     <div className="relative w-28 md:w-40 aspect-video rounded-xl overflow-hidden shrink-0
-                      bg-[#181818] ring-1 ring-white/[0.05]">
+                      bg-[#14161d] ring-1 ring-white/[0.05]">
                       <img
                         src={ep.thumbnail || drama.poster}
                         alt={ep.title || `${ep.number}화`}
@@ -589,15 +589,15 @@ export default function DramaDetail() {
                       {!ep.isFree && (
                         <span className="absolute top-1.5 left-1.5 flex items-center gap-1
                           bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
-                          <Lock size={9} className="text-[#D4AF37]" />
-                          <span className="text-[9px] text-[#D4AF37] font-bold">VIP</span>
+                          <Lock size={9} className="text-[#ff3e6c]" />
+                          <span className="text-[9px] text-[#ff3e6c] font-bold">VIP</span>
                         </span>
                       )}
                       {/* Watch progress bar */}
                       {cwEp && <EpisodeProgress progress={cwEp.progress} />}
                       {/* Current indicator */}
                       {isCurrent && (
-                        <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#D4AF37]
+                        <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#ff3e6c]
                           shadow-[0_0_6px_rgba(212,175,55,0.8)]" />
                       )}
                     </div>
@@ -605,7 +605,7 @@ export default function DramaDetail() {
                     {/* Episode number chip */}
                     <div className={[
                       "hidden sm:flex w-8 h-8 shrink-0 items-center justify-center rounded-xl text-xs font-black",
-                      isCurrent ? "bg-[#D4AF37]/15 text-[#D4AF37]" : "bg-white/[0.055] text-white/35",
+                      isCurrent ? "bg-[#ff3e6c]/15 text-[#ff3e6c]" : "bg-white/[0.055] text-white/35",
                     ].join(" ")}>
                       {ep.number}
                     </div>
@@ -615,15 +615,15 @@ export default function DramaDetail() {
                       <div className="flex items-center gap-2 mb-1">
                         <p className={[
                           "text-sm md:text-[15px] font-bold leading-snug transition-colors truncate",
-                          isCurrent ? "text-[#D4AF37]" : "text-white/88 group-hover:text-white",
+                          isCurrent ? "text-[#ff3e6c]" : "text-white/88 group-hover:text-white",
                         ].join(" ")}>
                           {ep.title || `${ep.number}화`}
                         </p>
                         {!ep.isFree && (
-                          <span className="shrink-0 text-[10px] text-[#D4AF37] font-black">VIP</span>
+                          <span className="shrink-0 text-[10px] text-[#ff3e6c] font-black">VIP</span>
                         )}
                         {isCurrent && (
-                          <span className="shrink-0 text-[10px] text-[#D4AF37]/70 font-semibold bg-[#D4AF37]/10 px-1.5 py-0.5 rounded-md">
+                          <span className="shrink-0 text-[10px] text-[#ff3e6c]/70 font-semibold bg-[#ff3e6c]/10 px-1.5 py-0.5 rounded-md">
                             시청 중
                           </span>
                         )}
@@ -646,7 +646,7 @@ export default function DramaDetail() {
                       size={16}
                       className={[
                         "shrink-0 transition-colors hidden md:block",
-                        isCurrent ? "text-[#D4AF37]/40 group-hover:text-[#D4AF37]/70" : "text-white/18 group-hover:text-white/45",
+                        isCurrent ? "text-[#ff3e6c]/40 group-hover:text-[#ff3e6c]/70" : "text-white/18 group-hover:text-white/45",
                       ].join(" ")}
                     />
                   </Link>

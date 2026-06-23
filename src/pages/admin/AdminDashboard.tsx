@@ -1071,7 +1071,7 @@ export default function AdminDashboard() {
     return { line, area, pts, w, h };
   }, [viewsChartData, maxVal]);
 
-  const palette = ["#D4AF37","#f0d77b","#9c7e23","#caa84b","#8a6c1d","#3a2f10"];
+  const palette = ["#ff3e6c","#ff7196","#d31a52","#caa84b","#8a6c1d","#3a2f10"];
 
   return (
     <div className="px-4 md:px-8 pt-20 md:pt-24 pb-10 animate-fade-in admin-grid-bg min-h-screen">
@@ -1140,12 +1140,12 @@ export default function AdminDashboard() {
             <svg viewBox="0 0 100 32" className="w-full h-8 mt-2 overflow-visible">
               <defs>
                 <linearGradient id={`g-${s.label}`} x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#D4AF37" stopOpacity="0.5" />
-                  <stop offset="100%" stopColor="#D4AF37" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#ff3e6c" stopOpacity="0.5" />
+                  <stop offset="100%" stopColor="#ff3e6c" stopOpacity="0" />
                 </linearGradient>
               </defs>
               <path d={`${sparkPath(s.spark)} L100,32 L0,32 Z`} fill={`url(#g-${s.label})`} />
-              <path d={sparkPath(s.spark)} fill="none" stroke="#D4AF37" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+              <path d={sparkPath(s.spark)} fill="none" stroke="#ff3e6c" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
             </svg>
           </div>
         ))}
@@ -1285,8 +1285,8 @@ export default function AdminDashboard() {
               <svg viewBox="0 0 600 140" className="w-full h-32 md:h-40" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="revAreaGold" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#D4AF37" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#D4AF37" stopOpacity="0" />
+                    <stop offset="0%" stopColor="#ff3e6c" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#ff3e6c" stopOpacity="0" />
                   </linearGradient>
                 </defs>
                 {[0.25, 0.5, 0.75].map((p) => (
@@ -1304,12 +1304,12 @@ export default function AdminDashboard() {
                   return (
                     <>
                       {area && <path d={area} fill="url(#revAreaGold)" />}
-                      {line && <path d={line} fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
+                      {line && <path d={line} fill="none" stroke="#ff3e6c" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
                       {pts.map(([x, y], i) =>
                         i === pts.length - 1 ? (
                           <g key={i}>
-                            <circle cx={x} cy={y} r="6" fill="#D4AF37" opacity="0.25" />
-                            <circle cx={x} cy={y} r="3" fill="#D4AF37" />
+                            <circle cx={x} cy={y} r="6" fill="#ff3e6c" opacity="0.25" />
+                            <circle cx={x} cy={y} r="3" fill="#ff3e6c" />
                           </g>
                         ) : null
                       )}
@@ -1368,8 +1368,8 @@ export default function AdminDashboard() {
             <svg viewBox={`0 0 ${areaPath.w} ${areaPath.h}`} className="w-full h-44 md:h-56" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="areaGold" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#D4AF37" stopOpacity="0.5" />
-                  <stop offset="100%" stopColor="#D4AF37" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#ff3e6c" stopOpacity="0.5" />
+                  <stop offset="100%" stopColor="#ff3e6c" stopOpacity="0" />
                 </linearGradient>
               </defs>
               {[0.25, 0.5, 0.75].map((p) => (
@@ -1377,12 +1377,12 @@ export default function AdminDashboard() {
                   stroke="#2a2a2c" strokeDasharray="3 4" />
               ))}
               {areaPath.area && <path d={areaPath.area} fill="url(#areaGold)" />}
-              {areaPath.line && <path d={areaPath.line} fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
+              {areaPath.line && <path d={areaPath.line} fill="none" stroke="#ff3e6c" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
               {areaPath.pts.map(([x, y], i) =>
                 i === areaPath.pts.length - 1 ? (
                   <g key={i}>
-                    <circle cx={x} cy={y} r="6" fill="#D4AF37" opacity="0.25" />
-                    <circle cx={x} cy={y} r="3" fill="#D4AF37" />
+                    <circle cx={x} cy={y} r="6" fill="#ff3e6c" opacity="0.25" />
+                    <circle cx={x} cy={y} r="3" fill="#ff3e6c" />
                   </g>
                 ) : null
               )}
@@ -1420,7 +1420,7 @@ export default function AdminDashboard() {
                       return el;
                     });
                   })()}
-                  <circle cx="50" cy="50" r="26" fill="#0f0f10" />
+                  <circle cx="50" cy="50" r="26" fill="#0d0f14" />
                 </svg>
               </div>
               <div className="space-y-1.5">
@@ -1709,7 +1709,7 @@ export default function AdminDashboard() {
                     {/* 자막 관리 */}
                     <button
                       onClick={() => setSubtitleTarget({ id: d.id, title: d.title })}
-                      className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-white hover:text-[#D4AF37] hover:border-[#D4AF37]/40 transition-colors"
+                      className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-white hover:text-[#ff3e6c] hover:border-[#ff3e6c]/40 transition-colors"
                       aria-label="자막 관리"
                       title="자막 관리"
                     >

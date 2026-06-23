@@ -158,7 +158,7 @@ export default function Subscription() {
               <div className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden">
                 <div
                   className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-10"
-                  style={{ background: "radial-gradient(circle, #D4AF37, transparent 70%)" }}
+                  style={{ background: "radial-gradient(circle, #ff3e6c, transparent 70%)" }}
                 />
               </div>
 
@@ -201,7 +201,7 @@ export default function Subscription() {
                 disabled={loadingPlan === plan.id}
                 className="w-full py-4 rounded-xl font-black text-base text-black tracking-wide transition-all duration-200 hover:brightness-110 active:scale-[0.97] shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{
-                  background: "linear-gradient(135deg, #f0d77b 0%, #D4AF37 50%, #9c7e23 100%)",
+                  background: "linear-gradient(135deg, #ff7196 0%, #ff3e6c 50%, #d31a52 100%)",
                   boxShadow: "0 4px 24px rgba(212,175,55,0.35)",
                 }}
               >

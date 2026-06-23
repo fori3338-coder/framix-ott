@@ -20,7 +20,7 @@ type GenreKey = "romance" | "revenge" | "chaebol" | "contract" | "timeloop";
 const GENRES = [
   { key: "romance" as GenreKey, label: "로맨스", icon: <Heart size={14} />, accent: "#ec4899", bg: "rgba(236,72,153,0.12)" },
   { key: "revenge" as GenreKey, label: "복수", icon: <Swords size={14} />, accent: "#ef4444", bg: "rgba(239,68,68,0.12)" },
-  { key: "chaebol" as GenreKey, label: "재벌", icon: <Crown size={14} />, accent: "#D4AF37", bg: "rgba(212,175,55,0.12)" },
+  { key: "chaebol" as GenreKey, label: "재벌", icon: <Crown size={14} />, accent: "#ff3e6c", bg: "rgba(212,175,55,0.12)" },
   { key: "contract" as GenreKey, label: "계약결혼", icon: <Handshake size={14} />, accent: "#a855f7", bg: "rgba(168,85,247,0.12)" },
   { key: "timeloop" as GenreKey, label: "타임루프", icon: <Clock size={14} />, accent: "#3b82f6", bg: "rgba(59,130,246,0.12)" },
 ];
@@ -175,7 +175,7 @@ function GenreCard({ drama, index, accentColor }: { drama: Drama; index: number;
         <div className="absolute inset-0 flex flex-col justify-end p-2 transition-opacity duration-200" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.88) 0%, transparent 55%)", opacity: hovered ? 1 : 0 }}>
           <p className="text-[9px] md:text-[10px] font-bold text-white truncate">{drama.title}</p>
           <div className="flex items-center gap-1 mt-0.5">
-            <svg width="7" height="7" viewBox="0 0 10 10" fill="#D4AF37"><path d="M5 0.5l1.3 2.6 2.9.4-2.1 2 .5 2.9L5 6.9l-2.6 1.5.5-2.9-2.1-2 2.9-.4z" /></svg>
+            <svg width="7" height="7" viewBox="0 0 10 10" fill="#ff3e6c"><path d="M5 0.5l1.3 2.6 2.9.4-2.1 2 .5 2.9L5 6.9l-2.6 1.5.5-2.9-2.1-2 2.9-.4z" /></svg>
             <span className="text-[8px] text-white/50">{drama.rating.toFixed(1)}</span>
           </div>
         </div>

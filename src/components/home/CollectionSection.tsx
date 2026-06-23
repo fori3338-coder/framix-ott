@@ -38,7 +38,7 @@ export default function CollectionSection({ romance, chaebol, timeloop }: Collec
 
   const collections: Collection[] = [
     { title: "복수 컬렉션", subtitle: "통쾌한 반전과 복수의 카타르시스", color: "rgba(127,29,29,0.35)", accent: "#ef4444", dramas: chaebol.length > 0 ? chaebol : romance },
-    { title: "재벌 컬렉션", subtitle: "화려한 상류층의 은밀한 이야기", color: "rgba(120,90,0,0.35)", accent: "#D4AF37", dramas: chaebol },
+    { title: "재벌 컬렉션", subtitle: "화려한 상류층의 은밀한 이야기", color: "rgba(120,90,0,0.35)", accent: "#ff3e6c", dramas: chaebol },
     { title: "타임루프 컬렉션", subtitle: "운명을 바꾸는 두 번째 기회", color: "rgba(30,58,138,0.35)", accent: "#60a5fa", dramas: timeloop.length > 0 ? timeloop : romance },
   ].filter((c) => c.dramas.length > 0);
 

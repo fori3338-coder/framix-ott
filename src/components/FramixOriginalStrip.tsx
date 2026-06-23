@@ -57,10 +57,10 @@ export default function FramixOriginalStrip({ dramas }: FramixOriginalStripProps
     >
       {/* ── Section Header ─────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-5 md:px-12 mb-5 md:mb-7">
-        <div className="section-accent-bar" style={{ background: "linear-gradient(to bottom, #D4AF37, #9c7e23)" }} />
+        <div className="section-accent-bar" />
         <div className="flex items-center gap-2.5 flex-wrap">
           <h2 className="section-title-premium">FRAMIX ORIGINAL</h2>
-          <span className="flex items-center gap-1 text-[9px] md:text-[10px] font-black px-2 py-[3px] rounded-full tracking-widest border bg-yellow-500/12 text-yellow-400 border-yellow-500/25">
+          <span className="flex items-center gap-1 text-[9px] md:text-[10px] font-black px-2 py-[3px] rounded-full tracking-widest border bg-[#ff3e6c]/14 text-[#ff7196] border-[#ff3e6c]/30">
             <Sparkles size={8} />
             ORIGINAL
           </span>
@@ -99,8 +99,8 @@ export default function FramixOriginalStrip({ dramas }: FramixOriginalStripProps
         {/* ORIGINAL badge watermark top-right */}
         <div className="absolute top-4 right-5 z-[3] md:top-6 md:right-8">
           <div className="framix-original-badge">
-            <span className="text-[10px] md:text-[11px] font-black tracking-[0.2em] text-yellow-400">FRAMIX</span>
-            <span className="text-[9px] md:text-[10px] font-bold tracking-[0.3em] text-yellow-400/70">ORIGINAL</span>
+            <span className="text-[10px] md:text-[11px] font-black tracking-[0.2em] text-[#ff7196]">FRAMIX</span>
+            <span className="text-[9px] md:text-[10px] font-bold tracking-[0.3em] text-[#ff7196]/70">ORIGINAL</span>
           </div>
         </div>
 
@@ -178,11 +178,11 @@ export default function FramixOriginalStrip({ dramas }: FramixOriginalStripProps
           gap: 1px;
         }
         .original-strip-card {
-          box-shadow: 0 40px 100px -20px rgba(0,0,0,0.95), 0 0 0 1px rgba(212,175,55,0.12), 0 0 40px -10px rgba(212,175,55,0.08);
+          box-shadow: 0 40px 100px -20px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,62,108,0.16), 0 0 40px -10px rgba(255,62,108,0.10);
           transition: box-shadow 0.4s ease;
         }
         .original-strip-card:hover {
-          box-shadow: 0 48px 120px -20px rgba(0,0,0,0.98), 0 0 0 1px rgba(212,175,55,0.22), 0 0 60px -10px rgba(212,175,55,0.14);
+          box-shadow: 0 48px 120px -20px rgba(0,0,0,0.98), 0 0 0 1px rgba(255,62,108,0.28), 0 0 60px -10px rgba(255,62,108,0.18);
         }
       `}</style>
     </section>
@@ -209,9 +209,9 @@ function ActiveDramaInfo({ drama }: { drama: Drama }) {
     >
       {/* Exclusive tag */}
       {drama.isExclusive && (
-        <div className="inline-flex items-center gap-1 mb-3 px-2.5 py-1 rounded bg-yellow-500/15 border border-yellow-500/25">
-          <Sparkles size={9} className="text-yellow-400" />
-          <span className="text-[9px] md:text-[10px] font-black tracking-widest text-yellow-400">독점 공개</span>
+        <div className="inline-flex items-center gap-1 mb-3 px-2.5 py-1 rounded bg-[#ff3e6c]/14 border border-[#ff3e6c]/30">
+          <Sparkles size={9} className="text-[#ff7196]" />
+          <span className="text-[9px] md:text-[10px] font-black tracking-widest text-[#ff7196]">독점 공개</span>
         </div>
       )}
 
@@ -224,7 +224,7 @@ function ActiveDramaInfo({ drama }: { drama: Drama }) {
       {/* Meta */}
       <div className="flex items-center gap-2.5 mb-3 flex-wrap">
         <div className="flex items-center gap-1">
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="#D4AF37">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="#ff3e6c">
             <path d="M5 0.5l1.3 2.6 2.9.4-2.1 2 .5 2.9L5 6.9l-2.6 1.5.5-2.9-2.1-2 2.9-.4z" />
           </svg>
           <span className="text-[11px] md:text-[13px] text-white font-bold">{drama.rating.toFixed(1)}</span>
@@ -307,7 +307,7 @@ function OriginalThumb({
         opacity: 0,
         animation: revealed ? `fade-in-up 0.5s cubic-bezier(0.22,1,0.36,1) ${index * 80}ms both` : "none",
         boxShadow: active
-          ? "0 0 0 2px #D4AF37, 0 8px 32px -8px rgba(212,175,55,0.55), 0 0 20px -4px rgba(212,175,55,0.35)"
+          ? "0 0 0 2px var(--color-brand), 0 8px 32px -8px rgba(255,62,108,0.55), 0 0 20px -4px rgba(255,62,108,0.35)"
           : "0 0 0 1px rgba(255,255,255,0.08)",
         transition: "all 0.32s cubic-bezier(0.22,1,0.36,1)",
         transform: active ? "scale(1.04)" : "scale(1)",
@@ -335,7 +335,7 @@ function OriginalThumb({
       </p>
       {/* Active indicator */}
       {active && (
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-yellow-400" />
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#ff3e6c]" />
       )}
     </button>
   );

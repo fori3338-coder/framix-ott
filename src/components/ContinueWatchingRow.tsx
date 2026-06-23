@@ -150,8 +150,8 @@ export default function ContinueWatchingRow({ items, onRemove }: ContinueWatchin
 
       {/* Edge fades */}
       <div className="relative group/cw-row">
-        <div className="pointer-events-none absolute top-0 bottom-0 left-0 w-6 md:w-12 bg-gradient-to-r from-[#050505] to-transparent z-[5]" />
-        <div className="pointer-events-none absolute top-0 bottom-0 right-0 w-10 md:w-20 bg-gradient-to-l from-[#050505] to-transparent z-[5]" />
+        <div className="pointer-events-none absolute top-0 bottom-0 left-0 w-6 md:w-12 bg-gradient-to-r from-[#07080b] to-transparent z-[5]" />
+        <div className="pointer-events-none absolute top-0 bottom-0 right-0 w-10 md:w-20 bg-gradient-to-l from-[#07080b] to-transparent z-[5]" />
 
         {/* Cards */}
         <div
