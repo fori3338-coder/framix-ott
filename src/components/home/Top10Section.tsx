@@ -12,6 +12,13 @@ import { Flame, Play, Plus, Check } from "lucide-react";
 import type { Drama } from "../../types";
 import { useFavorites } from "../../hooks/useFavorites";
 
+// CMD-05: 순위 변동 목업 데이터 (mock — 실제 DB 연동 전 표시용)
+type RankChange = "up" | "down" | "new" | "same";
+const RANK_CHANGES: RankChange[] = [
+  "same", "up", "new", "down", "up", "new", "down", "up", "same", "down",
+];
+const RANK_DELTAS: number[] = [0, 2, 0, 1, 3, 0, 2, 1, 0, 3];
+
 interface Top10SectionProps {
   dramas: Drama[];
 }
@@ -52,7 +59,15 @@ export default function Top10Section({ dramas }: Top10SectionProps) {
       <div className="fxt-rail-wrap">
         <div className="fxt-rail">
           {items.map((drama, i) => (
-            <Top10Card key={drama.id} drama={drama} rank={i + 1} revealed={revealed} index={i} />
+            <Top10Card
+              key={drama.id}
+              drama={drama}
+              rank={i + 1}
+              revealed={revealed}
+              index={i}
+              rankChange={RANK_CHANGES[i] ?? "same"}
+              rankDelta={RANK_DELTAS[i] ?? 0}
+            />
           ))}
         </div>
       </div>
@@ -123,12 +138,18 @@ export default function Top10Section({ dramas }: Top10SectionProps) {
         .fxt-name{font-size:14px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .fxt-name-meta{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:11px;color:rgba(255,255,255,.45)}
         .fxt-star{color:#ffd34d}
+
+        .fxt-rank-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:900;
+          letter-spacing:.06em;padding:2px 6px;border-radius:999px;margin-top:5px}
+        .fxt-rank-badge.up{background:rgba(34,197,94,.18);color:#4ade80;border:1px solid rgba(34,197,94,.3)}
+        .fxt-rank-badge.down{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.28)}
+        .fxt-rank-badge.new{background:rgba(99,102,241,.2);color:#a5b4fc;border:1px solid rgba(99,102,241,.3)}
       `}</style>
     </section>
   );
 }
 
-function Top10Card({ drama, rank, revealed, index }: { drama: Drama; rank: number; revealed: boolean; index: number }) {
+function Top10Card({ drama, rank, revealed, index, rankChange, rankDelta }: { drama: Drama; rank: number; revealed: boolean; index: number; rankChange: RankChange; rankDelta: number }) {
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorited = isFavorite(drama.id);
@@ -180,6 +201,16 @@ function Top10Card({ drama, rank, revealed, index }: { drama: Drama; rank: numbe
             <span>·</span>
             <span>{drama.totalEpisodes}부작</span>
           </div>
+          {/* CMD-05: 순위 변동 배지 */}
+          {rankChange === "new" && (
+            <div className="fxt-rank-badge new">NEW</div>
+          )}
+          {rankChange === "up" && rankDelta > 0 && (
+            <div className="fxt-rank-badge up">▲ {rankDelta}</div>
+          )}
+          {rankChange === "down" && rankDelta > 0 && (
+            <div className="fxt-rank-badge down">▼ {rankDelta}</div>
+          )}
         </div>
       </div>
     </div>

@@ -267,7 +267,10 @@ function ContinueWatchingCard({
             <p className="fxc-name">{item.seriesTitle}</p>
             <p className="fxc-ep2">
               {item.episodeNumber}화 시청 중
-              {remainingEps !== null && remainingEps > 0 ? ` · ${remainingEps}화 남음` : ""}
+              {remainingEps !== null && remainingEps === 0 && " · 마지막 화"}
+              {remainingEps !== null && remainingEps === 1 && " · 1화 남음"}
+              {remainingEps !== null && remainingEps !== null && remainingEps >= 2 && remainingEps <= 3 && ` · 거의 다 봤어요`}
+              {remainingEps !== null && remainingEps !== null && remainingEps > 3 && ` · ${remainingEps}화 남음`}
             </p>
           </div>
           <span className={`fxc-pct ${isNearDone ? "done" : ""}`}>{progressPct}%</span>

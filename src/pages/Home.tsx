@@ -18,6 +18,8 @@ import FramixOriginalStrip from "../components/FramixOriginalStrip";
 import Top10Section from "../components/home/Top10Section";
 import MyListSection from "../components/home/MyListSection";
 import Footer from "../components/layout/Footer";
+import ShowcaseRow from "../components/ShowcaseRow";
+import GenreHubSection from "../components/home/GenreHubSection";
 
 import { useDramas } from "../hooks/useDramas";
 import { useContinueWatching } from "../hooks/useContinueWatching";
@@ -147,7 +149,44 @@ export default function Home() {
         {/* ── S3. FRAMIX ORIGINAL ───────────────────────────────────── */}
         <FramixOriginalStrip dramas={sections.originals} />
 
-        {/* ── S4. My List ───────────────────────────────────────────── */}
+        {/* ── S4. Discovery: 급상승 (CMD-01) ──────────────────────── */}
+        <ShowcaseRow
+          title="급상승 중"
+          subtitle="지금 이 순간 가장 뜨거운 작품"
+          dramas={sections.risingNow}
+          rowVariant="trending"
+          badge="TODAY"
+          cardVariant="default"
+        />
+
+        {/* ── S5. Discovery: AI Pick (CMD-01) ──────────────────── */}
+        <ShowcaseRow
+          title="AI Pick"
+          subtitle="프레믹스 AI가 엄선한 오늘의 추천"
+          dramas={sections.aiPick}
+          rowVariant="aipick"
+          badge="AI"
+          cardVariant="default"
+        />
+
+        {/* ── S6. Discovery: 당신을 위한 추천 (CMD-01) ─────────── */}
+        <ShowcaseRow
+          title="당신을 위한 추천"
+          subtitle="시청 기록 기반 맞춤 추천"
+          dramas={sections.forYou}
+          cardVariant="default"
+        />
+
+        {/* ── S7. GenreHub (CMD-04) ─────────────────────────────── */}
+        <GenreHubSection
+          romance={sections.romance}
+          revenge={sections.revenge}
+          chaebol={sections.chaebol}
+          contract={sections.contract}
+          timeloop={sections.timeloop}
+        />
+
+        {/* ── S8. My List ───────────────────────────────────────── */}
         <MyListSection
           favoritedList={favoritedList}
           continueWatchingItems={continueWatchingItems}
