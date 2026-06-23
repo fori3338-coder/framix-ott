@@ -245,15 +245,13 @@ function DefaultCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" 
         className={[
           "relative w-full aspect-[9/16] rounded-xl overflow-hidden bg-[#0f0f10]",
           "ring-1 ring-white/10",
-          // 3-layer shadow system: near + mid + far depth
-          "shadow-[0_2px_8px_rgba(0,0,0,0.25), 0_8px_24px_rgba(0,0,0,0.4), 0_16px_48px_rgba(0,0,0,0.6)]",
-          // Hover: scale(1.12) + translateY(-12px) + enhanced shadows
-          "transition-[transform,box-shadow,ring-color] duration-[300ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
-          "md:group-hover:scale-[1.12]",
-          "md:group-hover:-translate-y-3",
-          "md:group-hover:shadow-[0_4px_12px_rgba(0,0,0,0.35), 0_16px_40px_rgba(0,0,0,0.55), 0_28px_72px_rgba(0,0,0,0.75)]",
-          "md:group-hover:ring-white/22",
-          "group-active:scale-[0.98]",
+          "shadow-[0_2px_8px_rgba(0,0,0,0.3),0_8px_24px_rgba(0,0,0,0.45),0_16px_48px_rgba(0,0,0,0.6)]",
+          "transition-[transform,box-shadow,ring-color] duration-[320ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
+          "md:group-hover:scale-[1.08]",
+          "md:group-hover:-translate-y-[8px]",
+          "md:group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.4),0_20px_48px_rgba(0,0,0,0.6),0_32px_80px_rgba(0,0,0,0.75)]",
+          "md:group-hover:ring-white/24",
+          "group-active:scale-[0.97]",
           "will-change-[transform,box-shadow]",
         ].join(" ")}
       >
@@ -379,9 +377,8 @@ function Top10Card({ drama, rank, size = "md" }: { drama: Drama; rank: number; s
     : size === "lg" ? "w-[160px] sm:w-[190px] md:w-[220px]"
     : "w-[145px] sm:w-[170px] md:w-[195px]";
 
-  // Rank font: 120px+ (using larger clamp)
-  const rankSize = rank >= 10 ? "clamp(80px, 14vw, 140px)" : "clamp(90px, 16vw, 160px)";
-  const rankColor = rank === 1 ? "#FFD700" : rank <= 3 ? "rgba(212,175,55,0.95)" : "rgba(255,255,255,0.2)";
+  // Rank font: crisp large outline style — 지시서 스펙 150~180px
+  const rankSize = rank >= 10 ? "clamp(120px, 16vw, 160px)" : "clamp(130px, 18vw, 180px)";
 
   const handlePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -412,15 +409,24 @@ function Top10Card({ drama, rank, size = "md" }: { drama: Drama; rank: number; s
         className="absolute pointer-events-none select-none z-0"
         style={{
           left: "0",
-          bottom: "-12px",
-          lineHeight: 0.8,
+          bottom: "-10px",
+          lineHeight: 0.82,
           fontSize: rankSize,
           fontWeight: 900,
-          color: rankColor,
+          color: "transparent",
           fontFamily: "'Arial Black', 'Impact', sans-serif",
           letterSpacing: "-0.08em",
-          textShadow: `0 4px 16px rgba(0,0,0,0.8), 0 0 40px ${rank === 1 ? 'rgba(255,215,0,0.3)' : 'rgba(0,0,0,0.5)'}`,
-          filter: rank === 1 ? "drop-shadow(0 0 12px rgba(255,215,0,0.4))" : "none",
+          WebkitTextStroke: rank === 1
+            ? "3px rgba(212,175,55,0.85)"
+            : rank <= 3
+            ? "2.5px rgba(192,192,192,0.65)"
+            : "2px rgba(255,255,255,0.18)",
+          paintOrder: "stroke fill",
+          textShadow: rank === 1
+            ? "0 0 40px rgba(212,175,55,0.35), 0 8px 32px rgba(212,175,55,0.25), 0 2px 8px rgba(0,0,0,0.9)"
+            : rank <= 3
+            ? "0 0 30px rgba(192,192,192,0.20), 0 6px 24px rgba(0,0,0,0.8)"
+            : "0 4px 16px rgba(0,0,0,0.8)",
         }}
         aria-hidden="true"
       >
@@ -435,12 +441,11 @@ function Top10Card({ drama, rank, size = "md" }: { drama: Drama; rank: number; s
             "relative w-full aspect-[9/16] rounded-xl overflow-hidden",
             "bg-[#1a1a1c]",
             "ring-1 ring-white/12",
-            // 3-layer shadow system
-            "shadow-[0_4px_12px_rgba(0,0,0,0.3), 0_12px_32px_rgba(0,0,0,0.5), 0_20px_60px_rgba(0,0,0,0.7)]",
-            // Hover state: scale up, increase shadows
-            "transition-[transform,box-shadow,ring-color] duration-[300ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
-            "md:group-hover:scale-[1.15]",
-            "md:group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.4), 0_24px_56px_rgba(0,0,0,0.6), 0_32px_80px_rgba(0,0,0,0.8)]",
+            "shadow-[0_4px_12px_rgba(0,0,0,0.3),0_12px_32px_rgba(0,0,0,0.5),0_20px_60px_rgba(0,0,0,0.7)]",
+            "transition-[transform,box-shadow,ring-color] duration-[320ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
+            "md:group-hover:scale-[1.08]",
+            "md:group-hover:-translate-y-[8px]",
+            "md:group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.45),0_24px_56px_rgba(0,0,0,0.65),0_36px_84px_rgba(0,0,0,0.8)]",
             "md:group-hover:ring-white/25",
             "group-active:scale-[0.97]",
             "will-change-[transform,box-shadow]",
