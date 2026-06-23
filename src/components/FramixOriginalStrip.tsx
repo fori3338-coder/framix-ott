@@ -144,6 +144,13 @@ export default function FramixOriginalStrip({ dramas }: FramixOriginalStripProps
 
         .fxo-info{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;
           height:100%;min-height:clamp(260px,44vw,460px);max-width:560px;padding:clamp(22px,4vw,52px)}
+        .fxo-verified{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;margin-bottom:13px;
+          font-size:11px;font-weight:900;letter-spacing:.16em;color:#fff;padding:5px 13px 5px 5px;border-radius:999px;
+          background:linear-gradient(135deg,rgba(255,62,108,.92),rgba(177,22,63,.88));border:1px solid rgba(255,109,140,.6);
+          box-shadow:0 8px 22px -8px rgba(255,62,108,.7)}
+        .fxo-verified-f{display:grid;place-items:center;width:19px;height:19px;border-radius:6px;background:#fff;
+          color:#e0214f;font-size:12px;font-weight:900;letter-spacing:0}
+        .fxo-verified-ko{letter-spacing:.05em}
         .fxo-exclusive{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;margin-bottom:14px;
           font-size:11px;font-weight:900;letter-spacing:.14em;color:#ff6d8c;padding:5px 11px;border-radius:7px;
           background:rgba(255,62,108,.15);border:1px solid rgba(255,62,108,.35)}
@@ -204,6 +211,14 @@ function ActiveDramaInfo({ drama }: { drama: Drama }) {
 
   return (
     <div className="fxo-info" key={drama.id} style={{ animation: "fxoIn .55s cubic-bezier(.22,1,.36,1) both" }}>
+      <span className="fxo-verified">
+        <span className="fxo-verified-f">F</span>
+        FRAMIX ORIGINAL
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span className="fxo-verified-ko">인증</span>
+      </span>
       {drama.isExclusive && (
         <span className="fxo-exclusive"><Sparkles size={10} /> 독점 공개</span>
       )}

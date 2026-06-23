@@ -6,6 +6,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Play, Star } from "lucide-react";
 import type { Drama } from "../types";
+import { FramixBadgeStack } from "./FramixBadge";
+import { isFramixOriginal } from "../lib/framixBadges";
 
 interface DramaCardProps {
   drama: Drama;
@@ -37,6 +39,7 @@ export default function DramaCard({
       <div
         className={[
           "relative aspect-[9/16] rounded-xl overflow-hidden",
+          isFramixOriginal(drama) ? "framix-original-card" : "",
           "bg-[#1a1a1c] ring-1 ring-white/8",
           "transition-[transform,box-shadow] duration-[350ms]",
           "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
@@ -68,19 +71,8 @@ export default function DramaCard({
           </div>
         )}
 
-        {/* Badges */}
-        <div className="absolute top-1.5 left-1.5 flex flex-col gap-1 items-start z-10">
-          {drama.isExclusive && (
-            <span className="bg-[#D4AF37] text-black text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
-              독점
-            </span>
-          )}
-          {drama.isNew && (
-            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
-              NEW
-            </span>
-          )}
-        </div>
+        {/* FRAMIX badge system */}
+        <FramixBadgeStack drama={drama} size="xs" className="absolute top-1.5 left-1.5 z-10" />
 
         {/* Rank Number */}
         {rank !== undefined && (

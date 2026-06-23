@@ -14,6 +14,8 @@ import { useNavigate } from "react-router-dom";
 import { Play, Plus, Check, Info } from "lucide-react";
 import type { Drama } from "../types";
 import { useFavorites } from "../hooks/useFavorites";
+import { FramixBadgeStack } from "./FramixBadge";
+import { isFramixOriginal } from "../lib/framixBadges";
 
 export type CardVariant = "default" | "top10" | "editor" | "featured";
 
@@ -244,6 +246,7 @@ function DefaultCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" 
       <div
         className={[
           "relative w-full aspect-[9/16] rounded-xl overflow-hidden bg-[#0f0f10]",
+          isFramixOriginal(drama) ? "framix-original-card" : "",
           "ring-1 ring-white/10",
           "shadow-[0_2px_8px_rgba(0,0,0,0.3),0_8px_24px_rgba(0,0,0,0.45),0_16px_48px_rgba(0,0,0,0.6)]",
           "transition-[transform,box-shadow,ring-color] duration-[320ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
@@ -272,15 +275,8 @@ function DefaultCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" 
           </div>
         )}
 
-        {/* Top badges: New, Exclusive */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1 items-start z-10">
-          {drama.isExclusive && (
-            <span className="bg-white text-black text-[8px] font-black px-1.5 py-0.5 rounded tracking-wider">독점</span>
-          )}
-          {drama.isNew && (
-            <span className="bg-white/95 text-black text-[8px] font-black px-1.5 py-0.5 rounded tracking-wider">NEW</span>
-          )}
-        </div>
+        {/* FRAMIX badge system */}
+        <FramixBadgeStack drama={drama} size="xs" className="absolute top-2 left-2 z-10" />
 
         {/* Bottom Overlay: Appears on hover with Play, Save, Details */}
         <div
@@ -584,6 +580,7 @@ function EditorCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" |
       <div
         className={[
           "relative w-full rounded-xl overflow-hidden bg-[#1a1a1c]",
+          isFramixOriginal(drama) ? "framix-original-card" : "",
           "ring-1 ring-white/8",
           "transition-[transform,box-shadow] duration-[350ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
           "md:group-hover:scale-[1.04] md:group-hover:shadow-[0_16px_48px_rgba(0,0,0,0.6)] md:group-hover:ring-white/20",
@@ -609,35 +606,8 @@ function EditorCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" |
         {/* Always-on dark bottom gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
 
-        {/* Editor Pick badge — top left, glass */}
-        <div className="absolute top-2.5 left-2.5 z-10">
-          <div
-            className={[
-              "flex items-center gap-1 px-2 py-1 rounded-md",
-              "text-[9px] font-black tracking-widest text-white/90 uppercase",
-              "border border-white/20",
-            ].join(" ")}
-            style={{
-              background: "rgba(255,255,255,0.10)",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-            }}
-          >
-            <svg width="8" height="8" viewBox="0 0 12 12" fill="none">
-              <path d="M6 1l1.5 3.2 3.5.5-2.5 2.4.6 3.4L6 8.9l-3.1 1.6.6-3.4L1 4.7l3.5-.5z" fill="#fff" fillOpacity=".85" />
-            </svg>
-            Editor Pick
-          </div>
-        </div>
-
-        {/* Original badge — top right */}
-        {drama.isOriginal && (
-          <div className="absolute top-2.5 right-2.5 z-10">
-            <span className="text-[8px] font-black text-white/55 tracking-[0.15em] uppercase px-1.5 py-0.5 rounded border border-white/15 bg-black/40">
-              ORIGINAL
-            </span>
-          </div>
-        )}
+        {/* FRAMIX badge system */}
+        <FramixBadgeStack drama={drama} size="sm" max={2} className="absolute top-2.5 left-2.5 z-10" />
 
         {/* Hover overlay — full glass info expansion */}
         <div
@@ -752,6 +722,7 @@ function FeaturedCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md"
       <div
         className={[
           "relative w-full overflow-hidden bg-[#111] rounded-xl",
+          isFramixOriginal(drama) ? "framix-original-card" : "",
           "ring-1 ring-white/6",
           // Hover: scale + shadow + height reveal
           "transition-[transform,box-shadow] duration-[350ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
@@ -776,16 +747,9 @@ function FeaturedCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md"
         {/* Resting gradient — subtle bottom */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-        {/* Resting badges */}
+        {/* Resting badges — FRAMIX system */}
         <div className="absolute top-0 left-0 right-0 flex items-start justify-between p-2.5 z-10">
-          <div className="flex gap-1.5">
-            {drama.isNew && (
-              <span className="text-[8px] font-black text-white/80 tracking-widest uppercase px-1.5 py-0.5 rounded border border-white/20 bg-black/40">NEW</span>
-            )}
-            {drama.isExclusive && (
-              <span className="text-[8px] font-black text-white/80 tracking-widest uppercase px-1.5 py-0.5 rounded border border-white/20 bg-black/40">독점</span>
-            )}
-          </div>
+          <FramixBadgeStack drama={drama} size="sm" max={2} />
           <span className="text-[8px] font-bold text-white/35 tracking-wider">{drama.year}</span>
         </div>
 

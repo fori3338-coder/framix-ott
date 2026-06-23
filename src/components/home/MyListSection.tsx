@@ -6,6 +6,8 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clock, Heart, Play } from "lucide-react";
 import type { Drama, ContinueWatchingItem } from "../../types";
+import { FramixBadgeStack } from "../FramixBadge";
+import { isFramixOriginal } from "../../lib/framixBadges";
 
 interface MyListSectionProps {
   favoritedList: Drama[];
@@ -153,7 +155,7 @@ function MyListCard({ drama, tab, cwItem }: { drama: Drama; index: number; tab: 
       onClick={() => navigate(`/drama/${drama.id}`)}
     >
       <div
-        className="relative rounded-xl overflow-hidden"
+        className={`relative rounded-xl overflow-hidden ${isFramixOriginal(drama) ? "framix-original-card" : ""}`}
         style={{
           aspectRatio: "2/3",
           transform: hovered ? "scale(1.06) translateY(-8px)" : "scale(1) translateY(0)",
@@ -181,6 +183,9 @@ function MyListCard({ drama, tab, cwItem }: { drama: Drama; index: number; tab: 
             <span className="text-[8px] text-white/30 text-center px-1">{drama.title}</span>
           </div>
         )}
+
+        {/* FRAMIX badge system */}
+        <FramixBadgeStack drama={drama} size="xs" className="absolute top-1.5 left-1.5 z-10" />
 
         {/* Progress bar for continue watching */}
         {tab === "continue" && progress > 0 && (
