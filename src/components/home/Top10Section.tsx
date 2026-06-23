@@ -86,7 +86,7 @@ function Top10Row({ drama, rank, revealed, index }: { drama: Drama; rank: number
       style={{
         opacity: 0,
         animation: revealed ? `fade-in-up 0.45s cubic-bezier(0.22,1,0.36,1) ${Math.min(index * 60, 480)}ms both` : "none",
-        transform: hovered ? "scale(1.05) translateY(-6px)" : "scale(1) translateY(0)",
+        transform: hovered ? "scale(1.05)" : "scale(1)",
         transition: "transform 0.3s cubic-bezier(0.22,1,0.36,1)",
       }}
       onMouseEnter={() => setHovered(true)}
@@ -113,10 +113,10 @@ function Top10Row({ drama, rank, revealed, index }: { drama: Drama; rank: number
             WebkitTextFillColor: "transparent",
             textShadow: "none",
             filter: rank === 1
-              ? "drop-shadow(0 0 16px rgba(255,215,0,0.75)) drop-shadow(0 0 8px rgba(255,165,0,0.5)) drop-shadow(0 3px 6px rgba(0,0,0,0.8))"
+              ? "drop-shadow(0 0 12px rgba(255,215,0,0.6)) drop-shadow(0 2px 4px rgba(0,0,0,0.7))"
               : rank <= 3
-              ? "drop-shadow(0 0 8px rgba(224,224,224,0.6)) drop-shadow(0 0 4px rgba(192,192,192,0.5)) drop-shadow(0 3px 6px rgba(0,0,0,0.7))"
-              : "drop-shadow(0 3px 6px rgba(0,0,0,0.6))",
+              ? "drop-shadow(0 0 6px rgba(192,192,192,0.4)) drop-shadow(0 2px 4px rgba(0,0,0,0.6))"
+              : "drop-shadow(0 2px 4px rgba(0,0,0,0.5))",
           }}
         >
           {rank}
@@ -221,8 +221,8 @@ function Top10MobileCard({ drama, rank, revealed, index }: { drama: Drama; rank:
             backgroundClip: "text",
             WebkitTextFillColor: "transparent",
             filter: rank === 1
-              ? "drop-shadow(0 0 12px rgba(255,215,0,0.65)) drop-shadow(0 0 6px rgba(255,165,0,0.4)) drop-shadow(0 2px 4px rgba(0,0,0,0.7))"
-              : "drop-shadow(0 2px 4px rgba(0,0,0,0.6))",
+              ? "drop-shadow(0 0 8px rgba(255,215,0,0.5)) drop-shadow(0 2px 3px rgba(0,0,0,0.6))"
+              : "drop-shadow(0 2px 3px rgba(0,0,0,0.5))",
           }}
         >
           {rank}
