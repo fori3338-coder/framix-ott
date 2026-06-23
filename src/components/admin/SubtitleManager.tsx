@@ -185,7 +185,7 @@ export default function SubtitleManager({ seriesId, seriesTitle, onClose }: Prop
         {/* ── 헤더 ── */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#2a2a2c] bg-[#1a1a1c]">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="text-[#ff3e6c] shrink-0">
+            <span className="text-[#D4AF37] shrink-0">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="2" y="4" width="20" height="16" rx="2" /><path d="M7 15h4m0 0h4m-4 0V9" />
               </svg>
@@ -223,11 +223,11 @@ export default function SubtitleManager({ seriesId, seriesTitle, onClose }: Prop
                       onClick={() => setSelectedEpId(ep.id)}
                       className={`shrink-0 sm:shrink text-left px-3 py-2.5 sm:py-3 transition-colors border-b border-[#1e1e20] ${
                         isSelected
-                          ? "bg-[#ff3e6c]/10 border-l-2 border-l-[#ff3e6c] sm:border-l"
+                          ? "bg-[#D4AF37]/10 border-l-2 border-l-[#D4AF37] sm:border-l"
                           : "hover:bg-white/5"
                       }`}
                     >
-                      <p className={`text-xs font-semibold truncate ${isSelected ? "text-[#ff3e6c]" : "text-white/80"}`}>
+                      <p className={`text-xs font-semibold truncate ${isSelected ? "text-[#D4AF37]" : "text-white/80"}`}>
                         {ep.episode_number}화 {ep.title}
                       </p>
                       <p className="text-[10px] mt-0.5">
@@ -266,14 +266,14 @@ export default function SubtitleManager({ seriesId, seriesTitle, onClose }: Prop
               <>
                 {/* ── 언어 선택 + VTT 업로드 ── */}
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#ff3e6c] mb-3">VTT 업로드</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] mb-3">VTT 업로드</h3>
                   <div className="flex flex-col sm:flex-row gap-2.5">
                     {/* 언어 선택 */}
                     <select
                       value={selectedLang}
                       onChange={(e) => setSelectedLang(e.target.value)}
                       disabled={uploading}
-                      className="flex-1 sm:flex-none sm:w-52 bg-[#1e1e20] border border-[#2a2a2c] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#ff3e6c] disabled:opacity-50"
+                      className="flex-1 sm:flex-none sm:w-52 bg-[#1e1e20] border border-[#2a2a2c] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37] disabled:opacity-50"
                     >
                       {SUBTITLE_LANGUAGES.map((l) => (
                         <option key={l.code} value={l.code}>
@@ -287,7 +287,7 @@ export default function SubtitleManager({ seriesId, seriesTitle, onClose }: Prop
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploading}
-                      className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#ff3e6c] text-black text-sm font-bold hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#D4AF37] text-black text-sm font-bold hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {uploading ? (
                         <>
@@ -313,7 +313,7 @@ export default function SubtitleManager({ seriesId, seriesTitle, onClose }: Prop
                   {uploading && (
                     <div className="mt-2 h-1 bg-[#2a2a2c] rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-[#ff3e6c] rounded-full transition-all duration-200"
+                        className="h-full bg-[#D4AF37] rounded-full transition-all duration-200"
                         style={{ width: `${uploadProgress}%` }}
                       />
                     </div>
@@ -326,7 +326,7 @@ export default function SubtitleManager({ seriesId, seriesTitle, onClose }: Prop
 
                 {/* ── 현재 자막 목록 ── */}
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#ff3e6c] mb-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] mb-3">
                     등록된 자막 ({uploadedCodes.size}개)
                   </h3>
 
@@ -363,7 +363,7 @@ export default function SubtitleManager({ seriesId, seriesTitle, onClose }: Prop
                             <button
                               onClick={() => { navigator.clipboard.writeText(url).catch(() => {}); setMsg({ text: "URL 복사됨", ok: true }); }}
                               title="URL 복사"
-                              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-[#555] hover:text-[#ff3e6c] hover:bg-[#ff3e6c]/10 transition-colors text-[11px] font-mono"
+                              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-[#555] hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors text-[11px] font-mono"
                             >
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
@@ -401,7 +401,7 @@ export default function SubtitleManager({ seriesId, seriesTitle, onClose }: Prop
                         key={lang.code}
                         onClick={() => setSelectedLang(lang.code)}
                         title={`${lang.label} 자막 업로드`}
-                        className="text-[11px] px-2.5 py-1 rounded-full bg-[#1a1a1c] border border-[#2a2a2c] text-[#555] hover:text-[#ff3e6c] hover:border-[#ff3e6c]/40 transition-colors"
+                        className="text-[11px] px-2.5 py-1 rounded-full bg-[#1a1a1c] border border-[#2a2a2c] text-[#555] hover:text-[#D4AF37] hover:border-[#D4AF37]/40 transition-colors"
                       >
                         {lang.label}
                       </button>

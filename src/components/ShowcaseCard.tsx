@@ -243,7 +243,7 @@ function DefaultCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" 
       {/* Card Container with 3-layer shadow system */}
       <div
         className={[
-          "relative w-full aspect-[9/16] rounded-xl overflow-hidden bg-[#0d0f14]",
+          "relative w-full aspect-[9/16] rounded-xl overflow-hidden bg-[#0f0f10]",
           "ring-1 ring-white/10",
           "shadow-[0_2px_8px_rgba(0,0,0,0.3),0_8px_24px_rgba(0,0,0,0.45),0_16px_48px_rgba(0,0,0,0.6)]",
           "transition-[transform,box-shadow,ring-color] duration-[320ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",

@@ -1,10 +1,9 @@
 /**
- * FramixOriginalStrip — FRAMIX ORIGINAL 전용 Hero Strip
+ * FramixOriginalStrip — FRAMIX ORIGINAL 전용 (full rebuild)
  *
- * Netflix Originals / Apple TV+ Originals 스타일의 와이드 배너형 레이아웃.
- * 일반 Row 형태 금지 — 대형 배경 이미지 + 텍스트 오버레이 형식.
- * Scroll Reveal + GPU transform only (60fps)
- * 모바일: 단일 세로 스택, 터치 스와이프 지원
+ * 브랜드 구분 극대화: 일반 Row 형태 금지. 로즈 글로우 프레임의 와이드
+ * 시네마 패널 + 하단 썸네일 셀렉터. "FRAMIX ORIGINAL" 전용 아이덴티티.
+ * 기능 유지: 자동 전환 / 재생·상세 이동 / 찜 / 독점 배지.
  */
 import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +20,6 @@ export default function FramixOriginalStrip({ dramas }: FramixOriginalStripProps
   const [revealed, setRevealed] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
 
-  // Scroll Reveal
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -33,163 +31,166 @@ export default function FramixOriginalStrip({ dramas }: FramixOriginalStripProps
     return () => obs.disconnect();
   }, []);
 
-  // Auto-advance
+  const count = Math.min(dramas.length, 6);
   useEffect(() => {
-    if (dramas.length <= 1) return;
-    const t = setInterval(() => {
-      setActiveIdx((i) => (i + 1) % Math.min(dramas.length, 5));
-    }, 6000);
+    if (count <= 1) return;
+    const t = setInterval(() => setActiveIdx((i) => (i + 1) % count), 6500);
     return () => clearInterval(t);
-  }, [dramas.length]);
+  }, [count]);
 
   if (dramas.length === 0) return null;
 
-  const items = dramas.slice(0, 5);
+  const items = dramas.slice(0, 6);
   const active = items[activeIdx];
 
   return (
-    <section
-      ref={sectionRef}
-      className={[
-        "relative home-section section-reveal framix-original-strip",
-        revealed ? "is-visible" : "",
-      ].join(" ")}
-    >
-      {/* ── Section Header ─────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-5 md:px-12 mb-5 md:mb-7">
-        <div className="section-accent-bar" />
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <h2 className="section-title-premium">FRAMIX ORIGINAL</h2>
-          <span className="flex items-center gap-1 text-[9px] md:text-[10px] font-black px-2 py-[3px] rounded-full tracking-widest border bg-[#ff3e6c]/14 text-[#ff7196] border-[#ff3e6c]/30">
-            <Sparkles size={8} />
-            ORIGINAL
-          </span>
+    <section ref={sectionRef} className={`fxo-section ${revealed ? "in" : ""}`}>
+      {/* Brand header */}
+      <div className="fxo-head">
+        <div className="fxo-brand">
+          <span className="fxo-brand-f">F</span>
+          <div className="fxo-brand-txt">
+            <span className="fxo-brand-name">FRAMIX</span>
+            <span className="fxo-brand-orig">ORIGINAL</span>
+          </div>
+        </div>
+        <div className="fxo-head-meta">
+          <Sparkles size={13} className="fxo-spark" />
+          <span>오직 FRAMIX에서만</span>
         </div>
       </div>
 
-      {/* ── Main Hero Strip ─────────────────────────────────────────────── */}
-      <div className="relative mx-5 md:mx-12 rounded-2xl overflow-hidden original-strip-card"
-        style={{ minHeight: "clamp(200px, 42vw, 420px)" }}>
-        {/* Background image */}
-        <div className="absolute inset-0 z-0">
-          {items.map((d, i) => (
-            <div
-              key={d.id}
-              className="absolute inset-0 transition-opacity duration-700"
-              style={{ opacity: i === activeIdx ? 1 : 0 }}
-            >
+      {/* Feature panel */}
+      <div className="fxo-stage">
+        <div className="fxo-panel">
+          <div className="fxo-bg">
+            {items.map((d, i) => (
               <img
+                key={d.id}
                 src={d.backdrop || d.poster}
                 alt={d.title}
-                decoding="async"
                 loading="lazy"
-                className="w-full h-full object-cover will-change-[opacity]"
+                className="fxo-bg-img"
+                style={{ opacity: i === activeIdx ? 1 : 0 }}
               />
-            </div>
-          ))}
-        </div>
-
-        {/* Scrim layers */}
-        <div className="absolute inset-0 z-[1]"
-          style={{
-            background: "linear-gradient(to right, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.08) 100%), linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)"
-          }}
-        />
-
-        {/* ORIGINAL badge watermark top-right */}
-        <div className="absolute top-4 right-5 z-[3] md:top-6 md:right-8">
-          <div className="framix-original-badge">
-            <span className="text-[10px] md:text-[11px] font-black tracking-[0.2em] text-[#ff7196]">FRAMIX</span>
-            <span className="text-[9px] md:text-[10px] font-bold tracking-[0.3em] text-[#ff7196]/70">ORIGINAL</span>
+            ))}
           </div>
+          <div className="fxo-scrim" />
+
+          <ActiveDramaInfo drama={active} />
+
+          {items.length > 1 && (
+            <>
+              <button className="fxo-arrow fxo-arrow-l" onClick={() => setActiveIdx((i) => (i - 1 + items.length) % items.length)} aria-label="이전">
+                <ChevronLeft size={18} />
+              </button>
+              <button className="fxo-arrow fxo-arrow-r" onClick={() => setActiveIdx((i) => (i + 1) % items.length)} aria-label="다음">
+                <ChevronRight size={18} />
+              </button>
+            </>
+          )}
         </div>
 
-        {/* Content overlay */}
-        <div className="relative z-[2] flex items-center h-full p-6 md:p-10 lg:p-14"
-          style={{ minHeight: "clamp(200px, 42vw, 420px)" }}>
-          <div className="max-w-lg">
-            {/* Active drama info */}
-            <ActiveDramaInfo drama={active} />
-          </div>
-        </div>
-
-        {/* Nav arrows (desktop) */}
+        {/* Thumbnail selector */}
         {items.length > 1 && (
-          <>
-            <button
-              onClick={() => setActiveIdx((i) => (i - 1 + items.length) % items.length)}
-              className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full items-center justify-center active:scale-95"
-              style={{
-                background: "rgba(0,0,0,0.55)",
-                backdropFilter: "blur(20px) saturate(180%)",
-                WebkitBackdropFilter: "blur(20px) saturate(180%)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)",
-                transition: "all 0.2s cubic-bezier(0.22,1,0.36,1)",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.80)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.55)")}
-              aria-label="이전"
-            >
-              <ChevronLeft size={18} className="text-white" />
-            </button>
-            <button
-              onClick={() => setActiveIdx((i) => (i + 1) % items.length)}
-              className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full items-center justify-center active:scale-95"
-              style={{
-                background: "rgba(0,0,0,0.55)",
-                backdropFilter: "blur(20px) saturate(180%)",
-                WebkitBackdropFilter: "blur(20px) saturate(180%)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)",
-                transition: "all 0.2s cubic-bezier(0.22,1,0.36,1)",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.80)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.55)")}
-              aria-label="다음"
-            >
-              <ChevronRight size={18} className="text-white" />
-            </button>
-          </>
+          <div className="fxo-thumbs">
+            {items.map((d, i) => (
+              <button
+                key={d.id}
+                className={`fxo-thumb ${i === activeIdx ? "active" : ""}`}
+                onClick={() => setActiveIdx(i)}
+                aria-label={d.title}
+              >
+                <img src={d.backdrop || d.poster} alt={d.title} loading="lazy" />
+                <span className="fxo-thumb-grad" />
+                <span className="fxo-thumb-name">{d.title}</span>
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
-      {/* ── Thumbnail Row (smaller cards below) ──────────────────────────── */}
-      {items.length > 1 && (
-        <div className="flex gap-2.5 md:gap-3 mt-4 px-5 md:px-12 overflow-x-auto scrollbar-hide pb-1">
-          {items.map((d, i) => (
-            <OriginalThumb
-              key={d.id}
-              drama={d}
-              active={i === activeIdx}
-              onClick={() => setActiveIdx(i)}
-              index={i}
-              revealed={revealed}
-            />
-          ))}
-        </div>
-      )}
-
       <style>{`
-        .framix-original-badge {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 1px;
-        }
-        .original-strip-card {
-          box-shadow: 0 40px 100px -20px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,62,108,0.16), 0 0 40px -10px rgba(255,62,108,0.10);
-          transition: box-shadow 0.4s ease;
-        }
-        .original-strip-card:hover {
-          box-shadow: 0 48px 120px -20px rgba(0,0,0,0.98), 0 0 0 1px rgba(255,62,108,0.28), 0 0 60px -10px rgba(255,62,108,0.18);
-        }
+        .fxo-section{position:relative;padding:clamp(34px,5vw,60px) clamp(20px,6vw,118px)}
+        .fxo-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px}
+        .fxo-brand{display:flex;align-items:center;gap:13px}
+        .fxo-brand-f{display:grid;place-items:center;width:42px;height:42px;border-radius:11px;
+          background:linear-gradient(135deg,#ff3e6c,#b1163f);color:#fff;font-weight:900;font-size:22px;
+          box-shadow:0 8px 22px -4px rgba(255,62,108,.6)}
+        .fxo-brand-txt{display:flex;flex-direction:column;line-height:1}
+        .fxo-brand-name{font-size:clamp(20px,2.6vw,30px);font-weight:900;color:#fff;letter-spacing:.02em}
+        .fxo-brand-orig{font-size:clamp(11px,1.3vw,13px);font-weight:800;letter-spacing:.42em;
+          color:#ff6d8c;margin-top:2px}
+        .fxo-head-meta{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;
+          color:rgba(255,255,255,.5);padding:6px 13px;border-radius:999px;
+          background:rgba(255,62,108,.08);border:1px solid rgba(255,62,108,.22)}
+        .fxo-spark{color:#ff6d8c}
+
+        .fxo-stage{opacity:0}
+        .fxo-section.in .fxo-stage{animation:fxoIn .6s cubic-bezier(.22,1,.36,1) both}
+        @keyframes fxoIn{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+
+        .fxo-panel{position:relative;border-radius:22px;overflow:hidden;
+          min-height:clamp(260px,44vw,460px);
+          box-shadow:0 40px 100px -28px rgba(0,0,0,.9);
+          border:1px solid rgba(255,62,108,.24)}
+        .fxo-panel::after{content:"";position:absolute;inset:0;border-radius:22px;pointer-events:none;
+          box-shadow:inset 0 0 60px -10px rgba(255,62,108,.22)}
+        .fxo-bg{position:absolute;inset:0}
+        .fxo-bg-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .8s ease}
+        .fxo-scrim{position:absolute;inset:0;
+          background:linear-gradient(to right,rgba(7,8,11,.95) 0%,rgba(7,8,11,.6) 42%,rgba(7,8,11,.05) 100%),
+            linear-gradient(to top,rgba(7,8,11,.75),transparent 55%)}
+
+        .fxo-info{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;
+          height:100%;min-height:clamp(260px,44vw,460px);max-width:560px;padding:clamp(22px,4vw,52px)}
+        .fxo-exclusive{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;margin-bottom:14px;
+          font-size:11px;font-weight:900;letter-spacing:.14em;color:#ff6d8c;padding:5px 11px;border-radius:7px;
+          background:rgba(255,62,108,.15);border:1px solid rgba(255,62,108,.35)}
+        .fxo-title{font-size:clamp(1.7rem,4.4vw,3rem);font-weight:900;color:#fff;line-height:1.04;
+          letter-spacing:-.02em;margin:0 0 14px;text-shadow:0 4px 24px rgba(0,0,0,.7)}
+        .fxo-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;
+          font-size:13px;color:rgba(255,255,255,.62)}
+        .fxo-star{display:inline-flex;align-items:center;gap:4px;color:#ffd34d;font-weight:800}
+        .fxo-dot{width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.35)}
+        .fxo-syn{display:none;font-size:14px;line-height:1.6;color:rgba(255,255,255,.6);margin:0 0 22px;
+          max-width:44ch;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+        @media(min-width:768px){.fxo-syn{display:-webkit-box}}
+        .fxo-actions{display:flex;align-items:center;gap:12px}
+        .fxo-play{display:inline-flex;align-items:center;gap:9px;height:48px;padding:0 24px;border:0;border-radius:12px;
+          cursor:pointer;font-size:14px;font-weight:800;color:#fff;
+          background:linear-gradient(180deg,#ff4e78,#e0214f);box-shadow:0 10px 26px -6px rgba(255,62,108,.6)}
+        .fxo-play:hover{transform:translateY(-2px)}
+        .fxo-fav{width:48px;height:48px;display:grid;place-items:center;border-radius:12px;cursor:pointer;color:#fff;
+          background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(12px)}
+        .fxo-fav.on{background:rgba(255,62,108,.22);border-color:#ff3e6c;color:#ff7d9c}
+        .fxo-detail{font-size:13px;color:rgba(255,255,255,.55);background:none;border:0;cursor:pointer;
+          text-decoration:underline;text-underline-offset:3px}
+        .fxo-detail:hover{color:#fff}
+
+        .fxo-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:42px;height:42px;border-radius:50%;
+          display:grid;place-items:center;cursor:pointer;color:#fff;
+          background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(14px);transition:all .2s ease}
+        .fxo-arrow:hover{background:rgba(0,0,0,.8);border-color:rgba(255,62,108,.6)}
+        .fxo-arrow-l{left:14px}.fxo-arrow-r{right:14px}
+        @media(max-width:768px){.fxo-arrow{display:none}}
+
+        .fxo-thumbs{display:flex;gap:11px;margin-top:14px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+        .fxo-thumbs::-webkit-scrollbar{display:none}
+        .fxo-thumb{position:relative;flex:0 0 auto;width:clamp(120px,17vw,180px);aspect-ratio:16/9;
+          border-radius:12px;overflow:hidden;cursor:pointer;border:0;padding:0;opacity:.6;
+          transition:all .3s cubic-bezier(.22,1,.36,1)}
+        .fxo-thumb img{width:100%;height:100%;object-fit:cover}
+        .fxo-thumb.active{opacity:1;outline:2px solid #ff3e6c;transform:translateY(-4px);
+          box-shadow:0 14px 30px -10px rgba(255,62,108,.55)}
+        .fxo-thumb-grad{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.8),transparent 60%)}
+        .fxo-thumb-name{position:absolute;left:8px;right:8px;bottom:6px;font-size:11px;font-weight:700;color:#fff;
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
       `}</style>
     </section>
   );
 }
 
-// ── Active Drama Info (hero overlay content) ──────────────────────────────
 function ActiveDramaInfo({ drama }: { drama: Drama }) {
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -202,141 +203,33 @@ function ActiveDramaInfo({ drama }: { drama: Drama }) {
   };
 
   return (
-    <div
-      className="animate-original-in"
-      key={drama.id}
-      style={{ animation: "originalContentIn 0.55s cubic-bezier(0.22,1,0.36,1) both" }}
-    >
-      {/* Exclusive tag */}
+    <div className="fxo-info" key={drama.id} style={{ animation: "fxoIn .55s cubic-bezier(.22,1,.36,1) both" }}>
       {drama.isExclusive && (
-        <div className="inline-flex items-center gap-1 mb-3 px-2.5 py-1 rounded bg-[#ff3e6c]/14 border border-[#ff3e6c]/30">
-          <Sparkles size={9} className="text-[#ff7196]" />
-          <span className="text-[9px] md:text-[10px] font-black tracking-widest text-[#ff7196]">독점 공개</span>
-        </div>
+        <span className="fxo-exclusive"><Sparkles size={10} /> 독점 공개</span>
       )}
-
-      {/* Title */}
-      <h3 className="text-white font-black leading-[1.1] mb-2"
-        style={{ fontSize: "clamp(1.25rem, 3.5vw, 2.2rem)", textShadow: "0 2px 16px rgba(0,0,0,0.7)" }}>
-        {drama.title}
-      </h3>
-
-      {/* Meta */}
-      <div className="flex items-center gap-2.5 mb-3 flex-wrap">
-        <div className="flex items-center gap-1">
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="#ff3e6c">
-            <path d="M5 0.5l1.3 2.6 2.9.4-2.1 2 .5 2.9L5 6.9l-2.6 1.5.5-2.9-2.1-2 2.9-.4z" />
-          </svg>
-          <span className="text-[11px] md:text-[13px] text-white font-bold">{drama.rating.toFixed(1)}</span>
-        </div>
-        <span className="text-[10px] text-white/40">·</span>
-        <span className="text-[10px] md:text-[12px] text-white/60">{drama.totalEpisodes}부작</span>
-        <span className="text-[10px] text-white/40">·</span>
+      <h3 className="fxo-title">{drama.title}</h3>
+      <div className="fxo-meta">
+        <span className="fxo-star">★ {drama.rating.toFixed(1)}</span>
+        <span className="fxo-dot" />
+        <span>{drama.totalEpisodes}부작</span>
         {drama.genres.slice(0, 2).map((g) => (
-          <span key={g} className="text-[10px] md:text-[11px] text-white/55">{g}</span>
+          <span key={g}><span className="fxo-dot" style={{ display: "inline-block", marginRight: 8 }} />{g}</span>
         ))}
       </div>
-
-      {/* Synopsis — desktop only */}
-      {drama.synopsis && (
-        <p className="hidden md:block text-[12px] lg:text-[13px] text-white/55 leading-relaxed mb-4 clamp-2 max-w-sm">
-          {drama.synopsis}
-        </p>
-      )}
-
-      {/* Actions */}
-      <div className="flex items-center gap-2.5">
-        <button
-          onClick={handlePlay}
-          className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-lg bg-white text-black font-bold text-[12px] md:text-[13px] hover:bg-white/90 active:scale-95 transition-all duration-150 shadow-lg"
-        >
-          <Play size={12} className="fill-black text-black" />
-          지금 시청
+      {drama.synopsis && <p className="fxo-syn">{drama.synopsis}</p>}
+      <div className="fxo-actions">
+        <button className="fxo-play" onClick={handlePlay}>
+          <Play size={14} className="fill-white" strokeWidth={0} /> 지금 시청
         </button>
         <button
+          className={`fxo-fav ${favorited ? "on" : ""}`}
           onClick={() => toggleFavorite(drama.id)}
-          className={[
-            "flex items-center justify-center w-9 h-9 rounded-full border transition-all duration-150 active:scale-90",
-            favorited ? "bg-white/20 border-white text-white" : "bg-black/40 border-white/35 text-white hover:border-white/65",
-          ].join(" ")}
           aria-label={favorited ? "찜 해제" : "보관함 추가"}
         >
-          {favorited ? <Check size={14} /> : <Plus size={14} />}
+          {favorited ? <Check size={16} strokeWidth={3} /> : <Plus size={16} />}
         </button>
-        <button
-          onClick={() => navigate(`/drama/${drama.id}`)}
-          className="text-[11px] md:text-[12px] text-white/50 hover:text-white/80 transition-colors duration-150 underline underline-offset-2"
-        >
-          상세보기
-        </button>
+        <button className="fxo-detail" onClick={() => navigate(`/drama/${drama.id}`)}>상세보기</button>
       </div>
-
-      <style>{`
-        @keyframes originalContentIn {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
-  );
-}
-
-// ── Original Thumbnail (bottom row) ──────────────────────────────────────
-function OriginalThumb({
-  drama,
-  active,
-  onClick,
-  index,
-  revealed,
-}: {
-  drama: Drama;
-  active: boolean;
-  onClick: () => void;
-  index: number;
-  revealed: boolean;
-}) {
-  const [imgErr, setImgErr] = useState(false);
-
-  return (
-    <button
-      onClick={onClick}
-      className="relative flex-shrink-0 rounded-xl overflow-hidden focus:outline-none"
-      style={{
-        width: "clamp(90px, 16vw, 140px)",
-        aspectRatio: "16/9",
-        opacity: 0,
-        animation: revealed ? `fade-in-up 0.5s cubic-bezier(0.22,1,0.36,1) ${index * 80}ms both` : "none",
-        boxShadow: active
-          ? "0 0 0 2px var(--color-brand), 0 8px 32px -8px rgba(255,62,108,0.55), 0 0 20px -4px rgba(255,62,108,0.35)"
-          : "0 0 0 1px rgba(255,255,255,0.08)",
-        transition: "all 0.32s cubic-bezier(0.22,1,0.36,1)",
-        transform: active ? "scale(1.04)" : "scale(1)",
-      }}
-      aria-label={drama.title}
-    >
-      {!imgErr ? (
-        <img
-          src={drama.backdrop || drama.poster}
-          alt={drama.title}
-          loading="lazy"
-          className="w-full h-full object-cover transition-transform duration-300"
-          style={{ transform: active ? "scale(1.06)" : "scale(1)" }}
-          onError={() => setImgErr(true)}
-        />
-      ) : (
-        <div className="w-full h-full bg-[#1a1a1c] flex items-center justify-center">
-          <span className="text-[9px] text-white/30">{drama.title}</span>
-        </div>
-      )}
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-      <p className="absolute bottom-1.5 left-1.5 right-1.5 text-[9px] font-semibold text-white/80 truncate text-left">
-        {drama.title}
-      </p>
-      {/* Active indicator */}
-      {active && (
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#ff3e6c]" />
-      )}
-    </button>
   );
 }

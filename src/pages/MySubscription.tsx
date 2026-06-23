@@ -173,7 +173,7 @@ export default function MySubscription() {
             to="/subscription"
             className="inline-block px-5 py-2.5 rounded-xl font-bold text-sm text-black"
             style={{
-              background: "linear-gradient(135deg, #ff7196 0%, #ff3e6c 50%, #d31a52 100%)",
+              background: "linear-gradient(135deg, #f0d77b 0%, #D4AF37 50%, #9c7e23 100%)",
             }}
           >
             구독 플랜 보기
@@ -193,7 +193,7 @@ export default function MySubscription() {
           <div className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden">
             <div
               className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-10"
-              style={{ background: "radial-gradient(circle, #ff3e6c, transparent 70%)" }}
+              style={{ background: "radial-gradient(circle, #D4AF37, transparent 70%)" }}
             />
           </div>
 
@@ -259,7 +259,7 @@ export default function MySubscription() {
                 to="/subscription"
                 className="px-5 py-2.5 rounded-xl font-bold text-sm text-black"
                 style={{
-                  background: "linear-gradient(135deg, #ff7196 0%, #ff3e6c 50%, #d31a52 100%)",
+                  background: "linear-gradient(135deg, #f0d77b 0%, #D4AF37 50%, #9c7e23 100%)",
                 }}
               >
                 다시 구독하기

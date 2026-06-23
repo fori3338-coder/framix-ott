@@ -1,13 +1,13 @@
 /**
- * ContinueWatchingRow — Premium 이어보기 섹션
- * - 카드 30% 더 크게 (cw-card-lg)
- * - Scroll Reveal (IntersectionObserver)
- * - Premium section typography
- * - Dark theme optimized
+ * ContinueWatchingRow — FRAMIX 이어보기 (full rebuild)
+ *
+ * 이어보기 경험 중심 재설계: 와이드 16:9 카드 + 큰 잔여 진행률 표시 +
+ * 두드러진 "이어보기" 레쥼 바. 가로 스크롤 / 좌우 네비게이션 유지.
+ * 기능 유지: supabase watch_history 삭제 / onRemove / 재생 이동.
  */
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Play, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, X, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import type { ContinueWatchingItem } from "../types";
 import { supabase } from "../lib/supabase";
 
@@ -25,8 +25,7 @@ function formatLastWatched(iso: string): string {
   if (!iso) return "";
   const then = new Date(iso).getTime();
   if (isNaN(then)) return "";
-  const diffMs = Date.now() - then;
-  const diffMin = Math.floor(diffMs / 60000);
+  const diffMin = Math.floor((Date.now() - then) / 60000);
   if (diffMin < 1) return "방금 시청";
   if (diffMin < 60) return `${diffMin}분 전 시청`;
   const diffHour = Math.floor(diffMin / 60);
@@ -49,17 +48,11 @@ export default function ContinueWatchingRow({ items, onRemove }: ContinueWatchin
   const [canNext, setCanNext] = useState(true);
   const [revealed, setRevealed] = useState(false);
 
-  // Scroll Reveal
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setRevealed(true);
-          obs.disconnect();
-        }
-      },
+      ([entry]) => { if (entry.isIntersecting) { setRevealed(true); obs.disconnect(); } },
       { threshold: 0.06 }
     );
     obs.observe(el);
@@ -85,9 +78,7 @@ export default function ContinueWatchingRow({ items, onRemove }: ContinueWatchin
     };
   }, [items.length, updateScroll]);
 
-  const scrollBy = (amount: number) => {
-    scrollRef.current?.scrollBy({ left: amount, behavior: "smooth" });
-  };
+  const scrollBy = (amount: number) => scrollRef.current?.scrollBy({ left: amount, behavior: "smooth" });
 
   const handleRemove = async (e: React.MouseEvent, item: ContinueWatchingItem) => {
     e.stopPropagation();
@@ -95,70 +86,39 @@ export default function ContinueWatchingRow({ items, onRemove }: ContinueWatchin
     const { data: userData } = await supabase.auth.getUser();
     const uid = userData?.user?.id;
     if (uid) {
-      await supabase
-        .from("watch_history")
-        .delete()
-        .eq("user_id", uid)
-        .eq("episode_id", item.episodeId);
+      await supabase.from("watch_history").delete().eq("user_id", uid).eq("episode_id", item.episodeId);
     }
   };
 
   if (items.length === 0) return null;
 
   return (
-    <section
-      ref={sectionRef}
-      className={[
-        "relative home-section section-reveal",
-        revealed ? "is-visible" : "",
-      ].join(" ")}
-    >
-      {/* Section Header */}
-      <div className="flex items-end justify-between px-5 md:px-12 mb-5 md:mb-7">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="section-accent-bar" />
+    <section ref={sectionRef} className="fxc-section">
+      <div className="fxc-head">
+        <div className="fxc-head-left">
+          <span className="fxc-bar" />
           <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="section-title-premium">이어보기</h2>
-              <span className="text-[9px] md:text-[10px] font-black px-2 py-[3px] rounded-full tracking-widest border bg-white/8 text-white/65 border-white/14">
-                계속 시청
-              </span>
+            <div className="fxc-title-row">
+              <h2 className="fxc-title">이어보기</h2>
+              <span className="fxc-tag"><RotateCcw size={11} /> 계속 시청</span>
             </div>
-            <p className="section-subtitle-premium hidden md:block">
-              중단한 지점부터 다시 시작하세요
-            </p>
+            <p className="fxc-sub">중단한 지점부터 바로 이어서 감상하세요</p>
           </div>
         </div>
-
-        <div className="hidden md:flex items-center gap-1.5">
-          <button
-            onClick={() => scrollBy(-800)}
-            disabled={!canPrev}
-            className="w-9 h-9 rounded-full border border-white/12 flex items-center justify-center text-white/50 hover:border-white/30 hover:text-white disabled:opacity-20 transition-all duration-200"
-          >
-            <ChevronLeft size={16} />
+        <div className="fxc-nav">
+          <button onClick={() => scrollBy(-840)} disabled={!canPrev} className="fxc-nav-btn" aria-label="이전">
+            <ChevronLeft size={18} />
           </button>
-          <button
-            onClick={() => scrollBy(800)}
-            disabled={!canNext}
-            className="w-9 h-9 rounded-full border border-white/12 flex items-center justify-center text-white/50 hover:border-white/30 hover:text-white disabled:opacity-20 transition-all duration-200"
-          >
-            <ChevronRight size={16} />
+          <button onClick={() => scrollBy(840)} disabled={!canNext} className="fxc-nav-btn" aria-label="다음">
+            <ChevronRight size={18} />
           </button>
         </div>
       </div>
 
-      {/* Edge fades */}
-      <div className="relative group/cw-row">
-        <div className="pointer-events-none absolute top-0 bottom-0 left-0 w-6 md:w-12 bg-gradient-to-r from-[#07080b] to-transparent z-[5]" />
-        <div className="pointer-events-none absolute top-0 bottom-0 right-0 w-10 md:w-20 bg-gradient-to-l from-[#07080b] to-transparent z-[5]" />
-
-        {/* Cards */}
-        <div
-          ref={scrollRef}
-          className="flex gap-4 md:gap-5 overflow-x-auto scrollbar-hide px-5 md:px-12 pb-6 md:pb-8"
-          style={{ scrollSnapType: "x mandatory" }}
-        >
+      <div className="fxc-rail-wrap">
+        <div className="fxc-fade-l" />
+        <div className="fxc-fade-r" />
+        <div ref={scrollRef} className="fxc-rail">
           {items.map((item, idx) => (
             <ContinueWatchingCard
               key={item.episodeId}
@@ -171,17 +131,89 @@ export default function ContinueWatchingRow({ items, onRemove }: ContinueWatchin
           ))}
         </div>
       </div>
+
+      <style>{`
+        .fxc-section{position:relative;padding:clamp(20px,3vw,40px) 0}
+        .fxc-head{display:flex;align-items:flex-end;justify-content:space-between;
+          padding:0 clamp(20px,6vw,118px);margin-bottom:20px}
+        .fxc-head-left{display:flex;align-items:center;gap:14px;min-width:0}
+        .fxc-bar{width:4px;height:38px;border-radius:4px;background:linear-gradient(to bottom,#ff3e6c,#b91c45);
+          box-shadow:0 0 18px rgba(255,62,108,.45)}
+        .fxc-title-row{display:flex;align-items:center;gap:10px}
+        .fxc-title{font-size:clamp(20px,2.4vw,28px);font-weight:900;color:#fff;letter-spacing:-.02em;margin:0}
+        .fxc-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.08em;
+          padding:3px 9px;border-radius:999px;color:rgba(255,255,255,.7);background:rgba(255,255,255,.08);
+          border:1px solid rgba(255,255,255,.16)}
+        .fxc-sub{margin:3px 0 0;font-size:13px;color:rgba(255,255,255,.45)}
+        .fxc-nav{display:flex;gap:8px}
+        .fxc-nav-btn{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;cursor:pointer;
+          background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.7);
+          transition:all .2s ease}
+        .fxc-nav-btn:hover:not(:disabled){background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.34)}
+        .fxc-nav-btn:disabled{opacity:.25;cursor:default}
+        @media(max-width:768px){.fxc-nav{display:none}}
+
+        .fxc-rail-wrap{position:relative}
+        .fxc-fade-l,.fxc-fade-r{position:absolute;top:0;bottom:0;width:60px;z-index:4;pointer-events:none}
+        .fxc-fade-l{left:0;background:linear-gradient(to right,#06070a,transparent)}
+        .fxc-fade-r{right:0;background:linear-gradient(to left,#06070a,transparent)}
+        .fxc-rail{display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;
+          padding:6px clamp(20px,6vw,118px) 26px;scrollbar-width:none}
+        .fxc-rail::-webkit-scrollbar{display:none}
+
+        .fxc-card{position:relative;flex:0 0 auto;width:clamp(300px,44vw,420px);scroll-snap-align:start;
+          cursor:pointer;border-radius:18px;overflow:hidden;background:#101218;
+          border:1px solid rgba(255,255,255,.07);opacity:0;
+          transition:transform .3s cubic-bezier(.22,1,.36,1),box-shadow .3s ease,border-color .3s ease}
+        .fxc-card.in{animation:fxcIn .55s cubic-bezier(.22,1,.36,1) both}
+        @keyframes fxcIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+        .fxc-card:hover{transform:translateY(-6px);border-color:rgba(255,62,108,.4);
+          box-shadow:0 26px 56px -18px rgba(0,0,0,.85)}
+        .fxc-thumb{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#1a1c22}
+        .fxc-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease}
+        .fxc-card:hover .fxc-thumb img{transform:scale(1.06)}
+        .fxc-thumb-grad{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.85),transparent 55%)}
+        .fxc-play-ov{position:absolute;inset:0;display:grid;place-items:center}
+        .fxc-play-circle{width:60px;height:60px;border-radius:50%;display:grid;place-items:center;
+          background:rgba(255,62,108,.92);box-shadow:0 8px 28px rgba(255,62,108,.5);
+          transform:scale(.85);opacity:.85;transition:all .26s ease}
+        .fxc-card:hover .fxc-play-circle{transform:scale(1);opacity:1}
+        .fxc-ep{position:absolute;top:12px;left:12px;font-size:11px;font-weight:700;color:#fff;
+          padding:4px 9px;border-radius:7px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);
+          border:1px solid rgba(255,255,255,.12)}
+        .fxc-remove{position:absolute;top:11px;right:11px;width:30px;height:30px;border-radius:50%;
+          display:grid;place-items:center;cursor:pointer;color:rgba(255,255,255,.7);
+          background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.16);opacity:0;transition:all .2s ease;z-index:5}
+        .fxc-card:hover .fxc-remove{opacity:1}
+        .fxc-remove:hover{background:#000;color:#fff}
+
+        .fxc-bar-track{position:absolute;left:0;right:0;bottom:0;height:5px;background:rgba(255,255,255,.16)}
+        .fxc-bar-fill{height:100%;position:relative;border-radius:0 3px 3px 0}
+        .fxc-bar-fill::after{content:"";position:absolute;right:0;top:50%;transform:translate(50%,-50%);
+          width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 0 10px rgba(255,255,255,.9)}
+
+        .fxc-body{padding:14px 16px 16px}
+        .fxc-row1{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+        .fxc-name{font-size:15px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .fxc-ep2{font-size:12px;color:rgba(255,255,255,.5);margin-top:3px}
+        .fxc-pct{flex:0 0 auto;font-size:13px;font-weight:900;color:#ff7d9c;font-variant-numeric:tabular-nums}
+        .fxc-pct.done{color:#ff5252}
+        .fxc-metarow{display:flex;align-items:center;justify-content:space-between;margin:12px 0 12px;
+          font-size:11px;color:rgba(255,255,255,.42)}
+        .fxc-remain{font-weight:700;color:rgba(255,255,255,.6);font-variant-numeric:tabular-nums}
+        .fxc-resume{width:100%;height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+          border:0;border-radius:11px;cursor:pointer;font-size:14px;font-weight:800;color:#fff;
+          background:linear-gradient(180deg,#ff4e78,#e0214f);
+          box-shadow:0 8px 22px -6px rgba(255,62,108,.55);transition:transform .16s ease,box-shadow .16s ease}
+        .fxc-resume:hover{transform:translateY(-1px);box-shadow:0 12px 28px -6px rgba(255,62,108,.7)}
+        .fxc-resume:active{transform:scale(.98)}
+      `}</style>
     </section>
   );
 }
 
-// ─── Individual Card ───────────────────────────────────────────────────────
 function ContinueWatchingCard({
-  item,
-  idx,
-  revealed,
-  onPlay,
-  onRemove,
+  item, idx, revealed, onPlay, onRemove,
 }: {
   item: ContinueWatchingItem;
   idx: number;
@@ -192,209 +224,62 @@ function ContinueWatchingCard({
   const remainSec = Math.max(0, item.durationSeconds - item.progressSeconds);
   const progressPct = Math.min(100, Math.max(0, item.progress));
   const isNearDone = progressPct >= 85;
-  const isAlmostDone = remainSec < 120;
-
-  // 남은 화수 계산 (totalEpisodes가 있을 경우)
   const remainingEps = item.totalEpisodes && item.episodeNumber
     ? Math.max(0, item.totalEpisodes - item.episodeNumber)
     : null;
 
   return (
     <div
-      className="relative shrink-0 cursor-pointer group"
-      style={{
-        width: "clamp(280px, 42vw, 380px)",
-        scrollSnapAlign: "start",
-        opacity: 0,
-        animation: revealed
-          ? `fade-in-up 0.55s cubic-bezier(0.22,1,0.36,1) ${Math.min(idx * 60, 360)}ms both`
-          : "none",
-      }}
+      className={`fxc-card ${revealed ? "in" : ""}`}
+      style={{ animationDelay: `${Math.min(idx * 60, 360)}ms` }}
       onClick={onPlay}
     >
-      {/* ── Thumbnail 16:9 ─────────────────────────────────────────── */}
-      <div
-        className={[
-          "relative w-full rounded-xl overflow-hidden bg-zinc-900",
-          "transition-[transform,box-shadow] duration-[320ms]",
-          "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
-          "md:group-hover:scale-[1.04]",
-          "md:group-hover:shadow-[0_28px_64px_rgba(0,0,0,0.70)]",
-          "will-change-[transform]",
-          "ring-1 ring-white/8 md:group-hover:ring-white/20",
-        ].join(" ")}
-        style={{ aspectRatio: "16/9" }}
-      >
+      <div className="fxc-thumb">
         <img
           src={item.thumbnail}
           alt={item.seriesTitle}
-          className={[
-            "w-full h-full object-cover",
-            "transition-transform duration-[320ms]",
-            "[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
-            "md:group-hover:scale-[1.08]",
-            "will-change-transform",
-          ].join(" ")}
           onError={(e) => {
             const img = e.target as HTMLImageElement;
-            if (!img.src.endsWith("/content/fallback-poster.svg"))
-              img.src = "/content/fallback-poster.svg";
+            if (!img.src.endsWith("/content/fallback-poster.svg")) img.src = "/content/fallback-poster.svg";
           }}
         />
-
-        {/* Cinematic gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
-
-        {/* ── Play Button ──────────────────────────────────────────── */}
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="fxc-thumb-grad" />
+        <div className="fxc-play-ov">
+          <div className="fxc-play-circle"><Play size={24} className="text-white fill-white ml-0.5" /></div>
+        </div>
+        <span className="fxc-ep">{item.episodeNumber}화{item.episodeTitle ? ` · ${item.episodeTitle}` : ""}</span>
+        <button className="fxc-remove" onClick={onRemove} aria-label="이어보기에서 삭제"><X size={13} /></button>
+        <div className="fxc-bar-track">
           <div
-            className={[
-              "w-14 h-14 rounded-full flex items-center justify-center",
-              "transition-[transform,opacity,background,box-shadow] duration-[280ms]",
-              "opacity-60 md:group-hover:opacity-100",
-              "scale-90 md:group-hover:scale-110",
-              "bg-white/80 md:group-hover:bg-white",
-              "shadow-[0_4px_20px_rgba(0,0,0,0.45)] md:group-hover:shadow-[0_8px_32px_rgba(0,0,0,0.6)]",
-            ].join(" ")}
-          >
-            <Play size={24} className="text-black fill-black ml-1" />
-          </div>
-        </div>
-
-        {/* ── Remove Button ──────────────────────────────────────── */}
-        <button
-          onClick={onRemove}
-          className={[
-            "absolute top-2.5 right-2.5 w-7 h-7 rounded-full",
-            "bg-black/70 border border-white/18",
-            "flex items-center justify-center text-white/55",
-            "hover:text-white hover:bg-black/90 hover:border-white/38",
-            "transition-all z-10",
-            "opacity-0 md:group-hover:opacity-100",
-            "active:scale-90",
-          ].join(" ")}
-          aria-label="이어보기 목록에서 삭제"
-        >
-          <X size={12} />
-        </button>
-
-        {/* ── Episode badge (top-left) ──────────────────────────── */}
-        <div className="absolute top-2.5 left-2.5 z-10">
-          <span
-            className="text-[9px] font-bold text-white/80 px-2 py-0.5 rounded-md border border-white/12"
-            style={{ background: "rgba(0,0,0,0.60)", backdropFilter: "blur(6px)" }}
-          >
-            {item.episodeNumber}화{item.episodeTitle ? ` · ${item.episodeTitle}` : ""}
-          </span>
-        </div>
-
-        {/* ── Progress bar — bottom of thumbnail, thicker & more readable ── */}
-        <div className="absolute bottom-0 left-0 right-0">
-          {/* Track */}
-          <div className="h-[4px] bg-white/15 w-full">
-            <div
-              className="h-full transition-[width] duration-500 relative"
-              style={{
-                width: `${progressPct}%`,
-                background: isNearDone
-                  ? "linear-gradient(to right, #c0392b, #ff5252)"
-                  : "linear-gradient(to right, rgba(255,255,255,0.7), #ffffff)",
-                boxShadow: isNearDone
-                  ? "0 0 10px 2px rgba(255,82,82,0.6)"
-                  : "0 0 8px 2px rgba(255,255,255,0.45)",
-              }}
-            >
-              {/* Progress dot */}
-              <span
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-[8px] h-[8px] rounded-full"
-                style={{
-                  background: isNearDone ? "#ff5252" : "#ffffff",
-                  boxShadow: isNearDone
-                    ? "0 0 10px rgba(255,82,82,0.9)"
-                    : "0 0 8px rgba(255,255,255,0.9)",
-                }}
-              />
-            </div>
-          </div>
+            className="fxc-bar-fill"
+            style={{
+              width: `${progressPct}%`,
+              background: isNearDone ? "linear-gradient(to right,#c0392b,#ff5252)" : "linear-gradient(to right,#ff4e78,#ff3e6c)",
+              boxShadow: isNearDone ? "0 0 12px rgba(255,82,82,.6)" : "0 0 12px rgba(255,62,108,.6)",
+            }}
+          />
         </div>
       </div>
 
-      {/* ── Info Section ──────────────────────────────────────────── */}
-      <div className="mt-3 flex flex-col gap-2">
-
-        {/* Row 1: 제목 + 에피소드 */}
-        <div>
-          <p className="text-white font-bold text-[13px] md:text-[14px] truncate leading-tight">
-            {item.seriesTitle}
-          </p>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-white/45 text-[10px] font-medium truncate">
-              {item.episodeNumber}화{item.episodeTitle ? ` · ${item.episodeTitle}` : ""}
-            </span>
-            {/* 남은 화수 badge */}
-            {remainingEps !== null && remainingEps > 0 && (
-              <>
-                <span className="text-white/25 text-[9px]">·</span>
-                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded"
-                  style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)" }}>
-                  {remainingEps}화 남음
-                </span>
-              </>
-            )}
+      <div className="fxc-body">
+        <div className="fxc-row1">
+          <div style={{ minWidth: 0 }}>
+            <p className="fxc-name">{item.seriesTitle}</p>
+            <p className="fxc-ep2">
+              {item.episodeNumber}화 시청 중
+              {remainingEps !== null && remainingEps > 0 ? ` · ${remainingEps}화 남음` : ""}
+            </p>
           </div>
+          <span className={`fxc-pct ${isNearDone ? "done" : ""}`}>{progressPct}%</span>
         </div>
 
-        {/* Row 2: 진행률 시각적 바 + 퍼센트 + 시간 */}
-        <div className="flex flex-col gap-1.5">
-          {/* 진행률 텍스트 바 */}
-          <div className="flex items-center justify-between">
-            <span className="text-white/38 text-[10px] font-medium">
-              {item.lastWatched ? formatLastWatched(item.lastWatched) : ""}
-            </span>
-            <div className="flex items-center gap-2">
-              <span
-                className="text-[10px] font-bold tabular-nums"
-                style={{ color: isAlmostDone ? "rgba(255,82,82,0.9)" : "rgba(255,255,255,0.55)" }}
-              >
-                {formatTime(remainSec)} 남음
-              </span>
-              <span
-                className="text-[10px] font-black tabular-nums px-1.5 py-0.5 rounded"
-                style={{
-                  color: isNearDone ? "rgba(255,82,82,0.9)" : "rgba(255,255,255,0.75)",
-                  background: isNearDone ? "rgba(255,82,82,0.12)" : "rgba(255,255,255,0.09)",
-                }}
-              >
-                {progressPct}%
-              </span>
-            </div>
-          </div>
-          {/* 미니 Progress bar (info 영역에도 반복) */}
-          <div className="h-[2px] w-full bg-white/10 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-[width] duration-500"
-              style={{
-                width: `${progressPct}%`,
-                background: isNearDone
-                  ? "linear-gradient(to right, #c0392b, #ff5252)"
-                  : "rgba(255,255,255,0.55)",
-              }}
-            />
-          </div>
+        <div className="fxc-metarow">
+          <span>{item.lastWatched ? formatLastWatched(item.lastWatched) : ""}</span>
+          <span className="fxc-remain">{formatTime(remainSec)} 남음</span>
         </div>
 
-        {/* ── Resume Button ─────────────────────────────────── */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onPlay(); }}
-          className={[
-            "w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg",
-            "text-[11px] font-bold tracking-wide",
-            "bg-white text-black",
-            "hover:bg-white/90 active:scale-[0.97]",
-            "transition-all duration-200 shadow-[0_4px_16px_rgba(0,0,0,0.3)]",
-          ].join(" ")}
-        >
-          <Play size={11} className="fill-black text-black" />
+        <button className="fxc-resume" onClick={(e) => { e.stopPropagation(); onPlay(); }}>
+          <Play size={14} className="fill-white" strokeWidth={0} />
           이어보기
         </button>
       </div>

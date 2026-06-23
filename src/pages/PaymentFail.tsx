@@ -44,7 +44,7 @@ export default function PaymentFail() {
             onClick={() => navigate("/subscription")}
             className="w-full py-3 rounded-xl font-black text-sm text-black tracking-wide transition-all hover:brightness-110 active:scale-[0.97]"
             style={{
-              background: "linear-gradient(135deg, #ff7196 0%, #ff3e6c 50%, #d31a52 100%)",
+              background: "linear-gradient(135deg, #f0d77b 0%, #D4AF37 50%, #9c7e23 100%)",
               boxShadow: "0 4px 24px rgba(212,175,55,0.35)",
             }}
           >

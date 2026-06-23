@@ -55,7 +55,7 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
         {/* 상단 헤더 */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4">
           <div>
-            <span className="text-xl font-black tracking-tight" style={{ color: "#ff3e6c" }}>
+            <span className="text-xl font-black tracking-tight" style={{ color: "#D4AF37" }}>
               FRAMIX
             </span>
             <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
@@ -80,7 +80,7 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
                 onClick={() => { setMode(m); setError(null); setSuccess(null); }}
                 className="flex-1 py-2 text-sm font-semibold transition-all duration-200"
                 style={{
-                  background: mode === m ? "#ff3e6c" : "transparent",
+                  background: mode === m ? "#D4AF37" : "transparent",
                   color: mode === m ? "#000" : "var(--color-text-muted)",
                 }}
               >
@@ -120,7 +120,7 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
                       color: "var(--color-text)",
                       borderColor: "var(--color-border)",
                     }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = "#ff3e6c"; }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = "#D4AF37"; }}
                     onBlur={(e) => { e.currentTarget.style.borderColor = "var(--color-border)"; }}
                   />
                 </div>
@@ -141,7 +141,7 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
                     color: "var(--color-text)",
                     borderColor: "var(--color-border)",
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = "#ff3e6c"; }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = "#D4AF37"; }}
                   onBlur={(e) => { e.currentTarget.style.borderColor = "var(--color-border)"; }}
                 />
               </div>
@@ -161,7 +161,7 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
                     color: "var(--color-text)",
                     borderColor: "var(--color-border)",
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = "#ff3e6c"; }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = "#D4AF37"; }}
                   onBlur={(e) => { e.currentTarget.style.borderColor = "var(--color-border)"; }}
                 />
                 <button
@@ -179,7 +179,7 @@ export default function AuthModal({ onClose, defaultMode = "login" }: AuthModalP
                 onClick={handleSubmit}
                 disabled={loading}
                 className="w-full py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 disabled:opacity-60"
-                style={{ background: "#ff3e6c", color: "#000" }}
+                style={{ background: "#D4AF37", color: "#000" }}
               >
                 {loading && <Loader2 size={16} className="animate-spin" />}
                 {mode === "login" ? "로그인" : "회원가입"}

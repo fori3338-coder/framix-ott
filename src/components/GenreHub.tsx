@@ -42,7 +42,7 @@ const GENRE_CONFIG: { key: GenreKey; label: string; icon: React.ReactNode; color
     label: "재벌",
     icon: <Crown size={13} />,
     color: "rgba(212,175,55,0.15)",
-    accent: "#ff3e6c",
+    accent: "#D4AF37",
   },
   {
     key: "contract",

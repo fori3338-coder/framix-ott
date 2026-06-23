@@ -71,7 +71,7 @@ export default function DramaCard({
         {/* Badges */}
         <div className="absolute top-1.5 left-1.5 flex flex-col gap-1 items-start z-10">
           {drama.isExclusive && (
-            <span className="bg-[#ff3e6c] text-black text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+            <span className="bg-[#D4AF37] text-black text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
               독점
             </span>
           )}
@@ -90,7 +90,7 @@ export default function DramaCard({
               style={{
                 fontSize: "4.2rem",
                 color: "transparent",
-                WebkitTextStroke: "2px #ff3e6c",
+                WebkitTextStroke: "2px #D4AF37",
                 lineHeight: "0.8",
               }}
             >
@@ -128,7 +128,7 @@ export default function DramaCard({
         {progress !== undefined && progress > 0 && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50">
             <div
-              className="h-full bg-[#ff3e6c]"
+              className="h-full bg-[#D4AF37]"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -141,7 +141,7 @@ export default function DramaCard({
           {drama.title}
         </p>
         <div className="flex items-center gap-1 mt-0.5">
-          <Star size={10} className="text-[#ff3e6c] fill-[#ff3e6c] shrink-0" />
+          <Star size={10} className="text-[#D4AF37] fill-[#D4AF37] shrink-0" />
           <span className="text-[10px] text-white/50">{drama.rating.toFixed(1)}</span>
           <span className="text-[10px] text-white/30">· {drama.totalEpisodes}부작</span>
         </div>

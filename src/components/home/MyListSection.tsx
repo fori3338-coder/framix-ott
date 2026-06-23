@@ -73,7 +73,7 @@ export default function MyListSection({ favoritedList, continueWatchingItems, al
       {/* Header + Tabs inline */}
       <div className="px-5 md:px-12 mb-5">
         <div className="flex items-center gap-3 mb-4">
-          <div className="section-accent-bar" style={{ background: "linear-gradient(to bottom, #ff3e6c, #d31a52)" }} />
+          <div className="section-accent-bar" style={{ background: "linear-gradient(to bottom, #D4AF37, #9c7e23)" }} />
           <h2 className="section-title-premium">내 보관함</h2>
         </div>
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5">
@@ -91,14 +91,14 @@ export default function MyListSection({ favoritedList, continueWatchingItems, al
                   animation: revealed ? `fade-in-up 0.4s cubic-bezier(0.22,1,0.36,1) ${i * 60}ms both` : "none",
                   background: isActive ? "rgba(212,175,55,0.15)" : "rgba(255,255,255,0.04)",
                   borderColor: isActive ? "rgba(212,175,55,0.4)" : "rgba(255,255,255,0.08)",
-                  color: isActive ? "#ff3e6c" : "rgba(255,255,255,0.45)",
+                  color: isActive ? "#D4AF37" : "rgba(255,255,255,0.45)",
                   boxShadow: isActive ? "0 4px 16px -6px rgba(212,175,55,0.35)" : "none",
                 }}
               >
-                <span style={{ color: isActive ? "#ff3e6c" : "rgba(255,255,255,0.3)" }}>{tab.icon}</span>
+                <span style={{ color: isActive ? "#D4AF37" : "rgba(255,255,255,0.3)" }}>{tab.icon}</span>
                 {tab.label}
                 {count > 0 && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: isActive ? "rgba(212,175,55,0.2)" : "rgba(255,255,255,0.06)", color: isActive ? "#ff3e6c" : "rgba(255,255,255,0.28)" }}>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: isActive ? "rgba(212,175,55,0.2)" : "rgba(255,255,255,0.06)", color: isActive ? "#D4AF37" : "rgba(255,255,255,0.28)" }}>
                     {count}
                   </span>
                 )}
@@ -191,7 +191,7 @@ function MyListCard({ drama, tab, cwItem }: { drama: Drama; index: number; tab: 
                 width: `${Math.min(progress, 100)}%`,
                 background: progress >= 85
                   ? "linear-gradient(to right, #c0392b, #ff5252)"
-                  : "#ff3e6c",
+                  : "#D4AF37",
               }}
             />
           </div>
