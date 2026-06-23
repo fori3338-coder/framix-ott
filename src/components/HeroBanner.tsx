@@ -216,8 +216,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
           </div>
         </div>
 
-        {/* RIGHT COLUMN */}
-        <div className="hero-v10-right" />
+
       </div>
 
       {/* ── Slide Indicators ─────────────────────────────────────── */}

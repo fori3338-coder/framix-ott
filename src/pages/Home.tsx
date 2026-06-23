@@ -39,7 +39,7 @@ function merge(dbDramas: Drama[], showcase: Drama[]): Drama[] {
 
 // ── Footer ────────────────────────────────────────────────────────────────
 function HomeFooter() {
-  const serviceLinks = ["이용약관", "개인정보처리방침", "고객센터", "공지사항", "1:1 문의", "콘텐츠 파트너십"];
+  const serviceLinks = ["이용약관", "개인정보처리방침", "고객센터", "공지사항", "1:1 문의", "콘텐츠 제휴", "광고 문의"];
   return (
     <footer className="framix-footer-v4">
       <div className="framix-footer-v4-inner">
@@ -51,7 +51,7 @@ function HomeFooter() {
         </nav>
         <div className="framix-footer-v4-divider" />
         <p className="framix-footer-v4-copy">
-          © 2025 FRAMIX. All rights reserved. · 본 서비스의 콘텐츠는 저작권법에 의해 보호됩니다.
+          © 2025 FRAMIX. All rights reserved. · 본 서비스의 콘텐츠는 저작권법에 의해 보호됩니다. · support@framix.co.kr
         </p>
       </div>
     </footer>
