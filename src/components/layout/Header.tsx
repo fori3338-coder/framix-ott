@@ -73,6 +73,7 @@ export default function Header() {
   // Profile dropdown (desktop) / bottom-sheet (mobile)
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const [avatarErr, setAvatarErr] = useState(false);
 
   const { hidden, progress } = useHeaderScroll();
 
@@ -143,15 +144,15 @@ export default function Header() {
   /* ── Inline styles for dynamic glass effect ── */
   const headerStyle: React.CSSProperties = {
     transform: hidden ? "translate3d(0,-100%,0)" : "translate3d(0,0,0)",
-    transition: "transform 380ms cubic-bezier(0.4,0,0.2,1), background 300ms ease, backdrop-filter 300ms ease, box-shadow 300ms ease",
+    transition: "transform 360ms cubic-bezier(0.4,0,0.2,1), background 280ms ease, backdrop-filter 280ms ease, box-shadow 280ms ease",
     willChange: "transform, opacity",
     background: progress > 0
-      ? `rgba(8,8,10,${0.72 + progress * 0.18})`
+      ? `rgba(6,6,8,${0.78 + progress * 0.16})`
       : "transparent",
-    backdropFilter: progress > 0 ? `blur(${progress * 20}px) saturate(${140 + progress * 40}%)` : "none",
-    WebkitBackdropFilter: progress > 0 ? `blur(${progress * 20}px) saturate(${140 + progress * 40}%)` : "none",
-    boxShadow: progress > 0.5
-      ? `0 1px 0 rgba(255,255,255,${0.06 * progress}), 0 4px 24px rgba(0,0,0,${0.3 * progress})`
+    backdropFilter: progress > 0 ? `blur(${progress * 24}px) saturate(${160 + progress * 50}%)` : "none",
+    WebkitBackdropFilter: progress > 0 ? `blur(${progress * 24}px) saturate(${160 + progress * 50}%)` : "none",
+    boxShadow: progress > 0.4
+      ? `0 1px 0 rgba(255,255,255,${0.07 * progress}), 0 4px 32px rgba(0,0,0,${0.38 * progress})`
       : "none",
   };
 
@@ -239,11 +240,18 @@ export default function Header() {
                   aria-label="프로필 메뉴"
                   aria-expanded={profileOpen}
                 >
-                  <img
-                    src="https://picsum.photos/seed/framix-profile/64/64"
-                    alt="프로필"
-                    className="framix-avatar"
-                  />
+                  {avatarErr ? (
+                    <div className="framix-avatar flex items-center justify-center bg-white/10 border border-white/20">
+                      <User size={16} className="text-white/70" />
+                    </div>
+                  ) : (
+                    <img
+                      src={user.user_metadata?.avatar_url || "https://picsum.photos/seed/framix-profile/64/64"}
+                      alt="프로필"
+                      className="framix-avatar"
+                      onError={() => setAvatarErr(true)}
+                    />
+                  )}
                   <ChevronDown
                     size={13}
                     className="framix-chevron"
@@ -255,11 +263,18 @@ export default function Header() {
                 {profileOpen && (
                   <div className="framix-dropdown framix-desktop-only" role="menu">
                     <div className="framix-dropdown-header">
-                      <img
-                        src="https://picsum.photos/seed/framix-profile/64/64"
-                        alt="프로필"
-                        className="framix-dropdown-avatar"
-                      />
+                      {avatarErr ? (
+                        <div className="framix-dropdown-avatar flex items-center justify-center bg-white/10 border border-white/20 rounded-full">
+                          <User size={18} className="text-white/70" />
+                        </div>
+                      ) : (
+                        <img
+                          src={user.user_metadata?.avatar_url || "https://picsum.photos/seed/framix-profile/64/64"}
+                          alt="프로필"
+                          className="framix-dropdown-avatar"
+                          onError={() => setAvatarErr(true)}
+                        />
+                      )}
                       <div>
                         <p className="framix-dropdown-email">{user.email}</p>
                         <p className="framix-dropdown-plan">FRAMIX 멤버</p>
@@ -303,20 +318,31 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              <div className="framix-auth-btns">
+              <>
+                {/* 모바일: 로그인 아이콘 버튼 */}
                 <button
-                  className="framix-btn-ghost"
+                  className="framix-icon-btn framix-mobile-only"
                   onClick={() => openAuth("login")}
+                  aria-label="로그인"
                 >
-                  로그인
+                  <User size={20} />
                 </button>
-                <button
-                  className="framix-btn-primary"
-                  onClick={() => openAuth("signup")}
-                >
-                  시작하기
-                </button>
-              </div>
+                {/* 데스크탑: 텍스트 버튼 */}
+                <div className="framix-auth-btns framix-desktop-only">
+                  <button
+                    className="framix-btn-ghost"
+                    onClick={() => openAuth("login")}
+                  >
+                    로그인
+                  </button>
+                  <button
+                    className="framix-btn-primary"
+                    onClick={() => openAuth("signup")}
+                  >
+                    시작하기
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -335,11 +361,18 @@ export default function Header() {
           <div className="framix-bottom-sheet framix-mobile-only" role="dialog" aria-modal="true">
             <div className="framix-bottom-sheet-handle" />
             <div className="framix-dropdown-header">
-              <img
-                src="https://picsum.photos/seed/framix-profile/64/64"
-                alt="프로필"
-                className="framix-dropdown-avatar"
-              />
+              {avatarErr ? (
+                <div className="framix-dropdown-avatar flex items-center justify-center bg-white/10 border border-white/20 rounded-full">
+                  <User size={18} className="text-white/70" />
+                </div>
+              ) : (
+                <img
+                  src={user.user_metadata?.avatar_url || "https://picsum.photos/seed/framix-profile/64/64"}
+                  alt="프로필"
+                  className="framix-dropdown-avatar"
+                  onError={() => setAvatarErr(true)}
+                />
+              )}
               <div>
                 <p className="framix-dropdown-email">{user.email}</p>
                 <p className="framix-dropdown-plan">FRAMIX 멤버</p>

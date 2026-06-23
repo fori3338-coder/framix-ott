@@ -100,7 +100,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             {/* ── Title ─────────────────────────────────────────────── */}
             <h1
               className="hero-v10-title hero-fade-in"
-              style={{ animationDelay: "0ms", animationFillMode: "backwards" }}
+              style={{ animationDelay: "60ms", animationFillMode: "backwards" }}
             >
               {drama.title}
             </h1>
@@ -108,7 +108,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             {/* ── Cinematic Metadata Row ─────────────────────────────── */}
             <div
               className="hero-v10-metadata hero-fade-in"
-              style={{ animationDelay: "120ms", animationFillMode: "backwards" }}
+              style={{ animationDelay: "130ms", animationFillMode: "backwards" }}
             >
               {/* Rating box */}
               <div className="hero-v10-meta-item">
@@ -150,7 +150,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             {/* ── Description ───────────────────────────────────────── */}
             <p
               className="hero-v10-description hero-fade-in"
-              style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
+              style={{ animationDelay: "190ms", animationFillMode: "backwards" }}
             >
               {drama.synopsis}
             </p>
@@ -158,7 +158,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             {/* ── Genre Tags ────────────────────────────────────────── */}
             <div
               className="hero-v10-genre-tags hero-fade-in"
-              style={{ animationDelay: "300ms", animationFillMode: "backwards" }}
+              style={{ animationDelay: "250ms", animationFillMode: "backwards" }}
             >
               {drama.genres.slice(0, 3).map((g) => (
                 <span key={g} className="hero-v10-genre-tag">{g}</span>
@@ -168,7 +168,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
             {/* ── Action Buttons ────────────────────────────────────── */}
             <div
               className="hero-v10-actions hero-fade-in"
-              style={{ animationDelay: "360ms", animationFillMode: "backwards" }}
+              style={{ animationDelay: "320ms", animationFillMode: "backwards" }}
             >
               {/* Play — primary white pill */}
               <button
@@ -216,7 +216,8 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
           </div>
         </div>
 
-
+        {/* RIGHT COLUMN */}
+        <div className="hero-v10-right" />
       </div>
 
       {/* ── Slide Indicators ─────────────────────────────────────── */}

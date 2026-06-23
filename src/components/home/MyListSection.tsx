@@ -112,7 +112,7 @@ export default function MyListSection({ favoritedList, continueWatchingItems, al
       {currentDramas.length > 0 ? (
         <div
           key={animKey}
-          className="flex gap-3 px-5 md:px-12 overflow-x-auto scrollbar-hide pb-2"
+          className="flex gap-3.5 md:gap-4 px-5 md:px-12 overflow-x-auto scrollbar-hide pb-4"
           style={{ animation: "myListIn 0.3s cubic-bezier(0.22,1,0.36,1) both" }}
         >
           {currentDramas.map((drama, i) => (
@@ -146,8 +146,8 @@ function MyListCard({ drama, tab, cwItem }: { drama: Drama; index: number; tab: 
 
   return (
     <div
-      className="flex-shrink-0 cursor-pointer"
-      style={{ width: "clamp(100px, 22vw, 150px)" }}
+      className="flex-shrink-0 cursor-pointer group"
+      style={{ width: "clamp(105px, 22vw, 155px)" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() => navigate(`/drama/${drama.id}`)}
@@ -156,13 +156,26 @@ function MyListCard({ drama, tab, cwItem }: { drama: Drama; index: number; tab: 
         className="relative rounded-xl overflow-hidden"
         style={{
           aspectRatio: "2/3",
-          transform: hovered ? "scale(1.06)" : "scale(1)",
-          transition: "transform 0.3s cubic-bezier(0.22,1,0.36,1)",
-          boxShadow: hovered ? "0 16px 48px -12px rgba(0,0,0,0.75), 0 0 0 1.5px rgba(212,175,55,0.3)" : "0 4px 16px -4px rgba(0,0,0,0.45)",
+          transform: hovered ? "scale(1.05) translateY(-6px)" : "scale(1) translateY(0)",
+          transition: "transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s cubic-bezier(0.22,1,0.36,1)",
+          boxShadow: hovered
+            ? "0 20px 56px -8px rgba(0,0,0,0.9), 0 0 0 1.5px rgba(212,175,55,0.5)"
+            : "0 4px 16px -4px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06)",
+          willChange: "transform, box-shadow",
         }}
       >
         {!imgErr ? (
-          <img src={drama.poster || drama.backdrop} alt={drama.title} loading="lazy" className="w-full h-full object-cover" onError={() => setImgErr(true)} />
+          <img
+            src={drama.poster || drama.backdrop}
+            alt={drama.title}
+            loading="lazy"
+            className="w-full h-full object-cover"
+            style={{
+              transform: hovered ? "scale(1.12)" : "scale(1)",
+              transition: "transform 0.3s cubic-bezier(0.22,1,0.36,1)",
+            }}
+            onError={() => setImgErr(true)}
+          />
         ) : (
           <div className="w-full h-full bg-[#1a1a1c] flex items-center justify-center">
             <span className="text-[8px] text-white/30 text-center px-1">{drama.title}</span>
@@ -171,13 +184,29 @@ function MyListCard({ drama, tab, cwItem }: { drama: Drama; index: number; tab: 
 
         {/* Progress bar for continue watching */}
         {tab === "continue" && progress > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/15">
-            <div className="h-full bg-[#D4AF37] transition-all" style={{ width: `${Math.min(progress, 100)}%` }} />
+          <div className="absolute bottom-0 left-0 right-0 h-[3.5px] bg-white/12">
+            <div
+              className="h-full transition-all"
+              style={{
+                width: `${Math.min(progress, 100)}%`,
+                background: progress >= 85
+                  ? "linear-gradient(to right, #c0392b, #ff5252)"
+                  : "#D4AF37",
+              }}
+            />
           </div>
         )}
 
         {/* Hover overlay */}
-        <div className="absolute inset-0 flex flex-col justify-end p-2 transition-opacity duration-200" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.88) 0%, transparent 55%)", opacity: hovered ? 1 : 0 }}>
+        <div
+          className="absolute inset-0 flex flex-col justify-end p-2 pointer-events-none"
+          style={{
+            background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.25) 45%, transparent 75%)",
+            opacity: hovered ? 1 : 0,
+            transition: "opacity 0.25s ease",
+            pointerEvents: hovered ? "auto" : "none",
+          }}
+        >
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -192,7 +221,9 @@ function MyListCard({ drama, tab, cwItem }: { drama: Drama; index: number; tab: 
           </button>
         </div>
       </div>
-      <p className="mt-1.5 text-[10px] font-semibold text-white/70 truncate px-0.5">{drama.title}</p>
+      <p className="mt-2 text-[10px] font-semibold text-white/70 truncate px-0.5 group-hover:text-white/90 transition-colors duration-200">
+        {drama.title}
+      </p>
     </div>
   );
 }
