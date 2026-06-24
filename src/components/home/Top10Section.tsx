@@ -76,6 +76,7 @@ export default function Top10Section({ dramas }: Top10SectionProps) {
         .fxt-section{position:relative;padding:clamp(34px,5vw,60px) 0}
         .fxt-head{display:flex;align-items:center;justify-content:space-between;
           padding:0 clamp(20px,6vw,118px);margin-bottom:22px}
+        @media(max-width:860px){.fxt-head{padding:0 16px;margin-bottom:14px}}
         .fxt-head-left{display:flex;align-items:center;gap:14px}
         .fxt-bar{width:4px;height:38px;border-radius:4px;background:linear-gradient(to bottom,#ff3e6c,#b91c45);
           box-shadow:0 0 18px rgba(255,62,108,.45)}
@@ -89,6 +90,9 @@ export default function Top10Section({ dramas }: Top10SectionProps) {
         .fxt-rail{display:flex;gap:clamp(34px,4vw,56px);overflow-x:auto;scroll-snap-type:x mandatory;
           padding:14px clamp(20px,6vw,118px) 30px;scrollbar-width:none}
         .fxt-rail::-webkit-scrollbar{display:none}
+        @media(max-width:860px){
+          .fxt-rail{gap:clamp(20px,8vw,32px);padding:14px 16px 24px;-webkit-overflow-scrolling:touch}
+        }
 
         .fxt-card{position:relative;flex:0 0 auto;display:flex;align-items:flex-end;cursor:pointer;
           scroll-snap-align:start;opacity:0}
@@ -100,6 +104,9 @@ export default function Top10Section({ dramas }: Top10SectionProps) {
           -webkit-text-stroke:2px rgba(255,255,255,.22);color:transparent;
           margin-right:clamp(-26px,-2.4vw,-44px);position:relative;z-index:1;user-select:none;
           font-family:"Arial Black",Helvetica,sans-serif}
+        @media(max-width:860px){
+          .fxt-num{font-size:clamp(80px,22vw,120px);margin-right:clamp(-18px,-5vw,-28px)}
+        }
         .fxt-num.gold{-webkit-text-stroke:0;background:linear-gradient(160deg,#fff3c4,#ffd700 35%,#b8860b 70%,#ffd700);
           -webkit-background-clip:text;background-clip:text;
           filter:drop-shadow(0 0 20px rgba(255,215,0,.45))}
@@ -112,6 +119,7 @@ export default function Top10Section({ dramas }: Top10SectionProps) {
           border-radius:14px;overflow:hidden;background:#141519;
           box-shadow:0 18px 44px -14px rgba(0,0,0,.8);
           transition:transform .32s cubic-bezier(.22,1,.36,1),box-shadow .32s ease}
+        @media(max-width:860px){.fxt-poster{width:clamp(100px,28vw,130px);border-radius:10px}}
         .fxt-card:hover .fxt-poster{transform:translateY(-8px) scale(1.03);
           box-shadow:0 30px 60px -16px rgba(0,0,0,.9),0 0 0 1px rgba(255,62,108,.4)}
         .fxt-poster img{width:100%;height:100%;object-fit:cover}

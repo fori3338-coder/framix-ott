@@ -186,6 +186,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
 
       <style>{`
         .fxh-root{position:relative;width:100%;height:clamp(560px,86vh,920px);overflow:hidden;background:#06070a;isolation:isolate}
+        @media(max-width:860px){.fxh-root{height:clamp(380px,74vh,560px)}}
         .fxh-media{position:absolute;inset:0}
         .fxh-slide{position:absolute;inset:0;transition:opacity 1200ms ease}
         .fxh-img{width:100%;height:100%;object-fit:cover;transform-origin:center}
@@ -208,6 +209,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
 
         .fxh-content{position:absolute;left:clamp(20px,6vw,118px);bottom:clamp(118px,16vh,176px);z-index:6;
           width:min(620px,86vw)}
+        @media(max-width:860px){.fxh-content{left:16px;right:16px;width:auto;bottom:clamp(80px,14vw,120px)}}
         .fxh-orig{display:inline-flex;align-items:center;gap:9px;margin-bottom:16px;
           font-size:11px;font-weight:900;letter-spacing:.26em;color:#ff5c80}
         .fxh-orig-mark{display:grid;place-items:center;width:20px;height:20px;border-radius:6px;
@@ -215,6 +217,7 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
           box-shadow:0 4px 14px rgba(255,62,108,.5)}
         .fxh-title{font-size:clamp(2.6rem,6.6vw,5.4rem);line-height:.96;font-weight:900;color:#fff;
           letter-spacing:-.03em;margin:0 0 18px;text-shadow:0 6px 40px rgba(0,0,0,.65);max-width:13ch}
+        @media(max-width:860px){.fxh-title{font-size:clamp(1.8rem,7.5vw,2.6rem);margin-bottom:10px}}
         .fxh-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
         .fxh-rating{display:inline-flex;align-items:center;gap:5px;font-weight:800;font-size:14px;color:#ffd34d}
         .fxh-pill{font-size:11px;font-weight:800;color:rgba(255,255,255,.85);
@@ -225,22 +228,28 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
         .fxh-desc{font-size:clamp(14px,1.15vw,16px);line-height:1.6;color:rgba(255,255,255,.74);
           margin:0 0 28px;max-width:50ch;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
         @media(max-width:640px){.fxh-desc{-webkit-line-clamp:2}}
+        .fxh-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+        @media(max-width:860px){.fxh-meta{gap:8px;margin-bottom:10px}}
         .fxh-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+        @media(max-width:860px){.fxh-actions{gap:8px}}
         .fxh-btn-play{display:inline-flex;align-items:center;gap:10px;height:54px;padding:0 30px;border:0;
           border-radius:14px;font-size:16px;font-weight:800;color:#0a0a0c;cursor:pointer;
           background:linear-gradient(180deg,#fff,#ececec);
           box-shadow:0 10px 34px rgba(255,62,108,.34),0 2px 0 rgba(255,255,255,.5) inset;
           transition:transform .18s ease,box-shadow .18s ease}
+        @media(max-width:860px){.fxh-btn-play{height:44px;padding:0 20px;font-size:14px;border-radius:11px}}
         .fxh-btn-play:hover{transform:translateY(-2px);box-shadow:0 16px 44px rgba(255,62,108,.5)}
         .fxh-btn-play:active{transform:translateY(0) scale(.98)}
         .fxh-btn-glass{display:inline-flex;align-items:center;gap:9px;height:54px;padding:0 24px;border-radius:14px;
           font-size:15px;font-weight:700;color:#fff;cursor:pointer;
           background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
           backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:all .18s ease}
+        @media(max-width:860px){.fxh-btn-glass{height:44px;padding:0 16px;font-size:13px;border-radius:11px}}
         .fxh-btn-glass:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4)}
         .fxh-btn-icon{display:grid;place-items:center;width:54px;height:54px;border-radius:14px;cursor:pointer;
           color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);
           backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:all .18s ease}
+        @media(max-width:860px){.fxh-btn-icon{width:44px;height:44px;border-radius:11px}}
         .fxh-btn-icon:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.4)}
         .fxh-btn-icon.is-on{background:rgba(255,62,108,.22);border-color:#ff3e6c;color:#ff7d9c}
 
@@ -258,7 +267,11 @@ export default function HeroBanner({ dramas }: HeroBannerProps) {
         .fxh-strip-prog{position:absolute;left:0;bottom:0;height:3px;width:100%;background:#ff3e6c;
           transform-origin:left;animation:fxhProg linear forwards}
         @keyframes fxhProg{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-        @media(max-width:860px){.fxh-strip{max-width:92vw;right:16px}}
+        @media(max-width:860px){
+          .fxh-strip{max-width:92vw;right:16px;bottom:16px;gap:7px}
+          .fxh-strip-item{width:clamp(46px,12vw,60px);border-radius:8px}
+          .fxh-strip-item.is-active{transform:translateY(-3px)}
+        }
 
         .fxh-anim{opacity:0;animation:fxhUp .6s cubic-bezier(.22,1,.36,1) both}
         @keyframes fxhUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}

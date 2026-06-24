@@ -3,6 +3,7 @@
  * 멀티 컬럼 링크 그리드 + 브랜드 마크 + 소셜 + 법적 고지.
  */
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
 const COLUMNS: { title: string; links: { label: string; to: string }[] }[] = [
   {
@@ -44,6 +45,12 @@ const COLUMNS: { title: string; links: { label: string; to: string }[] }[] = [
 ];
 
 export default function Footer() {
+  const [openCol, setOpenCol] = useState<string | null>(null);
+
+  const toggleCol = (title: string) => {
+    setOpenCol((prev) => (prev === title ? null : title));
+  };
+
   return (
     <footer className="fxf">
       <div className="fxf-glow" />
@@ -59,7 +66,8 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="fxf-cols">
+          {/* Desktop: grid cols */}
+          <div className="fxf-cols fxf-desktop-cols">
             {COLUMNS.map((col) => (
               <div key={col.title} className="fxf-col">
                 <h4 className="fxf-col-title">{col.title}</h4>
@@ -68,6 +76,29 @@ export default function Footer() {
                     <li key={l.label}><Link to={l.to} className="fxf-link">{l.label}</Link></li>
                   ))}
                 </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* Mobile: accordion cols */}
+          <div className="fxf-accordion">
+            {COLUMNS.map((col) => (
+              <div key={col.title} className="fxf-acc-item">
+                <button
+                  className="fxf-acc-header"
+                  onClick={() => toggleCol(col.title)}
+                  aria-expanded={openCol === col.title}
+                >
+                  <span>{col.title}</span>
+                  <span className={`fxf-acc-chevron ${openCol === col.title ? "open" : ""}`}>›</span>
+                </button>
+                {openCol === col.title && (
+                  <ul className="fxf-col-list fxf-acc-body">
+                    {col.links.map((l) => (
+                      <li key={l.label}><Link to={l.to} className="fxf-link">{l.label}</Link></li>
+                    ))}
+                  </ul>
+                )}
               </div>
             ))}
           </div>
@@ -100,7 +131,6 @@ export default function Footer() {
           background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);cursor:pointer;transition:all .2s ease}
         .fxf-social:hover{background:rgba(255,62,108,.16);border-color:rgba(255,62,108,.4);color:#fff}
         .fxf-cols{display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:clamp(20px,4vw,56px)}
-        @media(max-width:680px){.fxf-cols{grid-template-columns:repeat(2,1fr);gap:24px}}
         .fxf-col-title{font-size:12px;font-weight:800;letter-spacing:.08em;color:rgba(255,255,255,.85);margin:0 0 14px;text-transform:uppercase}
         .fxf-col-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:11px}
         .fxf-link{font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;transition:color .18s ease}
@@ -109,6 +139,28 @@ export default function Footer() {
         .fxf-bottom{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;justify-content:space-between}
         .fxf-copy{font-size:12px;color:rgba(255,255,255,.55);margin:0;font-weight:600}
         .fxf-legal{font-size:12px;color:rgba(255,255,255,.32);margin:0}
+
+        /* Accordion — mobile only */
+        .fxf-accordion{display:none;width:100%}
+        .fxf-desktop-cols{display:grid}
+        .fxf-acc-item{border-bottom:1px solid rgba(255,255,255,.07)}
+        .fxf-acc-header{display:flex;align-items:center;justify-content:space-between;width:100%;
+          padding:14px 0;background:none;border:0;color:rgba(255,255,255,.85);
+          font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+        .fxf-acc-chevron{font-size:18px;color:rgba(255,255,255,.4);transition:transform .25s ease;line-height:1;display:inline-block}
+        .fxf-acc-chevron.open{transform:rotate(90deg)}
+        .fxf-acc-body{padding:4px 0 14px;gap:13px}
+
+        @media(max-width:680px){
+          .fxf{padding:28px 18px 32px}
+          .fxf-brand-col{min-width:unset;max-width:100%;width:100%}
+          .fxf-top{gap:16px}
+          .fxf-logo{font-size:24px}
+          .fxf-tagline{font-size:12px;margin:10px 0 12px}
+          .fxf-desktop-cols{display:none!important}
+          .fxf-accordion{display:block}
+          .fxf-bottom{flex-direction:column;align-items:flex-start;gap:4px}
+        }
       `}</style>
     </footer>
   );

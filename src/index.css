@@ -3217,3 +3217,93 @@
     box-shadow: 0 0 8px rgba(255,255,255,0.5);
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MOBILE PLAYER GESTURE — 더블탭 10초 이동 (Netflix 스타일)
+   Desktop 영향 없음 — @media(pointer:coarse) + @media(max-width:860px) 한정
+   ════════════════════════════════════════════════════════════════════════════ */
+@media (pointer: coarse) {
+  /* 좌/우 더블탭 터치 존 */
+  .fxp-tap-zone {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 32%;
+    z-index: 10;
+    /* 투명 — 시각적 표시 없음, 터치 전용 */
+    background: transparent;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .fxp-tap-left  { left: 0; }
+  .fxp-tap-right { right: 0; }
+
+  /* 중앙 30%는 터치 존 제외 → 재생/일시정지 버튼과 충돌 방지 */
+
+  /* 오버레이 컨테이너 */
+  .fxp-tap-overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 40%;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    animation: fxpTapIn 0.15s ease-out both;
+  }
+  .fxp-tap-overlay-left  { left: 0; border-radius: 0 50% 50% 0 / 0 100% 100% 0; }
+  .fxp-tap-overlay-right { right: 0; border-radius: 50% 0 0 50% / 100% 0 0 100%; }
+  @keyframes fxpTapIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* 물결 원형 배경 */
+  .fxp-tap-ripple {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.14);
+    animation: fxpRipple 0.7s ease-out both;
+  }
+  .fxp-tap-overlay-left  .fxp-tap-ripple { border-radius: 0 50% 50% 0 / 0 100% 100% 0; }
+  .fxp-tap-overlay-right .fxp-tap-ripple { border-radius: 50% 0 0 50% / 100% 0 0 100%; }
+  @keyframes fxpRipple {
+    0%   { opacity: 0.6; }
+    100% { opacity: 0; }
+  }
+
+  /* 텍스트 레이블 */
+  .fxp-tap-label {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    animation: fxpLabelIn 0.2s cubic-bezier(0.22,1,0.36,1) both;
+  }
+  @keyframes fxpLabelIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .fxp-tap-arrows {
+    font-size: 26px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -2px;
+  }
+  .fxp-tap-secs {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1;
+  }
+}
+
+/* 데스크탑 — 터치 존 완전 숨김 */
+@media (pointer: fine) {
+  .fxp-tap-zone,
+  .fxp-tap-overlay { display: none !important; }
+}

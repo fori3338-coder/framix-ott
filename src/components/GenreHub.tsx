@@ -148,6 +148,9 @@ export default function GenreHub({ romance, revenge, chaebol, contract, timeloop
           from { opacity: 0; transform: translateY(12px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @media(max-width:680px){
+          .genre-hub-tab{padding:10px 14px!important;font-size:12px!important;min-height:40px}
+        }
       `}</style>
     </section>
   );

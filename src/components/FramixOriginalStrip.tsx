@@ -112,7 +112,9 @@ export default function FramixOriginalStrip({ dramas }: FramixOriginalStripProps
 
       <style>{`
         .fxo-section{position:relative;padding:clamp(34px,5vw,60px) clamp(20px,6vw,118px)}
+        @media(max-width:680px){.fxo-section{padding:24px 14px}}
         .fxo-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px}
+        @media(max-width:680px){.fxo-head{margin-bottom:14px}}
         .fxo-brand{display:flex;align-items:center;gap:13px}
         .fxo-brand-f{display:grid;place-items:center;width:42px;height:42px;border-radius:11px;
           background:linear-gradient(135deg,#ff3e6c,#b1163f);color:#fff;font-weight:900;font-size:22px;
@@ -134,6 +136,7 @@ export default function FramixOriginalStrip({ dramas }: FramixOriginalStripProps
           min-height:clamp(260px,44vw,460px);
           box-shadow:0 40px 100px -28px rgba(0,0,0,.9);
           border:1px solid rgba(255,62,108,.24)}
+        @media(max-width:680px){.fxo-panel{border-radius:16px;min-height:clamp(220px,80vw,320px)}}
         .fxo-panel::after{content:"";position:absolute;inset:0;border-radius:22px;pointer-events:none;
           box-shadow:inset 0 0 60px -10px rgba(255,62,108,.22)}
         .fxo-bg{position:absolute;inset:0}
@@ -144,6 +147,7 @@ export default function FramixOriginalStrip({ dramas }: FramixOriginalStripProps
 
         .fxo-info{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;
           height:100%;min-height:clamp(260px,44vw,460px);max-width:560px;padding:clamp(22px,4vw,52px)}
+        @media(max-width:680px){.fxo-info{min-height:clamp(220px,80vw,320px);padding:16px;max-width:100%}}
         .fxo-verified{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;margin-bottom:13px;
           font-size:11px;font-weight:900;letter-spacing:.16em;color:#fff;padding:5px 13px 5px 5px;border-radius:999px;
           background:linear-gradient(135deg,rgba(255,62,108,.92),rgba(177,22,63,.88));border:1px solid rgba(255,109,140,.6);
@@ -156,6 +160,7 @@ export default function FramixOriginalStrip({ dramas }: FramixOriginalStripProps
           background:rgba(255,62,108,.15);border:1px solid rgba(255,62,108,.35)}
         .fxo-title{font-size:clamp(1.7rem,4.4vw,3rem);font-weight:900;color:#fff;line-height:1.04;
           letter-spacing:-.02em;margin:0 0 14px;text-shadow:0 4px 24px rgba(0,0,0,.7)}
+        @media(max-width:680px){.fxo-title{font-size:clamp(1.3rem,6vw,1.8rem);margin-bottom:8px}}
         .fxo-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;
           font-size:13px;color:rgba(255,255,255,.62)}
         .fxo-star{display:inline-flex;align-items:center;gap:4px;color:#ffd34d;font-weight:800}
@@ -193,6 +198,11 @@ export default function FramixOriginalStrip({ dramas }: FramixOriginalStripProps
         .fxo-thumb-grad{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.8),transparent 60%)}
         .fxo-thumb-name{position:absolute;left:8px;right:8px;bottom:6px;font-size:11px;font-weight:700;color:#fff;
           white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+        @media(max-width:680px){
+          .fxo-thumb{width:clamp(90px,28vw,130px);border-radius:9px}
+          .fxo-play{height:40px;padding:0 16px;font-size:13px}
+          .fxo-fav{width:40px;height:40px}
+        }
       `}</style>
     </section>
   );

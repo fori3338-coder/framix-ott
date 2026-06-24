@@ -364,6 +364,12 @@ export default function Player() {
     return saved === "default" || saved === "large_text" || saved === "high_contrast" ? saved : "default";
   });
 
+  // ─── Mobile Double-Tap Gesture (Netflix style) ───────────────────────────
+  const [tapOverlay, setTapOverlay] = useState<{ side: "left" | "right"; visible: boolean }>({ side: "left", visible: false });
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTapRef = useRef<{ side: "left" | "right"; time: number } | null>(null);
+  const tapOverlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const currentIndex = drama?.episodes.findIndex((e) => e.id === episodeId) ?? -1;
 
   const nextEpisode =
@@ -679,6 +685,39 @@ export default function Player() {
     setPlaying((p) => !p);
   };
 
+  // ─── Mobile Double-Tap Gesture Handler ──────────────────────────────────
+  const handleMobileTap = useCallback((side: "left" | "right") => {
+    const now = Date.now();
+    const last = lastTapRef.current;
+    const DOUBLE_TAP_MS = 300;
+
+    if (last && last.side === side && now - last.time < DOUBLE_TAP_MS) {
+      // Double-tap confirmed
+      lastTapRef.current = null;
+      if (tapTimerRef.current) { clearTimeout(tapTimerRef.current); tapTimerRef.current = null; }
+
+      const video = videoRef.current;
+      if (video) {
+        const seek = side === "left" ? -10 : 10;
+        video.currentTime = Math.max(0, Math.min(video.duration || 0, video.currentTime + seek));
+      }
+      // Show overlay
+      setTapOverlay({ side, visible: true });
+      if (tapOverlayTimerRef.current) clearTimeout(tapOverlayTimerRef.current);
+      tapOverlayTimerRef.current = setTimeout(() => setTapOverlay((p) => ({ ...p, visible: false })), 800);
+    } else {
+      // First tap — wait for potential second
+      lastTapRef.current = { side, time: now };
+      if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+      tapTimerRef.current = setTimeout(() => {
+        // Single tap — treat as regular click
+        lastTapRef.current = null;
+        revealControls();
+        setPlaying((p) => !p);
+      }, DOUBLE_TAP_MS);
+    }
+  }, [revealControls]);
+
   // ─── 볼륨 슬라이더 ───────────────────────────────────────────────────────
   const scheduleHideVolume = useCallback(() => {
     if (volumeHideTimerRef.current) clearTimeout(volumeHideTimerRef.current);
@@ -891,6 +930,35 @@ export default function Player() {
         </div>
       ) : (
         <div className="absolute inset-0 bg-black" />
+      )}
+
+      {/* ═══ MOBILE DOUBLE-TAP ZONES (모바일 전용) ══════════════════════════ */}
+      {hasVideo && (
+        <>
+          {/* 좌측 더블탭 존 — 10초 뒤로 */}
+          <div
+            className="fxp-tap-zone fxp-tap-left"
+            onTouchEnd={(e) => { e.stopPropagation(); handleMobileTap("left"); }}
+          />
+          {/* 우측 더블탭 존 — 10초 앞으로 */}
+          <div
+            className="fxp-tap-zone fxp-tap-right"
+            onTouchEnd={(e) => { e.stopPropagation(); handleMobileTap("right"); }}
+          />
+          {/* Netflix 스타일 더블탭 오버레이 애니메이션 */}
+          {tapOverlay.visible && (
+            <div className={`fxp-tap-overlay ${tapOverlay.side === "left" ? "fxp-tap-overlay-left" : "fxp-tap-overlay-right"}`}>
+              <div className="fxp-tap-ripple" />
+              <div className="fxp-tap-label">
+                {tapOverlay.side === "left" ? (
+                  <><span className="fxp-tap-arrows">«</span><span className="fxp-tap-secs">10</span></>
+                ) : (
+                  <><span className="fxp-tap-secs">10</span><span className="fxp-tap-arrows">»</span></>
+                )}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* ═══ CUSTOM SUBTITLE OVERLAY ════════════════════════════════════════ */}

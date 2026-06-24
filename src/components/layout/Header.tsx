@@ -299,12 +299,15 @@ export default function Header() {
       <style>{`
         .fxn-header{position:fixed;top:0;left:0;right:0;z-index:50;padding:14px clamp(16px,5vw,40px) 0;
           transition:transform 400ms cubic-bezier(.4,0,.2,1);will-change:transform}
+        @media(max-width:860px){.fxn-header{padding:10px 12px 0}}
         .fxn-bar{display:flex;align-items:center;gap:18px;height:60px;padding:0 10px 0 20px;
           border-radius:18px;background:var(--fxn-glass);border:1px solid var(--fxn-border);
           box-shadow:var(--fxn-shadow);backdrop-filter:var(--fxn-blur);-webkit-backdrop-filter:var(--fxn-blur);
           transition:background .3s ease,box-shadow .3s ease}
+        @media(max-width:860px){.fxn-bar{height:52px;padding:0 8px 0 14px;gap:8px;border-radius:14px}}
         .fxn-logo{position:relative;display:inline-flex;align-items:center;font-size:23px;font-weight:900;
           letter-spacing:.06em;color:#fff;text-decoration:none;flex:0 0 auto}
+        @media(max-width:860px){.fxn-logo{font-size:19px}}
         .fxn-logo-x{color:#ff3e6c}
         .fxn-logo-dot{position:absolute;top:2px;right:-9px;width:6px;height:6px;border-radius:50%;
           background:#ff3e6c;box-shadow:0 0 10px 2px rgba(255,62,108,.7)}
@@ -321,6 +324,7 @@ export default function Header() {
         .fxn-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:11px;cursor:pointer;
           color:rgba(255,255,255,.82);background:transparent;border:0;transition:all .2s ease}
         .fxn-icon:hover{background:rgba(255,255,255,.1);color:#fff}
+        @media(max-width:860px){.fxn-icon{width:44px;height:44px;border-radius:12px}}
         .fxn-search{display:flex;align-items:center;border-radius:12px;transition:all .25s ease}
         .fxn-search.open{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);padding-left:12px;width:min(280px,40vw)}
         .fxn-search-lead{color:rgba(255,255,255,.45);flex:0 0 auto}
