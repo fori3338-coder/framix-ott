@@ -252,9 +252,12 @@ export default function Header() {
       </header>
 
       {/* Mobile profile bottom-sheet */}
+      {/* fxn-sheet-backdrop은 모바일 전용. Desktop에서 렌더링하면 z-index:60 fixed 레이어가
+          전체 화면을 덮어 드롭다운 버튼의 click 이벤트를 차단하는 버그 발생.
+          useMediaQuery 대신 CSS class로 처리 → backdrop 자체를 desktop에서 display:none */}
       {user && profileOpen && (
         <Portal>
-          <div className="fxn-sheet-backdrop" onClick={() => setProfileOpen(false)} aria-hidden="true" />
+          <div className="fxn-sheet-backdrop fxn-mobile-only" onClick={() => setProfileOpen(false)} aria-hidden="true" />
           <div className="fxn-sheet" role="dialog" aria-modal="true">
             <div className="fxn-sheet-handle" />
             <div className="fxn-dd-head">
@@ -389,6 +392,8 @@ export default function Header() {
 
         .fxn-desktop{display:flex}
         .fxn-mobile{display:none}
+        /* Desktop: sheet-backdrop 완전 숨김 (z-index:60 fixed 레이어가 드롭다운 클릭 차단 방지) */
+        .fxn-mobile-only{display:none}
         @media(max-width:860px){
           .fxn-nav{display:none}
           .fxn-search{display:none}
@@ -396,6 +401,7 @@ export default function Header() {
           .fxn-mobile{display:grid}
           .fxn-auth.fxn-desktop{display:none!important}
           .fxn-dropdown{display:none}
+          .fxn-mobile-only{display:block}
         }
         @media(min-width:861px){
           .fxn-sheet{display:none}
