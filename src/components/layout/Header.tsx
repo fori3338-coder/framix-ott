@@ -98,7 +98,11 @@ export default function Header() {
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        // setTimeout으로 다음 이벤트 루프에서 실행
+        // 이렇게 해야 click 이벤트가 완전히 처리된 후 상태 변경
+        setTimeout(() => setProfileOpen(false), 0);
+      }
     };
     if (profileOpen) document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
@@ -197,6 +201,7 @@ export default function Header() {
                   ) : (
                     <img src={avatarSrc} alt="프로필" className="fxn-avatar" onError={() => setAvatarErr(true)} />
                   )}
+                  <span className="fxn-profile-label">{user.email?.split('@')[0] || '내 정보'}</span>
                   <ChevronDown size={13} className="fxn-chev" style={{ transform: profileOpen ? "rotate(180deg)" : "none" }} />
                 </button>
 
@@ -331,14 +336,19 @@ export default function Header() {
         .fxn-search-input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:#fff;font-size:14px;padding:0 6px;height:40px}
         .fxn-search-input::placeholder{color:rgba(255,255,255,.4)}
 
-        .fxn-profile{position:relative}
-        .fxn-profile-btn{display:flex;align-items:center;gap:5px;padding:4px 7px 4px 4px;border-radius:999px;cursor:pointer;
+        .fxn-profile{position:relative;display:flex;align-items:center}
+        .fxn-profile-btn{display:flex;align-items:center;gap:6px;padding:4px 8px 4px 4px;border-radius:999px;cursor:pointer;
           background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);transition:all .2s ease}
         .fxn-profile-btn:hover{background:rgba(255,255,255,.12)}
-        .fxn-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover}
-        .fxn-avatar-fallback{display:grid;place-items:center;background:rgba(255,255,255,.1);
-          border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7)}
-        .fxn-chev{color:rgba(255,255,255,.6);transition:transform .2s ease}
+        .fxn-profile-label{font-size:13px;font-weight:600;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+        .fxn-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0}
+        .fxn-avatar-fallback{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.1);
+          border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);flex-shrink:0}
+        .fxn-chev{color:rgba(255,255,255,.6);transition:transform .2s ease;flex-shrink:0}
+        @media(max-width:860px){
+          .fxn-profile-label{display:none}
+          .fxn-profile-btn{padding:4px}
+        }
 
         .fxn-auth{display:flex;align-items:center;gap:8px}
         .fxn-ghost{padding:9px 16px;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;
@@ -351,7 +361,7 @@ export default function Header() {
         .fxn-dropdown{position:absolute;top:calc(100% + 12px);right:0;min-width:220px;width:max-content;max-width:300px;border-radius:16px;padding:8px;
           background:rgba(16,18,24,.96);border:1px solid rgba(255,255,255,.1);
           box-shadow:0 24px 60px rgba(0,0,0,.6);backdrop-filter:blur(20px);animation:fxnDrop .2s ease;
-          display:flex;flex-direction:column;overflow:visible}
+          display:flex;flex-direction:column;overflow:visible;z-index:70;pointer-events:auto}
         @keyframes fxnDrop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
         .fxn-dd-head{display:flex;align-items:center;gap:11px;padding:10px}
         .fxn-dd-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;flex:0 0 auto}
@@ -361,10 +371,11 @@ export default function Header() {
         .fxn-dd-divider{height:1px;background:rgba(255,255,255,.08);margin:6px 4px}
         .fxn-dd-item{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;
           font-size:13px;font-weight:600;color:rgba(255,255,255,.82);background:transparent;border:0;cursor:pointer;text-align:left;
-          white-space:nowrap;box-sizing:border-box}
+          white-space:nowrap;box-sizing:border-box;pointer-events:auto;transition:background .15s ease}
         .fxn-dd-item:hover{background:rgba(255,255,255,.08);color:#fff}
+        .fxn-dd-item:active{background:rgba(255,255,255,.12)}
         .fxn-dd-item.danger{color:#ff7d8c}
-        .fxn-dd-item.danger:hover{background:rgba(255,62,108,.12)}
+        .fxn-dd-item.danger:hover{background:rgba(255,62,108,.12);color:#ff9aab}
 
         .fxn-desktop{display:flex}
         .fxn-mobile{display:none}
@@ -374,6 +385,10 @@ export default function Header() {
           .fxn-desktop{display:none!important}
           .fxn-mobile{display:grid}
           .fxn-auth.fxn-desktop{display:none!important}
+          .fxn-dropdown{display:none}
+        }
+        @media(min-width:861px){
+          .fxn-sheet{display:none}
         }
 
         .fxn-sheet-backdrop{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
@@ -386,9 +401,13 @@ export default function Header() {
         .fxn-sheet-nav{display:flex;flex-direction:column;gap:2px;margin-top:8px}
         .fxn-sheet-item{display:flex;align-items:center;gap:13px;padding:14px 12px;border-radius:12px;
           font-size:15px;font-weight:600;color:rgba(255,255,255,.85);background:transparent;border:0;cursor:pointer;text-align:left;
-          pointer-events:auto;touch-action:manipulation;-webkit-tap-highlight-color:transparent;width:100%;box-sizing:border-box}
-        .fxn-sheet-item:active{background:rgba(255,255,255,.08)}
+          pointer-events:auto;touch-action:manipulation;-webkit-tap-highlight-color:transparent;width:100%;box-sizing:border-box;
+          transition:background .15s ease}
+        .fxn-sheet-item:hover{background:rgba(255,255,255,.08);color:#fff}
+        .fxn-sheet-item:active{background:rgba(255,255,255,.12)}
         .fxn-sheet-item.danger{color:#ff7d8c}
+        .fxn-sheet-item.danger:hover{background:rgba(255,62,108,.12);color:#ff9aab}
+        .fxn-sheet-item.danger:active{background:rgba(255,62,108,.16)}
 
         .fxn-msearch{position:fixed;inset:0;z-index:62;background:#06070a;padding:16px}
         .fxn-msearch-bar{display:flex;align-items:center;gap:10px;height:50px;padding:0 14px;border-radius:14px;
