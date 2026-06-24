@@ -132,6 +132,17 @@ export default function Header() {
 
   const avatarSrc = user?.user_metadata?.avatar_url || "https://picsum.photos/seed/framix-profile/64/64";
 
+  // 공용 메뉴 핸들러 함수
+  const handleMenuNavigate = useCallback((path: string) => {
+    setProfileOpen(false);
+    setTimeout(() => navigate(path), 0);
+  }, [navigate]);
+
+  const handleLogout = useCallback(async () => {
+    setProfileOpen(false);
+    await signOut();
+  }, [signOut]);
+
   const headerStyle: React.CSSProperties = {
     transform: hidden ? "translate3d(0,-130%,0)" : "translate3d(0,0,0)",
     "--fxn-glass": progress > 0
@@ -219,11 +230,11 @@ export default function Header() {
                       </div>
                     </div>
                     <div className="fxn-dd-divider" />
-                    <button className="fxn-dd-item" role="menuitem" onClick={() => { setProfileOpen(false); navigate("/my-info"); }}><User size={15} /> 내 정보</button>
-                    <button className="fxn-dd-item" role="menuitem" onClick={() => { setProfileOpen(false); navigate("/my/subscription"); }}><Crown size={15} /> 내 구독</button>
-                    <button className="fxn-dd-item" role="menuitem" onClick={() => { setProfileOpen(false); navigate("/admin"); }}><Settings size={15} /> 관리센터</button>
+                    <button className="fxn-dd-item" role="menuitem" onClick={() => handleMenuNavigate("/my-info")}><User size={15} /> 내 정보</button>
+                    <button className="fxn-dd-item" role="menuitem" onClick={() => handleMenuNavigate("/my/subscription")}><Crown size={15} /> 내 구독</button>
+                    <button className="fxn-dd-item" role="menuitem" onClick={() => handleMenuNavigate("/admin")}><Settings size={15} /> 관리센터</button>
                     <div className="fxn-dd-divider" />
-                    <button className="fxn-dd-item danger" role="menuitem" onClick={async () => { setProfileOpen(false); await signOut(); }}><LogOut size={15} /> 로그아웃</button>
+                    <button className="fxn-dd-item danger" role="menuitem" onClick={handleLogout}><LogOut size={15} /> 로그아웃</button>
                   </div>
                 )}
               </div>
@@ -258,10 +269,10 @@ export default function Header() {
               </div>
             </div>
             <div className="fxn-sheet-nav">
-              <button className="fxn-sheet-item" onClick={() => { setProfileOpen(false); navigate("/my-info"); }}><User size={18} /> 내 정보</button>
-              <button className="fxn-sheet-item" onClick={() => { setProfileOpen(false); navigate("/my/subscription"); }}><Crown size={18} /> 내 구독</button>
-              <button className="fxn-sheet-item" onClick={() => { setProfileOpen(false); navigate("/admin"); }}><Settings size={18} /> 관리센터</button>
-              <button className="fxn-sheet-item danger" onClick={async () => { setProfileOpen(false); await signOut(); }}><LogOut size={18} /> 로그아웃</button>
+              <button className="fxn-sheet-item" onClick={() => handleMenuNavigate("/my-info")}><User size={18} /> 내 정보</button>
+              <button className="fxn-sheet-item" onClick={() => handleMenuNavigate("/my/subscription")}><Crown size={18} /> 내 구독</button>
+              <button className="fxn-sheet-item" onClick={() => handleMenuNavigate("/admin")}><Settings size={18} /> 관리센터</button>
+              <button className="fxn-sheet-item danger" onClick={handleLogout}><LogOut size={18} /> 로그아웃</button>
             </div>
           </div>
         </Portal>
@@ -346,8 +357,7 @@ export default function Header() {
           border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);flex-shrink:0}
         .fxn-chev{color:rgba(255,255,255,.6);transition:transform .2s ease;flex-shrink:0}
         @media(max-width:860px){
-          .fxn-profile-label{display:none}
-          .fxn-profile-btn{padding:4px}
+          .fxn-profile-btn{padding:4px 6px}
         }
 
         .fxn-auth{display:flex;align-items:center;gap:8px}
