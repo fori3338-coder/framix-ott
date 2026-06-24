@@ -201,7 +201,7 @@ export default function Header() {
                 </button>
 
                 {profileOpen && (
-                  <div className="fxn-dropdown fxn-desktop" role="menu">
+                  <div className="fxn-dropdown" role="menu">
                     <div className="fxn-dd-head">
                       {avatarErr ? (
                         <span className="fxn-dd-avatar fxn-avatar-fallback"><User size={18} /></span>
@@ -238,8 +238,8 @@ export default function Header() {
       {/* Mobile profile bottom-sheet */}
       {user && profileOpen && (
         <Portal>
-          <div className="fxn-sheet-backdrop fxn-mobile" onClick={() => setProfileOpen(false)} aria-hidden="true" />
-          <div className="fxn-sheet fxn-mobile" role="dialog" aria-modal="true">
+          <div className="fxn-sheet-backdrop" onClick={() => setProfileOpen(false)} aria-hidden="true" />
+          <div className="fxn-sheet" role="dialog" aria-modal="true">
             <div className="fxn-sheet-handle" />
             <div className="fxn-dd-head">
               {avatarErr ? (
@@ -265,7 +265,7 @@ export default function Header() {
       {/* Mobile full-screen search */}
       {mobileSearchOpen && (
         <Portal>
-          <div className="fxn-msearch fxn-mobile" role="dialog" aria-modal="true" aria-label="검색">
+          <div className="fxn-msearch" role="dialog" aria-modal="true" aria-label="검색">
             <div className="fxn-msearch-bar">
               <Search size={20} className="fxn-msearch-icon" />
               <input
@@ -348,18 +348,20 @@ export default function Header() {
           background:linear-gradient(180deg,#ff4e78,#e0214f);box-shadow:0 8px 22px -6px rgba(255,62,108,.6)}
         .fxn-primary:hover{transform:translateY(-1px)}
 
-        .fxn-dropdown{position:absolute;top:calc(100% + 12px);right:0;width:248px;border-radius:16px;padding:8px;
+        .fxn-dropdown{position:absolute;top:calc(100% + 12px);right:0;min-width:220px;width:max-content;max-width:300px;border-radius:16px;padding:8px;
           background:rgba(16,18,24,.96);border:1px solid rgba(255,255,255,.1);
-          box-shadow:0 24px 60px rgba(0,0,0,.6);backdrop-filter:blur(20px);animation:fxnDrop .2s ease}
+          box-shadow:0 24px 60px rgba(0,0,0,.6);backdrop-filter:blur(20px);animation:fxnDrop .2s ease;
+          display:flex;flex-direction:column;overflow:visible}
         @keyframes fxnDrop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
         .fxn-dd-head{display:flex;align-items:center;gap:11px;padding:10px}
         .fxn-dd-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;flex:0 0 auto}
-        .fxn-dd-id{min-width:0}
+        .fxn-dd-id{min-width:0;overflow:hidden}
         .fxn-dd-email{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
         .fxn-dd-plan{font-size:11px;color:#ff7d9c;margin:2px 0 0;font-weight:600}
         .fxn-dd-divider{height:1px;background:rgba(255,255,255,.08);margin:6px 4px}
         .fxn-dd-item{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;
-          font-size:13px;font-weight:600;color:rgba(255,255,255,.82);background:transparent;border:0;cursor:pointer;text-align:left}
+          font-size:13px;font-weight:600;color:rgba(255,255,255,.82);background:transparent;border:0;cursor:pointer;text-align:left;
+          white-space:nowrap;box-sizing:border-box}
         .fxn-dd-item:hover{background:rgba(255,255,255,.08);color:#fff}
         .fxn-dd-item.danger{color:#ff7d8c}
         .fxn-dd-item.danger:hover{background:rgba(255,62,108,.12)}
@@ -377,12 +379,14 @@ export default function Header() {
         .fxn-sheet-backdrop{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
         .fxn-sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;padding:10px 18px calc(20px + env(safe-area-inset-bottom));
           background:#101218;border-top:1px solid rgba(255,255,255,.1);border-radius:22px 22px 0 0;
-          box-shadow:0 -20px 60px rgba(0,0,0,.6);animation:fxnSheet .3s cubic-bezier(.22,1,.36,1)}
+          box-shadow:0 -20px 60px rgba(0,0,0,.6);animation:fxnSheet .3s cubic-bezier(.22,1,.36,1);
+          pointer-events:auto;display:block}
         @keyframes fxnSheet{from{transform:translateY(100%)}to{transform:none}}
         .fxn-sheet-handle{width:40px;height:4px;border-radius:3px;background:rgba(255,255,255,.2);margin:4px auto 10px}
         .fxn-sheet-nav{display:flex;flex-direction:column;gap:2px;margin-top:8px}
         .fxn-sheet-item{display:flex;align-items:center;gap:13px;padding:14px 12px;border-radius:12px;
-          font-size:15px;font-weight:600;color:rgba(255,255,255,.85);background:transparent;border:0;cursor:pointer;text-align:left}
+          font-size:15px;font-weight:600;color:rgba(255,255,255,.85);background:transparent;border:0;cursor:pointer;text-align:left;
+          pointer-events:auto;touch-action:manipulation;-webkit-tap-highlight-color:transparent;width:100%;box-sizing:border-box}
         .fxn-sheet-item:active{background:rgba(255,255,255,.08)}
         .fxn-sheet-item.danger{color:#ff7d8c}
 
