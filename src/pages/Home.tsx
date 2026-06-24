@@ -25,6 +25,7 @@ import { useDramas } from "../hooks/useDramas";
 import { useContinueWatching } from "../hooks/useContinueWatching";
 import { useFavorites } from "../hooks/useFavorites";
 import { useRecommendations } from "../hooks/useRecommendations";
+import { getRecommendationReason } from "../lib/premiumStats";
 import type { Drama } from "../types";
 
 import {
@@ -125,6 +126,13 @@ export default function Home() {
     .map((fid) => allDramas.find((d) => d.id === fid))
     .filter((d): d is Drama => Boolean(d));
 
+  // 추천 이유 (Because you watched / liked ...)
+  const recommendationReason = getRecommendationReason(
+    continueWatchingItems,
+    favoritedList,
+    allDramas
+  );
+
   return (
     <div className="pb-0 home-v4-root">
       {/* ── Hero Banner ────────────────────────────────────────────────── */}
@@ -167,6 +175,7 @@ export default function Home() {
           rowVariant="aipick"
           badge="AI"
           cardVariant="default"
+          reason={recommendationReason ?? undefined}
         />
 
         {/* ── S6. Discovery: 당신을 위한 추천 (CMD-01) ─────────── */}
@@ -175,7 +184,9 @@ export default function Home() {
           subtitle="시청 기록 기반 맞춤 추천"
           dramas={sections.forYou}
           cardVariant="default"
+          reason={recommendationReason ?? undefined}
         />
+
 
         {/* ── S7. GenreHub (CMD-04) ─────────────────────────────── */}
         <GenreHubSection

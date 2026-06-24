@@ -16,6 +16,7 @@ import type { Drama } from "../types";
 import { useFavorites } from "../hooks/useFavorites";
 import { FramixBadgeStack } from "./FramixBadge";
 import { isFramixOriginal } from "../lib/framixBadges";
+import { getLiveViewerCount, getReleaseCountdown } from "../lib/premiumStats";
 
 export type CardVariant = "default" | "top10" | "editor" | "featured";
 
@@ -277,6 +278,37 @@ function DefaultCard({ drama, size = "md" }: { drama: Drama; size?: "sm" | "md" 
 
         {/* FRAMIX badge system */}
         <FramixBadgeStack drama={drama} size="xs" className="absolute top-2 left-2 z-10" />
+
+        {/* Live viewers + D-Day (top-right) */}
+        <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1">
+          {getReleaseCountdown(drama) && (
+            <span
+              className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wider leading-none"
+              style={{
+                background:
+                  getReleaseCountdown(drama) === "NOW OPEN"
+                    ? "linear-gradient(135deg,#ff3e6c,#b91c45)"
+                    : "rgba(0,0,0,0.7)",
+                color: "#fff",
+                border:
+                  getReleaseCountdown(drama) === "NOW OPEN"
+                    ? "1px solid rgba(255,255,255,0.25)"
+                    : "1px solid rgba(212,175,55,0.55)",
+                boxShadow:
+                  getReleaseCountdown(drama) === "NOW OPEN"
+                    ? "0 4px 12px rgba(255,62,108,0.45)"
+                    : "none",
+              }}
+            >
+              {getReleaseCountdown(drama)}
+            </span>
+          )}
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/65 backdrop-blur-sm text-[9px] font-bold text-white/95 leading-none">
+            <span className="text-[10px] leading-none">🔥</span>
+            {getLiveViewerCount(drama).toLocaleString("en-US")}
+          </span>
+        </div>
+
 
         {/* Bottom Overlay: Appears on hover with Play, Save, Details */}
         <div

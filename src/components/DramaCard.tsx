@@ -8,6 +8,7 @@ import { Play, Star } from "lucide-react";
 import type { Drama } from "../types";
 import { FramixBadgeStack } from "./FramixBadge";
 import { isFramixOriginal } from "../lib/framixBadges";
+import { getLiveViewerCount } from "../lib/premiumStats";
 
 interface DramaCardProps {
   drama: Drama;
@@ -114,6 +115,12 @@ export default function DramaCard({
           >
             <Play size={17} className="text-black fill-black ml-0.5" />
           </div>
+        </div>
+
+        {/* Live viewers — bottom-left (above progress bar) */}
+        <div className="absolute bottom-1.5 left-1.5 z-10 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/65 backdrop-blur-sm text-[9px] font-bold text-white/95 leading-none">
+          <span className="text-[10px] leading-none">🔥</span>
+          {getLiveViewerCount(drama).toLocaleString("en-US")}
         </div>
 
         {/* Progress Bar */}

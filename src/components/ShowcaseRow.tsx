@@ -21,6 +21,8 @@ interface ShowcaseRowProps {
   badge?: string;
   cardVariant?: CardVariant;
   rowVariant?: RowVariant;
+  /** OTT 추천 이유 (e.g. "Because you watched Revenge Drama") */
+  reason?: string;
 }
 
 export default function ShowcaseRow({
@@ -32,6 +34,7 @@ export default function ShowcaseRow({
   badge,
   cardVariant,
   rowVariant = "default",
+  reason,
 }: ShowcaseRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
@@ -157,6 +160,12 @@ export default function ShowcaseRow({
             </div>
             {subtitle && (
               <p className="section-subtitle-premium hidden md:block">{subtitle}</p>
+            )}
+            {reason && (
+              <p className="mt-1 text-[11px] md:text-[12px] font-semibold tracking-wide text-[#D4AF37]/85 flex items-center gap-1">
+                <span className="inline-block w-1 h-1 rounded-full bg-[#D4AF37]" />
+                {reason}
+              </p>
             )}
           </div>
         </div>

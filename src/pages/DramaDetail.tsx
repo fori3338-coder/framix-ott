@@ -9,6 +9,14 @@ import { useDramas } from "../hooks/useDramas";
 import { useFavorites } from "../hooks/useFavorites";
 import { useContinueWatching } from "../hooks/useContinueWatching";
 import DramaRow from "../components/DramaRow";
+import PremiumPaywallCard from "../components/PremiumPaywallCard";
+import {
+  formatViews,
+  formatLiveCount,
+  getLiveViewerCount,
+  getReleaseCountdown,
+  FREE_EPISODE_LIMIT,
+} from "../lib/premiumStats";
 
 // ─── Scroll Reveal Hook ────────────────────────────────────────────────────
 function useReveal(threshold = 0.08) {
@@ -248,15 +256,41 @@ export default function DramaDetail() {
                 {drama.totalEpisodes}부작 · {drama.episodeLength}
               </span>
               {drama.views > 0 && (
-                <span className="text-white/30 text-xs flex items-center gap-1">
+                <span className="text-white/45 text-xs flex items-center gap-1 font-semibold">
                   <Eye size={11} />
-                  {(drama.views / 10000).toFixed(0)}만 조회
+                  {formatViews(drama.views)}
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/12 border border-red-500/30 text-red-300 text-[11px] font-bold">
+                <span aria-hidden>🔥</span>
+                {formatLiveCount(getLiveViewerCount(drama))}
+              </span>
+              {getReleaseCountdown(drama) && (
+                <span
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black tracking-widest"
+                  style={{
+                    background:
+                      getReleaseCountdown(drama) === "NOW OPEN"
+                        ? "linear-gradient(135deg,#ff3e6c,#b91c45)"
+                        : "rgba(212,175,55,0.12)",
+                    color:
+                      getReleaseCountdown(drama) === "NOW OPEN"
+                        ? "#fff"
+                        : "#D4AF37",
+                    border:
+                      getReleaseCountdown(drama) === "NOW OPEN"
+                        ? "1px solid rgba(255,255,255,0.25)"
+                        : "1px solid rgba(212,175,55,0.4)",
+                  }}
+                >
+                  {getReleaseCountdown(drama)}
                 </span>
               )}
             </div>
           </div>
         </div>
       </div>
+
 
       {/* ═══════════════════════════════════════════════════
           MOBILE HEADER (below backdrop)
@@ -546,10 +580,20 @@ export default function DramaDetail() {
                 // Find continue watching progress for this episode
                 const cwEp = cwForDrama?.episodeId === ep.id ? cwForDrama : null;
                 const isCurrent = cwEp !== null;
+                // Soft paywall: lock everything past FREE_EPISODE_LIMIT (override ep.isFree)
+                const softLocked = idx >= FREE_EPISODE_LIMIT || !ep.isFree;
+                const showPaywall = idx === FREE_EPISODE_LIMIT && drama.episodes.length > FREE_EPISODE_LIMIT;
+                const lockedCount = Math.max(0, drama.episodes.length - FREE_EPISODE_LIMIT);
 
                 return (
+                  <div key={ep.id}>
+                    {showPaywall && (
+                      <PremiumPaywallCard
+                        lockedCount={lockedCount}
+                        totalEpisodes={drama.episodes.length}
+                      />
+                    )}
                   <Link
-                    key={ep.id}
                     to={`/watch/${drama.id}/${ep.id}`}
                     className={[
                       "group flex items-center gap-3 md:gap-4 p-3.5 rounded-2xl",
@@ -586,7 +630,7 @@ export default function DramaDetail() {
                         </span>
                       )}
                       {/* Lock badge */}
-                      {!ep.isFree && (
+                      {softLocked && (
                         <span className="absolute top-1.5 left-1.5 flex items-center gap-1
                           bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
                           <Lock size={9} className="text-[#D4AF37]" />
@@ -619,7 +663,7 @@ export default function DramaDetail() {
                         ].join(" ")}>
                           {ep.title || `${ep.number}화`}
                         </p>
-                        {!ep.isFree && (
+                        {softLocked && (
                           <span className="shrink-0 text-[10px] text-[#D4AF37] font-black">VIP</span>
                         )}
                         {isCurrent && (
@@ -650,6 +694,7 @@ export default function DramaDetail() {
                       ].join(" ")}
                     />
                   </Link>
+                  </div>
                 );
               })}
             </div>
